@@ -1,0 +1,12 @@
+.DS_Store
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+midi/
+dumps/*
+!dumps/README.md
+!dumps/3*.syx
+!dumps/41-duracion.syx
+!dumps/53-escrito-72.syx

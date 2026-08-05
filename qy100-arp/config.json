@@ -1,0 +1,113 @@
+// Configuracion de qy100-arp.
+// Se permiten comentarios de linea con // (se quitan antes de parsear el JSON).
+//
+// Canales: se escriben 1-16 como en el panel del QY100, no 0-15.
+// Divisiones: 1/4 1/4T 1/8 1/8T 1/16 1/16T 1/32 1/32T
+{
+  // Canal MIDI del que escuchamos las notas entrantes. null = todos (omni).
+  // Ponlo al canal de transmision del teclado si tienes mas cosas en la cadena.
+  "input_channel": null,
+
+  // Semilla del generador aleatorio. Fija un numero para que lo generativo
+  // sea reproducible; null para que cambie en cada arranque.
+  "seed": null,
+
+  // Dejar pasar hacia el QY100 los mensajes que no son notas (CC, pitch bend,
+  // program change, aftertouch) para que las ruedas y pedales sigan sirviendo.
+  "passthrough": true,
+
+  // Control en vivo desde los knobs del controlador. Imprescindible en un setup
+  // sin pantalla: es la unica forma de tocar el motor mientras suena.
+  // Un CC mapeado aqui se consume y NO llega al QY100.
+  //
+  // Los numeros de abajo son los CC tipicos de una fila de knobs (74-79). Cambia
+  // las claves por los CC que mande realmente tu controlador; para averiguarlos
+  // corre con --sim y mira que llega, o usa el MIDI Logger de qy100.doffu.net.
+  "midi_control": {
+    "enabled": true,
+    "channel": null,        // null = cualquier canal
+    "map": {
+      "74": "arp.division",
+      "75": "arp.octaves",
+      "76": "arp.gate",
+      "77": "arp.pattern",
+      "78": "melody.density",
+      "79": "lane.hihat.probability",
+      "80": "lane.bombo.pulses",
+      "81": "lane.caja.rotation",
+      "82": "arp.latch",
+      "83": "melody.enabled"
+    }
+  },
+
+  "arpeggiator": {
+    "enabled": true,
+    // up | down | updown | updown_inc | downup | as_played | random | chord
+    "pattern": "updown",
+    "division": "1/16",
+    "octaves": 2,
+    "gate": 0.5,          // fraccion del paso que dura la nota (>1 = ligado)
+    "channel": 1,
+    "latch": false,       // true = sigue arpegiando al soltar las teclas
+    "transpose": 0,
+
+    // input = usa la velocity con que tocaste
+    // fixed = siempre fixed_velocity
+    // accent = fixed_velocity multiplicado por el patron de accents
+    "velocity_mode": "input",
+    "fixed_velocity": 100,
+    "accents": [1.0, 0.7, 0.85, 0.7]
+  },
+
+  "generative": {
+    // Lineas de percusion con reparto euclidiano.
+    // Notas segun el mapa de bateria XG estandar en el canal 10.
+    "euclid_lanes": [
+      {
+        "name": "bombo",
+        "enabled": true,
+        "steps": 16, "pulses": 4, "rotation": 0,
+        "note": 36, "channel": 10, "division": "1/16",
+        "velocity": 105, "accent": 15, "probability": 1.0
+      },
+      {
+        "name": "caja",
+        "enabled": true,
+        "steps": 16, "pulses": 2, "rotation": 4,
+        "note": 38, "channel": 10, "division": "1/16",
+        "velocity": 95, "probability": 1.0
+      },
+      {
+        "name": "hihat",
+        "enabled": true,
+        "steps": 16, "pulses": 11, "rotation": 0,
+        "note": 42, "channel": 10, "division": "1/16",
+        "velocity": 70, "probability": 0.85
+      }
+    ],
+
+    // Melodia por cadena de Markov sobre grados de escala.
+    // Pon "enabled": false si solo quieres el arpegiador.
+    "melody": {
+      "enabled": true,
+      "channel": 2,
+      "root": "C",
+      "scale": "minor",
+      "base_octave": 3,
+      "range_degrees": 8,     // grados disponibles hacia arriba desde la tonica
+      "division": "1/16",
+      "density": 0.5,         // probabilidad de que suene algo en cada paso
+      "gate": 0.9,
+      "velocity": 90,
+      "velocity_jitter": 15,
+
+      "stepwise": 1.0,        // sube = mas grado conjunto, baja = mas saltos
+      "tonal_pull": 1.0,      // sube = mas gravedad hacia tonica/3a/5a
+      "rest_after_leap": true,
+
+      // true = la melodia se pega a las notas que estes tocando en el teclado,
+      // asi sigue tus acordes en vivo en vez de una escala fija.
+      "follow_held": true
+    }
+  }
+}

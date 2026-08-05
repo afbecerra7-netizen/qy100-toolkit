@@ -1,0 +1,20 @@
+{
+ "_origen": "TRIBE Player 2 — Tambores de San Jacinto (Tribe Instruments, Colombia Bundle)",
+ "_verificacion": "Leido de la lista de articulaciones del plugin y comprobado contra el groove 'Aguabajo': las 19 notas que usa caen exactamente en esta tabla. C1 = 36.",
+ "_nota_LR": "Las articulaciones L y R son mano izquierda y derecha del mismo golpe. Alternarlas es lo que hace que un patron suene tocado y no secuenciado.",
+ "instrumentos": {
+  "Bombo":       {"Open": 36, "Cascara L": 38, "Cascara R": 40},
+  "Tambora":     {"Open L": 41, "Open R": 43, "Cascara L": 44, "Damped L": 45,
+                  "Cascara R": 46, "Damped R": 47},
+  "Llamador":    {"Bajoneo": 48, "Abierto": 50},
+  "Alegre":      {"Bajoneo": 52, "Abierto": 53, "Quemao": 55, "Latigazo": 57},
+  "Guache":      {"Up": 59, "Down": 60, "Rain": 62, "Tremolo": 64},
+  "Maracon":     {"Up": 65, "Down": 67, "Tremolo": 69},
+  "Caja":        {"Fondo L": 71, "Fondo R": 72, "Quemao L": 74, "Quemao R": 76,
+                  "Latigazo": 77},
+  "Guacharaca":  {"Shot": 79, "Short": 81, "Mid": 83, "Long": 84, "Longer": 86}
+ },
+ "pares_LR": [
+  [38, 40], [41, 43], [44, 46], [45, 47], [71, 72], [74, 76]
+ ]
+}
