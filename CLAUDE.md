@@ -4,19 +4,17 @@
 >
 > Not included here, and why:
 >
-> - **The manuals, the firmware image and Yamaha's Data Filer.** They are
->   Yamaha's (and Casio's, Arturia's, Akai's) copyrighted material — not mine to
->   redistribute. The page citations throughout this document still work if you
->   have them; if you own the hardware you probably do.
+> - **The manuals, the firmware image and Yamaha's Data Filer.** You'll already
+>   have those; the page citations throughout still point at them and resolve.
 > - **The reference dumps** (`dumps/`) and the generated MIDI (`midi/`). Not
 >   needed to use the tools, and some contain unreleased music.
 > - **An EP** that was produced with these tools. It belongs to someone else, so
 >   only the technical measurements taken from it survive here — the memory
 >   arithmetic, the note counts, the per-minute cost. Those are cited as "the EP".
 >
-> Everything else is here: the decoders, the generators, the live-play and MIDI
-> export tools, and this document, which is the record of what is known about the
-> format and how each piece of it was established.
+> Everything else is here: the decoders, the generators, the live-play, screen
+> and MIDI-export tools, and this document, which is the record of what is known
+> about the format and how each piece of it was established.
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -383,7 +381,7 @@ A user style is not only storage, it is a **playable instrument**, and that is t
 
 **ABC is the reason to write phrases as `Chord 1` / `Bass` rather than `Bypass`.** Utility `Fingered Zone` (p. 128): `FINGERED` On/Off, a `MIDI CHANNEL` (`All` or `01`–`16`) for chords arriving from an external keyboard, and a `LOW`/`HIGH` key split (`C-2`–`G8`). Chords played inside the zone drive the accompaniment live; **a note below `LOW` while holding a chord is read as an on-bass (slash) chord**. `FNGR` must also be on in the SONG/PATTERN screen.
 
-So any external keyboard becomes the chord controller. One caveat worth knowing: some controllers transmit on **two channels at once** (dual/split modes), so set ABC's `MIDI CHANNEL` to one specific channel rather than `All`, or every chord is read twice.
+So any external keyboard becomes the chord controller. One caveat: some controllers transmit on **two channels at once** in dual or split modes, so set ABC's `MIDI CHANNEL` to one specific channel rather than `All`, or every chord is read twice.
 
 **Yamaha's own three rules for phrases that survive reharmonization** (p. 59), which are design constraints for the generators:
 
@@ -409,7 +407,9 @@ Three things it has to get right, all learned the hard way:
 
 - **`ECHO BACK` must not be `RecMontr`.** The manual lists this as its own fault (troubleshooting, p. 143): with `RecMontr`, incoming MIDI is **re-channelised to the currently selected record track**, so 16 distinct channels collapse into one voice. The symptom is "everything plays but it's all one instrument". Set it to `Off`.
 - **A Program Change rewrites the loaded song's mixer voice for that channel.** Play on channels the target song does not use, or select an empty song slot first.
-- **Stuck notes**: every send is wrapped in `try/finally` with explicit note-offs and All Notes Off per channel. A script that dies mid-phrase leaves the tone generator sounding with no way to silence it from the panel.
+- **Stuck notes need `All Sound Off` (CC 120), not just `All Notes Off` (CC 123).** 123 only releases the keys: anything already in its release phase keeps sounding, and with long tails — SFX-kit textures, pads, a `Stream` on a three-bar gate — that can ring indefinitely. 120 cuts it regardless. Sending only 123 left the device beeping for an entire afternoon.
+
+  **And the beep was mistaken for a fault in the music.** Six tracks were played back in isolation, each ruled out by ear, and three separate hypotheses about the arrangement were built and discarded before anyone suspected the tooling. The tell was there early and got ignored: an `All Notes Off` silenced it once, and it came back **right after the next write** — twice. When a symptom disappears on a global reset and returns after your own action, the fault is yours, not the data's. `ep-escribir.py` now sends both CCs on all 16 channels after every write.
 
 **[`exportar_midi.py`](qy100-syx/exportar_midi.py) writes a standard `.mid`, and for getting notes into a DAW it beats the transfer outright.** The engines run at 480 clocks per quarter, which is set directly as the file's `ticks_per_beat` — the conversion is 1:1 with no rounding. Against recording the QY100 into Ableton it is exact, instant, needs no `MIDI Sync` / `MIDI control` / `Rec Count` dance, and cannot silently drop blocks. **The QY100 route still earns its keep for playing live, for its voices, and for pattern mode; for moving notes it does not.**
 
@@ -421,7 +421,46 @@ Three things it has to get right, all learned the hard way:
 
 **GM's drum names do not describe relative pitch.** Note 45 is called `Low Tom` but it is a rack tom — the floor toms are 41 (`Floor Tom L`) and 43 (`Floor Tom H`), *below* it. Trusting the name put a high tom where the EP wanted a floor tom, in two tracks, and it survived until Felipe heard it. Read the Data List's drum table (p. 12), not the name.
 
+**Two drum parts conflict unless one of them is channel 10** (2026-08-04). A song with `SFX Kit 1` (bank 126) on channel 1 and `Rock Kit` (bank 127) on channel 2 makes the tone generator emit **a sustained tone that corresponds to no note in the data**. Move the same drum track to channel 10 and it is clean. Each channel alone is also clean — the conflict needs both.
+
+This one is nasty because **it is invisible to every check we have**. It is not in the dump, the checksums are fine, the note counts are exact, and playing either track in isolation sounds correct. It also survives a power cycle, because the banks live in the song's mixer. The only symptom is the sound.
+
+Finding it took a binary search over channels — write a subset, listen, halve — after six tracks had been individually cleared by ear and three hypotheses about the arrangement had been built and discarded. **When every track is clean alone but the combination is not, stop looking at the data and start looking at the tone generator.** The rule now: if a song needs two percussion parts, one of them goes on channel 10.
+
+**Bank 126 loads from a song part** — verified on the panel (2026-08-04): a song track with bank 126 / program 0 shows `SFX` in the mixer, so both SFX kits are reachable from songs and not only from patterns.
+
+That was checked while chasing a constant high beep in an atmospheric track, and the beep turned out not to be a mapping error at all. The note was `72 Bubble`, exactly what the Data List says. The mistake was **musical**: `Bubble` is the one *discrete* blip in a kit otherwise full of sustained textures (`68 Shower`, `69 Thunder`, `70 Wind`, `71 Stream`), and it was placed at `E(3,16)` for 68 bars — around 200 blips over three minutes. Repeated that often, a short bright sound stops reading as atmosphere and starts reading as a beep. Replaced with wind and stream on long gates, 92 events instead of 272.
+
+Worth keeping because the first two hypotheses were both wrong and both plausible: that the wrong kit was loading (the same note is `Samba Whistle L` in the Standard Kit), and that the fault was in the mixer's bank byte. **Checking the panel killed both.** When something sounds wrong, the mapping is the obvious suspect and the arrangement is the likelier one.
+
 Related, for anything leaving the QY100: **sample libraries do not share the QY100's map.** SSD5 is a drum-kit library and has nothing at note 82, so Bajón's shaker was simply inaudible there — not a setting, an absent instrument. That note is also the cheapest thing to route to Tribe's Colombian percussion, since it is a single pitch and needs no remapping.
+
+### The screen is programmable — text and 16x16 bitmaps
+
+The QY100 obeys **XG Display Data** (Data List, table 1-5), which is not a QY100
+feature at all — it is standard XG, and the QY100 gets it for being an XG module.
+Two parameter changes, neither carrying a byte count or a checksum:
+
+```
+F0 43 1n 4C 06 00 00 <up to 32 ASCII>  F7    text
+F0 43 1n 4C 07 00 00 <48 bytes>        F7    bitmap
+```
+
+The bitmap is **16x16**, laid out unobviously: each byte holds seven horizontal
+pixels in bits b6..b0 with **b6 on the left**, and the 48 bytes are three column
+blocks — 0-15 are columns 0-6, 16-31 are columns 7-13, and 32-47 are columns
+14-15 using only b6 and b5.
+
+**The two addresses paint different regions, and the manual does not say so.**
+Felipe spotted it on the device: `06 00 00` goes to the **popup**, which clears
+itself, and `07 00 00` goes to a **strip at the bottom**, which stays. They are
+complementary rather than alternatives — the popup for transient messages, the
+strip for something persistent.
+
+And because the manual allows refreshing individual elements while the rest holds,
+the strip can be **animated**. Verified with a heart beating at 104 BPM. Since the
+QY100 also transmits MIDI clock, an animation could follow the sequencer rather
+than a local timer. `pantalla.py`.
 
 ## Firmware format (decoded)
 
@@ -499,16 +538,15 @@ Use `uvx`, not the system Python: 3.9 is too old for MarkItDown (needs ≥3.10),
 ## The rest of the rig
 
 The QY100 sits in a DAWless setup alongside other clock-capable gear, which is
-why the sync direction matters and why `MIDI CONTROL` keeps coming up. The
-specifics of that rig are not published here.
+why sync direction matters and why `MIDI CONTROL` keeps coming up. The specifics
+of that rig are not published here.
 
 One point worth keeping, because it is about the QY100 and not about the rig:
-**only one device can be the clock master**, and the QY100's role flips
-depending on the task. It is master when it drives an external arpeggiator
-(`MIDI SYNC = Internal`), and slave when a DAW records it
-(`MIDI SYNC = External`, `MIDI control = In/Out`, `Rec Count = OFF`). Those two
-configurations are mutually exclusive; decide which one you are doing before
-touching anything.
+**only one device can be the clock master**, and the QY100's role flips with the
+task. It is master when it drives an external arpeggiator (`MIDI SYNC =
+Internal`), and slave when a DAW records it (`MIDI SYNC = External`, `MIDI
+control = In/Out`, `Rec Count = OFF`). Those two configurations are mutually
+exclusive; decide which one you are doing before touching anything.
 
 ## Service manual page map
 

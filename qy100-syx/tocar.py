@@ -35,7 +35,14 @@ PUERTO = "M4"
 # Canales libres: el EP usa 1, 4, 5, 6, 7 y 8.
 CH_LEAD, CH_BAJO, CH_PAD, CH_PERC = 2, 3, 9, 10
 
-CC_BANCO_MSB, CC_BANCO_LSB, CC_ALL_NOTES_OFF = 0, 32, 123
+CC_BANCO_MSB, CC_BANCO_LSB = 0, 32
+# **Hacen falta los dos.** `All Notes Off` (123) solo suelta las teclas: lo que
+# ya esta en su fase de release sigue sonando, y con colas largas —los efectos
+# del SFX Kit, los pads, un arroyo con gate de tres compases— eso puede quedar
+# zumbando indefinidamente. `All Sound Off` (120) corta el sonido pase lo que
+# pase. Mandar solo el 123 dejo el equipo pitando durante toda una tarde, y el
+# pitido se confundio con un fallo de la composicion.
+CC_ALL_SOUND_OFF, CC_ALL_NOTES_OFF = 120, 123
 
 
 class Pieza:
@@ -109,8 +116,9 @@ class Pieza:
                 time.sleep(0.3)
             finally:
                 for canal in sorted(self.canales):
-                    out.send(mido.Message("control_change", channel=canal - 1,
-                                          control=CC_ALL_NOTES_OFF, value=0))
+                    for cc in (CC_ALL_SOUND_OFF, CC_ALL_NOTES_OFF):
+                        out.send(mido.Message("control_change", channel=canal - 1,
+                                              control=cc, value=0))
 
 
 def altura(clase, octava):

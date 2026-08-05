@@ -17,7 +17,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mido
 
-MID = os.environ.get("QY100_FIRMWARE", "_QY100_v137.mid")   # no incluido: es de Yamaha
+MID = os.environ.get("QY100_FIRMWARE", os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "QY100_1.37", "_QY100_v137.mid"))
 SALIDA = "/private/tmp/claude-501/-Users-felipebecerra-Proyectos-Yamaha/e7c8c4d4-1249-4761-965d-9929f6f431d4/scratchpad/qy100_rom.bin"
 
 

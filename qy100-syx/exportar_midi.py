@@ -80,13 +80,20 @@ if __name__ == "__main__":
     ap.add_argument("--cuantizar", type=int, default=0,
                     help="subdivision, p.ej. 16 para semicorcheas. 0 = sin tocar")
     ap.add_argument("--salida", default="midi")
+    ap.add_argument("--canales", help="solo estos canales, p.ej. 2,5. "
+                                      "Util para reimportar a un proyecto que ya "
+                                      "tiene trabajo encima sin pisarlo.")
     args = ap.parse_args()
 
     T = cargar(args.modulo)
     os.makedirs(args.salida, exist_ok=True)
 
+    quiere = ({int(x) for x in args.canales.split(",")} if args.canales else None)
+
     pistas, movidas, total = [], 0, 0
     for canal, nombre, notas in T.PISTAS:
+        if quiere is not None and canal not in quiere:
+            continue
         notas = sorted(notas, key=lambda x: x.time)
         if args.cuantizar:
             q = cuantizar(notas, args.cuantizar)
@@ -95,7 +102,8 @@ if __name__ == "__main__":
         total += len(notas)
         pistas.append((canal, nombre, notas))
 
-    sufijo = "-q%d" % args.cuantizar if args.cuantizar else ""
+    sufijo = ("-q%d" % args.cuantizar if args.cuantizar else "") + \
+             ("-ch" + args.canales.replace(",", "_") if args.canales else "")
     destino = os.path.join(args.salida, "%s%s.mid" % (T.NOMBRE, sufijo))
     escribir(T.NOMBRE, pistas, T.BPM, destino)
 

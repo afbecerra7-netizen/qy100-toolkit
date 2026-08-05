@@ -41,7 +41,9 @@ import re
 import subprocess
 import sys
 
-PDF = os.environ.get("QY100_DATALIST", "QY100E2.pdf")   # no incluido: es de Yamaha
+PDF = os.environ.get("QY100_DATALIST", os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "Manuales", "QY100E2.pdf"))
 PRIMERA, ULTIMA = 16, 34
 
 CAT_RE = re.compile(r"Phrase Category=(\w+):\s*(.+?)\s*$")
@@ -239,7 +241,9 @@ if __name__ == "__main__":
                     L.append("   ".join(fila).rstrip())
                 L.append("```\n")
 
-        destino = "QY100_Frases_Preset.md"
+        destino = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "manuales-md", "QY100_Frases_Preset.md")
         with open(destino, "w") as fh:
             fh.write("\n".join(L) + "\n")
         print("escrito %s" % destino)
