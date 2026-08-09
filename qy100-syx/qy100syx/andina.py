@@ -291,51 +291,66 @@ class BambucoFiestero(Bambuco):
 
 # --- Pasillo -------------------------------------------------------------
 #
-# **Sin sesquialtera**, y eso sale de los datos: en ACMUS-MIR los 57 pasillos
-# estan anotados en 3/4 con **un solo nivel de pulso**, frente a 71 de 73
-# bambucos en 6/8 **con dos**. Copiar aqui la estructura del bambuco meteria un
-# cruce que el genero no tiene.
+# **Sin sesquialtera.** En ACMUS-MIR los 57 pasillos estan anotados en 3/4 con un
+# solo nivel de pulso, frente a 71 de 73 bambucos en 6/8 con dos. Copiar aqui la
+# estructura del bambuco meteria un cruce que el genero no tiene.
 #
-# Tempo 182: los 57 anotados son bimodales, 23 alrededor de 101 (*lento*) y 34
-# alrededor de 182 (*fiestero*). Y sin percusion: el pasillo es musica de
-# cuerdas, y anadirle bombo para que tenga cuerpo en vivo lo convierte en otra
-# cosa.
+# La celda sale de `la-gata-goloza-fulgencio-garcia.mid`, el pasillo canonico.
+# **El 60% de sus 184 compases repiten el mismo patron**, y separando por
+# registro se ve que es:
 #
-# **AVISO**: este patron se construyo desde una descripcion en prosa encontrada
-# por internet, que es exactamente el metodo que dio dos versiones falsas del
-# bambuco antes de medir sobre una partitura. **Esta sin verificar contra una
-# fuente real.** Hasta que se compruebe con una partitura de pasillo, tratarlo
-# como una hipotesis que suena bien, no como el genero.
+#     corchea    1      2     3     4       5       6
+#               BAJO    ·     ·   ACORDE  ACORDE    ·
+#
+# La corchea 1 lleva 183 graves contra 71 acordes; las corcheas 4 y 5 llevan 104
+# y 110 acordes. **El bajo cae solo en el primer tiempo** —donde cambia el
+# acorde— y los dos acordes vienen despues, el primero a contratiempo.
+#
+# Esa corchea de diferencia es lo que empuja: la version anterior de este modulo
+# ponia los acordes en 3 y 5 (los tiempos 2 y 3), sacado de una descripcion en
+# prosa. Poniendolos en 4 y 5, el primero cae **entre** los tiempos y el segundo
+# en el tercero — sincopa y resolucion dentro del mismo compas.
+#
+# **Vino Tinto, del mismo compositor, usa otra celda**: el 58% de sus compases
+# ocupan las seis corcheas, y va a 180 bpm frente a 160. Probablemente sea la
+# misma division lento/fiestero que muestran los tempos anotados (dos grupos,
+# 101 y 182). Aqui se implementa la de La Gata Golosa; la densa queda pendiente.
+
+PASILLO_BAJO_EN = 0        # corchea 1
+PASILLO_ACORDE_EN = (3, 4)  # corcheas 4 y 5
 
 
 def _pasillo_bajo(g, compases, intensidad):
-    """Principal en el 1, secundaria en el 3: el rasgo del fiestero."""
+    """Solo en el primer tiempo. Fundamental, y quinta en los compases pares.
+
+    Que el bajo suene **una vez por compas** es lo que deja sitio a los dos
+    acordes. Rellenarlo con la quinta en el tercer tiempo —lo que hacia la
+    version anterior— tapa la sincopa.
+    """
     notas = []
     for c in range(compases):
         _n, raiz, _v = g.acorde_de(c)
         base = _bar(c, g.beats)
-        notas.append(F.Note(raiz, 108, NEGRA - 40, base))
-        if intensidad > 0.4:
-            notas.append(F.Note(raiz + 7, 88, NEGRA - 40, base + 2 * NEGRA))
+        alt = raiz if c % 2 == 0 else raiz + 7
+        notas.append(F.Note(alt, 108, NEGRA - 40, base + PASILLO_BAJO_EN * CORCHEA))
     return notas
 
 
 def _pasillo_tiple(g, compases, intensidad):
-    """Bajo en el primero **sin acorde**, rasgueos en el segundo y el tercero."""
+    """Dos acordes: uno a contratiempo y otro en el tercer tiempo."""
     notas = []
     for c in range(compases):
-        _n, raiz, voces = g.acorde_de(c)
+        _n, _r, voces = g.acorde_de(c)
         base = _bar(c, g.beats)
-        notas.append(F.Note(raiz + 12, 96, CORCHEA, base))
-        for i in (1, 2):
+        for k, i in enumerate(PASILLO_ACORDE_EN):
             for alt in voces:
-                notas.append(F.Note(alt, 84 if i == 1 else 72, CORCHEA - 20,
-                                    base + i * NEGRA))
+                notas.append(F.Note(alt, 78 if k == 0 else 90, CORCHEA - 20,
+                                    base + i * CORCHEA))
     return notas
 
 
 def _pasillo_requinto(g, compases, intensidad):
-    """Contracanto sincopado, solo en la segunda mitad de cada frase."""
+    """Contracanto en la segunda mitad de cada frase. Dialoga, no rellena."""
     if intensidad < 0.5:
         return []
     notas = []
@@ -344,7 +359,7 @@ def _pasillo_requinto(g, compases, intensidad):
             continue
         _n, _r, voces = g.acorde_de(c)
         base = _bar(c, g.beats)
-        for k, i in enumerate((1, 3, 5)):
+        for k, i in enumerate((1, 2, 5)):
             notas.append(F.Note(voces[k % len(voces)] + 12, 80, CORCHEA - 20,
                                 base + i * CORCHEA))
     return notas
@@ -352,7 +367,7 @@ def _pasillo_requinto(g, compases, intensidad):
 
 class Pasillo(Genero):
     nombre = "PASILLO"
-    bpm = 182.0
+    bpm = 160.0
     compases_por_acorde = 2
     progresion = (
         ("Am", 45, [57, 60, 64]),
@@ -361,11 +376,82 @@ class Pasillo(Genero):
         ("Am", 45, [57, 60, 64]),
     )
     pistas = (
-        (3, "BA", "bajo principal y quinta", "Aco.Bass", False, _pasillo_bajo),
-        (4, "C1", "tiple, rasgueo en 2 y 3", "NylonGtr", False, _pasillo_tiple),
-        (5, "C2", "requinto, contracanto",   "SteelGtr", False, _pasillo_requinto),
+        (3, "BA", "bajo en el primer tiempo", "Aco.Bass", False, _pasillo_bajo),
+        (4, "C1", "acordes en 4 y 5",         "NylonGtr", False, _pasillo_tiple),
+        (5, "C2", "requinto, contracanto",    "SteelGtr", False, _pasillo_requinto),
+    )
+
+
+# --- Pasillo denso (fiestero, "Vino Tinto") ------------------------------
+#
+# `vino-tinto-fulgencio-garcia.mid`, mismo compositor que La Gata Golosa pero a
+# 180 bpm en vez de 160, usa **otra celda**: el 58% de sus 216 compases ocupan
+# las seis corcheas. Y midiendo esos 126 compases aparece que no es un rasgueo
+# mas denso:
+#
+#     corchea              1     2     3     4     5     6
+#     graves <G3         106   113    79    54    67    72
+#     agudas              20    13    47    72    59    54
+#     notas a la vez     1.0   1.0   1.0   1.0   1.0   1.0
+#
+# **Una sola nota por corchea, siempre, y la velocity constante.** No hay
+# acordes: es una **linea que camina**, grave al principio del compas y subiendo
+# hacia el final. A 180 bpm la mano izquierda no rasguea, corre.
+#
+# Encaja con la division lento/fiestero que ya salia en los tempos anotados del
+# dataset (dos grupos, 101 y 182): el lento acompaña con acordes, el fiestero
+# con linea.
+#
+# **Lo medido es la linea del bajo.** La colocacion de los acordes aqui es una
+# eleccion: en el original la mano derecha lleva melodia, no acompanamiento, asi
+# que no hay nada que copiar. Se ponen escasos y fuera del camino de la linea.
+
+PASILLO_LINEA = (0, 0, 2, 4, 7, 4)     # grados sobre la fundamental, por corchea
+
+
+def _pasillo_linea(g, compases, intensidad):
+    """Corcheas continuas subiendo del grave al medio. Velocity plana.
+
+    La velocity constante esta medida y **no se humaniza**: lo que hace correr a
+    la linea es su regularidad. Acentuarla la convertiria en un patron con
+    tiempo fuerte, que es justo lo que no es.
+    """
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        grados = PASILLO_LINEA if intensidad > 0.45 else (0, None, 4, None, 7, None)
+        for i, gr in enumerate(grados):
+            if gr is None:
+                continue
+            notas.append(F.Note(raiz + gr, 92, CORCHEA - 15, base + i * CORCHEA))
+    return notas
+
+
+def _pasillo_acordes_escasos(g, compases, intensidad):
+    """Acorde en el segundo y el tercer tiempo. Puntua, no acompana."""
+    if intensidad < 0.4:
+        return []
+    notas = []
+    for c in range(compases):
+        _n, _r, voces = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i in (2, 4):
+            for alt in voces:
+                notas.append(F.Note(alt + 12, 74, CORCHEA - 30, base + i * CORCHEA))
+    return notas
+
+
+class PasilloDenso(Pasillo):
+    nombre = "PASDENSO"
+    bpm = 180.0
+    pistas = (
+        (3, "BA", "linea en corcheas continuas", "Aco.Bass", False, _pasillo_linea),
+        (4, "C1", "acordes escasos",             "NylonGtr", False,
+         _pasillo_acordes_escasos),
+        (5, "C2", "requinto, contracanto",       "SteelGtr", False, _pasillo_requinto),
     )
 
 
 GENEROS = {"bambuco": Bambuco, "fiestero": BambucoFiestero,
-           "pasillo": Pasillo}
+           "pasillo": Pasillo, "pasillodenso": PasilloDenso}

@@ -550,6 +550,17 @@ bateria, percusion y bajo de `AfrJz` referenciados —incluidas `Db`, `Bb` y `Fb
 que son de las que antes no se alcanzaban— y guitarra y vientos generativos
 encima. **De 25,0 KB a 8,4.**
 
+**`syx.py referencia` escribe referencias**, que es lo que faltaba: el formato
+estaba resuelto y medido desde el 2026-08-08 pero cada uso se hacia con un script
+suelto. Toma `SECCION:PISTA=CAT/BEAT/NUM` y **valida contra `frases.json` antes de
+tocar el equipo** — una referencia a una frase inexistente se escribe igual de
+bien, sin error, y el unico sintoma es una pista muda con la fila sin nombre en el
+panel.
+
+Es ortogonal a `estilo` y `andina` y se encadena en cualquier orden, porque
+`set_registry` preserva las ranuras cuyo estado no reconoce. Si la pista tenia
+contenido propio, sus bloques se retiran: pasa a referenciar y deja de ocupar.
+
 ### User phrases are slots, not a bank — and `Us—NNN` is our `tr` byte
 
 **48 user phrases per style** (specs, manual p. 133), numbered `Us—001` … `Us—048`, and the manual states the two ends explicitly (p. 58): `Us—001` is **D1 of Intro**, `Us—048` is **C4 of Ending**. That is 6 sections × 8 tracks, walked in the same order as the address, so

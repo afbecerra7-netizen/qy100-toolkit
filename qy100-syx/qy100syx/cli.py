@@ -108,6 +108,17 @@ def build_parser():
     an.add_argument("--yes", action="store_true")
     an.set_defaults(func=cmd_andina)
 
+    re_ = sub.add_parser("referencia", parents=[conn],
+                         help="referenciar frases de fabrica en un patron "
+                              "(cero bytes de memoria de usuario)")
+    re_.add_argument("spec", nargs="+",
+                     help="SECCION:PISTA=CAT/BEAT/NUM, p.ej. MainA:D1=Da/16/132. "
+                          "Usa `=vacia` para limpiar una ranura. Busca los "
+                          "numeros con `syx frases <texto>`")
+    re_.add_argument("--patron", type=int, default=1)
+    re_.add_argument("--escribir", action="store_true")
+    re_.set_defaults(func=cmd_referencia)
+
     fr = sub.add_parser("frases",
                         help="buscar entre las 4.285 frases preset "
                              "(categoria + beat + numero)")
@@ -920,6 +931,172 @@ def cmd_andina(args):
     return 0
 
 
+def _parse_ref(spec, F):
+    """`MainA:D1=Da/16/132` -> (seccion, pista, categoria, beat, numero).
+
+    Acepta nombres o indices en los dos primeros campos. El beat se escribe
+    `8`, `16` o `3/4`, que es como lo llama el panel.
+    """
+    try:
+        donde, que = spec.split("=", 1)
+        sec_txt, pista_txt = donde.split(":", 1)
+    except ValueError:
+        raise ValueError("formato: SECCION:PISTA=CAT/BEAT/NUM, p.ej. "
+                         "MainA:D1=Da/16/132")
+    secs = {n.replace(" ", "").lower(): i for i, n in enumerate(F.SECTIONS)}
+    pistas = {n.lower(): i for i, n in enumerate(F.TRACK_NAMES)}
+    sec = (int(sec_txt) if sec_txt.isdigit()
+           else secs.get(sec_txt.replace(" ", "").lower()))
+    pista = (int(pista_txt) if pista_txt.isdigit()
+             else pistas.get(pista_txt.lower()))
+    if sec is None or not 0 <= sec < len(F.SECTIONS):
+        raise ValueError("seccion desconocida: %r. Validas: %s"
+                         % (sec_txt, " ".join(n.replace(" ", "") for n in F.SECTIONS)))
+    if pista is None or not 0 <= pista < len(F.TRACK_NAMES):
+        raise ValueError("pista desconocida: %r. Validas: %s"
+                         % (pista_txt, " ".join(F.TRACK_NAMES)))
+    if que.lower() in ("vacia", "vacio", "-"):
+        return sec, pista, None, None, None
+    # El beat `3/4` lleva una barra, que tambien es el separador. Con cuatro
+    # trozos, los dos de en medio son el beat: `Ba/3/4/012`. Se acepta tambien
+    # `3-4` por comodidad al teclear.
+    trozos = que.split("/")
+    if len(trozos) == 4:
+        cat, beat, num = trozos[0], trozos[1] + "/" + trozos[2], trozos[3]
+    elif len(trozos) == 3:
+        cat, beat, num = trozos
+    else:
+        raise ValueError("esperaba CAT/BEAT/NUM o 'vacia', no %r" % que)
+    beat = beat.strip().replace("-", "/")
+    beat = beat if beat.endswith("beat") else beat + " beat"
+    try:
+        num = int(num)
+    except ValueError:
+        raise ValueError("el numero de frase no es un entero: %r" % num)
+    return sec, pista, cat.strip(), beat, num
+
+
+def cmd_referencia(args):
+    """Escribe referencias a frases de fabrica en un patron. Coste: cero bytes.
+
+    Una frase preset no se copia, **se referencia**: dos bytes del registro de la
+    cabecera —categoria y beat en la bandera, numero menos uno en la segunda
+    tabla— y las notas se quedan en la ROM del equipo. El patron no gasta memoria
+    de usuario por ellas.
+
+    Es ortogonal a `estilo` y `andina`: se pueden encadenar en cualquier orden
+    porque `set_registry` **preserva** las ranuras cuyo estado no reconoce, que
+    son justamente estas.
+
+    Si la pista tenia contenido propio, sus bloques se retiran — pasa a
+    referenciar y deja de ocupar.
+    """
+    import json
+    import os
+    from . import patternfmt as F
+
+    ruta = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "frases.json")
+    cats = json.load(open(ruta))["categorias"]
+
+    try:
+        refs = [_parse_ref(s, F) for s in args.spec]
+    except ValueError as e:
+        log(str(e))
+        return 1
+
+    # Validar contra el catalogo ANTES de tocar el equipo. Una referencia a una
+    # frase que no existe se escribe igual de bien y el panel muestra una fila
+    # sin nombre: no hay error, solo una pista muda.
+    for sec, pista, cat, beat, num in refs:
+        if cat is None:
+            continue
+        if cat not in cats:
+            log("categoria desconocida: %r. Validas: %s"
+                % (cat, " ".join(sorted(c for c in cats))))
+            return 1
+        if beat not in cats[cat]["beats"]:
+            log("%s no tiene %r. Tiene: %s"
+                % (cat, beat, ", ".join(sorted(cats[cat]["beats"]))))
+            return 1
+        if "%03d" % num not in cats[cat]["beats"][beat]:
+            hay = sorted(cats[cat]["beats"][beat])
+            log("%s / %s no tiene la frase %03d (van de %s a %s)"
+                % (cat, beat, num, hay[0], hay[-1]))
+            return 1
+
+    inp, outp = open_ports(args)
+    try:
+        outp.send(mido.Message("sysex", data=P.bulk_mode(True)[1:-1]))
+        time.sleep(0.3)
+        log("Leyendo el patron %d..." % args.patron)
+        blob, _ = transfer.request(outp, inp,
+                                   P.Addr.pattern(args.patron - 1, F.HEADER_TR),
+                                   args.quiet_for, args.timeout, log)
+    finally:
+        try:
+            outp.send(mido.Message("sysex", data=P.bulk_mode(False)[1:-1]))
+            time.sleep(0.2)
+        except Exception:
+            pass
+        for pt in (inp, outp):
+            if pt:
+                pt.close()
+
+    msgs, _ = P.parse_all(blob)
+    dumps = [m for m in msgs if m.sub == P.SUB_DUMP]
+    cab_msgs = [m for m in dumps if m.addr[2] == F.HEADER_TR]
+    if not cab_msgs:
+        log("El patron %d esta vacio. Una referencia necesita un patron que "
+            "exista: crealo antes con `estilo` o `andina`." % args.patron)
+        return 1
+
+    d = bytearray(b"".join(F.unpack(bytes(m.data)) for m in cab_msgs))
+    quitar = set()
+    log("")
+    for sec, pista, cat, beat, num in refs:
+        tr = F.track_byte(sec, pista)
+        if cat is None:
+            d[F.REGISTRY_FLAGS_OFF + tr] = 0xFE
+            d[F.REGISTRY_OFF + tr] = 0
+            quitar.add(tr)
+            log("  %-8s %-3s  vaciada" % (F.SECTIONS[sec], F.TRACK_NAMES[pista]))
+            continue
+        d[F.REGISTRY_FLAGS_OFF + tr] = F.bandera_frase(cat, beat)
+        d[F.REGISTRY_OFF + tr] = num - 1
+        quitar.add(tr)
+        log("  %-8s %-3s  %-3s %-9s %03d  %s   (0 bytes)"
+            % (F.SECTIONS[sec], F.TRACK_NAMES[pista], cat, beat, num,
+               cats[cat]["beats"][beat]["%03d" % num].strip()))
+
+    nueva = [F.pack(bytes(d[i:i + F.UNPACKED_BYTES]))
+             for i in range(0, len(d), F.UNPACKED_BYTES)]
+    # Las pistas que pasan a referencia dejan de tener bloques propios.
+    pistas_out = [m.raw for m in dumps
+                  if m.addr[2] != F.HEADER_TR and m.addr[2] not in quitar]
+    retirados = sum(1 for m in dumps
+                    if m.addr[2] != F.HEADER_TR and m.addr[2] in quitar)
+    if retirados:
+        log("")
+        log("  se retiran %d bloques de contenido propio (%.1f KB liberados)"
+            % (retirados, retirados * F.BLOCK_BYTES / 1024.0))
+    salida = pistas_out + [P.build_dump(m.addr, nueva[k])
+                           for k, m in enumerate(cab_msgs)]
+
+    if not args.escribir:
+        log("")
+        log("Previsualizacion. Anade --escribir.")
+        return 0
+
+    _, outp = open_ports(args, need_in=False)
+    try:
+        n = transfer.send_pattern(outp, salida, log=log)
+        log("Escritos %d bloques." % n)
+    finally:
+        outp.close()
+    return 0
+
+
 def cmd_voces(args):
     from . import generar as G
     b = G.banco()
@@ -993,5 +1170,5 @@ def main(argv=None):
 
     return {"dump": cmd_dump, "monitor": cmd_monitor, "inspect": cmd_inspect,
             "diff": cmd_diff, "send": cmd_send, "generar": cmd_generar,
-            "estilo": cmd_estilo, "frases": cmd_frases, "andina": cmd_andina,
+            "estilo": cmd_estilo, "frases": cmd_frases, "andina": cmd_andina, "referencia": cmd_referencia,
             "voces": cmd_voces}[args.cmd](args)
