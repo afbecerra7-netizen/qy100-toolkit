@@ -20,7 +20,11 @@ import mido
 MID = os.environ.get("QY100_FIRMWARE", os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "QY100_1.37", "_QY100_v137.mid"))
-SALIDA = "/private/tmp/claude-501/-Users-felipebecerra-Proyectos-Yamaha/e7c8c4d4-1249-4761-965d-9929f6f431d4/scratchpad/qy100_rom.bin"
+# Junto al firmware, salvo que se diga otra cosa. Antes era una ruta absoluta a
+# un directorio temporal de sesion, que ademas se publicaba en el repo abierto.
+SALIDA = os.environ.get(
+    "QY100_ROM_OUT", os.path.join(os.path.dirname(os.path.abspath(MID)),
+                                  "qy100_rom.bin"))
 
 
 def unpack(d):
