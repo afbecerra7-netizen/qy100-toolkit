@@ -140,6 +140,8 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **`bulk mode` locks the front panel.** Leave it on and the device appears dead to its own buttons — `dump` now always sends OFF in a `finally`, including on failure.
 - **A panel-initiated dump is self-framing**: `bulk mode ON → CLEAR ALL → data blocks → bulk mode OFF`. The CLEAR ALL is part of the payload so a restore wipes before writing. That framing also makes it possible to split a capture containing several dumps.
 - **`MIDI CONTROL` must be `Off` while dumping** (2026-07-29). With it on, the QY100 emits ~49 clock messages per second continuously and bulk captures lose whole blocks: the same pattern returned 8 blocks, then 3, then 2, then a different subset each attempt — the 5-block pattern header came back as 2. Everything that arrives is well-formed with a valid checksum, so it looks like the data changed rather than like loss. Filtering the clock in the driver (`rtmidi.ignore_types(timing=True)`, now applied automatically in `transfer.silenciar_reloj`) is **not sufficient** — it must be turned off at the device. Practical workflow: `In/Out` to sync a recording, `Off` to dump.
+- **Antes de culpar al QY100, apaga y enciende la interfaz.** Tras una transferencia larga la interfaz USB-MIDI puede quedarse con el puerto a medias y desde el software se ve exactamente igual que un aparato que no contesta: el volcado de verificacion no recibe respuesta y las pistas no salen por MIDI OUT aunque suenen. Ciclarla lo arregla. Costo dos diagnosticos falsos el 2026-08-08 —se reviso `MIDI CONTROL`, la pantalla del panel y el cableado— porque el sintoma es indistinguible de los fallos reales que si estan documentados aqui. **Es la comprobacion mas barata y va primero.**
+
 - **The QY100 transmits MIDI Clock even while stopped.** So incoming clock is *not* evidence that the sequencer is running, and no tool should infer "playing" from it. A recording script that auto-started after seeing clock without a Start fired 32 notes at a device sitting in the utility menu and recorded nothing. Wait for an actual Start.
 - **Capture must be callback-driven, not polled.** The QY100 streams MIDI clock continuously (48 ticks/s) and that flood makes a polling loop drop whole SysEx messages. The symptom is deceptive: everything that arrives is well-formed with a valid checksum, only some blocks are missing. The tell was that single-block items (setup, guitar effect) came back identical every time while anything multi-block varied.
 - Identical payloads legitimately appear under different addresses — empty patterns share the same `7F` header block. That is not corruption.
@@ -343,6 +345,59 @@ Two traps in the extraction, both of the kind that pass every check:
 
 One erratum in Yamaha's own list: the first phrase of `GR` / `3/4 beat` (p. 28) is printed `01` instead of `001`. Normalized on extraction.
 
+### Las frases de fabrica son referencias y no cuestan memoria (2026-08-08)
+
+**Medido sobre un equipo recien borrado**, que es la linea base ideal porque un
+patron vacio no devuelve absolutamente nada: cualquier cosa que aparezca es lo
+que se acaba de hacer.
+
+Asignar una frase preset a una pista desde el panel deja el patron **sin ningun
+bloque de pista**. Solo aparecen los 5 bloques de cabecera. Las notas se quedan
+en la ROM: el patron guarda una referencia. Confirmado tres veces seguidas.
+
+La consecuencia practica es de arquitectura, no de detalle: **un estilo puede
+mezclar frases de fabrica referenciadas (gratis) con frases generativas propias
+(que si ocupan)**, y pagar memoria solo por lo segundo. Con 128 KB compartidos
+entre canciones, patrones y frases, eso cambia cuanto cabe.
+
+**La referencia completa son DOS BYTES**, los dos en el registro de la cabecera
+del patron. Medido campo por campo, cambiando una sola variable cada vez:
+
+```
+bandera  (bytes 21-68)    = <categoria:4 bits> <beat:4 bits>
+tabla tr (bytes 69-116)   = numero de frase - 1
+
+   nibble bajo = 8      la pista tiene contenido propio
+   nibble bajo = E      vacia
+   nibble bajo = 9 / A  frase de fabrica; un valor por beat (falta medir el 3o)
+```
+
+Categoria, beat y numero —los tres campos con los que el manual (p. 54)
+identifica una frase— caben en dos bytes. **Por eso no cuesta memoria: no hay
+nada mas que guardar.**
+
+Lo notable de la segunda tabla es que **esta sobrecargada**. Documentada como "el
+valor `tr` de cada pista presente", guarda el `tr` cuando la pista tiene
+contenido propio y el numero de frase cuando referencia una preset. Hay que
+respetarlo al escribir el registro.
+
+**Dos lecturas equivocadas por el camino, y las dos por el mismo motivo.**
+Primero se leyo `09` frente a `B9` como dependencia del rol de la pista, por
+analogia con el byte 19 del prefijo; era la categoria. Despues se leyo el nibble
+bajo `9` como "es una frase de fabrica"; es el **beat**, y salia siempre `9`
+porque en todas las pruebas anteriores el beat estaba fijo. **Un campo que no
+varia en el experimento parece una constante**, y llamarlo constante es afirmar
+algo que no se ha probado. Solo aparecio al mover esa variable a proposito.
+
+Queda sin explicar el byte 26 del bloque 1: sigue al numero de frase pero no
+linealmente (`11`, `71`, `00` para 001, 002 y 010) y es independiente de la
+categoria. **No hace falta para la referencia**, ya que los tres campos estan
+localizados sin el; probablemente sea cache.
+
+Para escribir referencias por SysEx falta solo el diccionario: que indice de
+categoria corresponde a cada una de las 15, y que valor de nibble a cada beat.
+Es un barrido mecanico, no un problema.
+
 ### User phrases are slots, not a bank — and `Us—NNN` is our `tr` byte
 
 **48 user phrases per style** (specs, manual p. 133), numbered `Us—001` … `Us—048`, and the manual states the two ends explicitly (p. 58): `Us—001` is **D1 of Intro**, `Us—048` is **C4 of Ending**. That is 6 sections × 8 tracks, walked in the same order as the address, so
@@ -531,7 +586,7 @@ uvx --from 'markitdown[pdf]' markitdown Manuales/FILE.pdf > manuales-md/FILE.md
 ocrmypdf --force-ocr -l eng --output-type pdf --quiet Manuales/FILE.pdf /tmp/ocr.pdf && pdftotext -layout /tmp/ocr.pdf -
 ```
 
-OCR output can misread characters, so those files carry a warning header and their pages are also rendered to PNG (`manuales-md/casio-az1/`) — check a number against the image before trusting it.
+OCR output can misread characters, so those files carry a warning header and their pages are also rendered to PNG alongside the conversion — check a number against the image before trusting it.
 
 Use `uvx`, not the system Python: 3.9 is too old for MarkItDown (needs ≥3.10), and the `markitdown` on `PATH` is a 240-byte placeholder package that silently does nothing.
 

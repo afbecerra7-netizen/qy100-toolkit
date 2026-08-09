@@ -78,6 +78,26 @@ def build_parser():
     f.add_argument("b")
     f.add_argument("--context", type=int, default=4)
 
+    es = sub.add_parser("estilo", parents=[conn],
+                        help="generar un estilo de usuario entero "
+                             "(6 secciones x N pistas) en una sola escritura")
+    es.add_argument("--patron", type=int, default=1, help="patron 1-64")
+    es.add_argument("--semilla", type=int, default=0)
+    es.add_argument("--pistas", help="indices 0-7 separados por coma; "
+                                     "por defecto D1,D2,PC,BA,C1,C2")
+    es.add_argument("--escribir", action="store_true")
+    es.add_argument("--yes", action="store_true")
+    es.set_defaults(func=cmd_estilo)
+
+    fr = sub.add_parser("frases",
+                        help="buscar entre las 4.285 frases preset "
+                             "(categoria + beat + numero)")
+    fr.add_argument("texto", nargs="?", help="parte del nombre, p.ej. Bossa")
+    fr.add_argument("--categoria", help="Da Db Fa Fb PC Ba Bb Ga Gb GR KC KR PD BR SE")
+    fr.add_argument("--beat", help="8, 16 o 3/4")
+    fr.add_argument("--limite", type=int, default=40)
+    fr.set_defaults(func=cmd_frases)
+
     ge = sub.add_parser("generar", parents=[conn],
                         help="generar una pista con los motores generativos "
                              "y escribirla como frase de usuario")
@@ -481,6 +501,230 @@ def cmd_generar(args):
     return 0
 
 
+def cmd_estilo(args):
+    """Genera un estilo de usuario entero: seis secciones por N pistas.
+
+    La diferencia con `generar` no es de tamano sino de forma. `generar` lee el
+    patron, sustituye **una** pista y lo reescribe entero; repetirlo 36 veces
+    serian 36 transferencias completas, y cada una es una ocasion de que una
+    transferencia a medias corrompa la contabilidad de memoria del equipo (ya
+    paso una vez y hubo que limpiar y restaurar). Aqui se lee una vez, se arma
+    todo en memoria y se escribe una vez.
+    """
+    from . import estilo as E
+    from . import generar as G
+    from . import patternfmt as F
+
+    inp, outp = open_ports(args)
+    try:
+        outp.send(mido.Message("sysex", data=P.bulk_mode(True)[1:-1]))
+        time.sleep(0.3)
+        log("Leyendo el patron %d entero..." % args.patron)
+        blob, _ = transfer.request(outp, inp,
+                                   P.Addr.pattern(args.patron - 1, F.HEADER_TR),
+                                   args.quiet_for, args.timeout, log)
+    finally:
+        try:
+            outp.send(mido.Message("sysex", data=P.bulk_mode(False)[1:-1]))
+            time.sleep(0.2)
+        except Exception:
+            pass
+        for pt in (inp, outp):
+            if pt:
+                pt.close()
+
+    msgs, _ = P.parse_all(blob)
+    dumps = [m for m in msgs if m.sub == P.SUB_DUMP]
+    por_addr = {}
+    for m in dumps:
+        por_addr.setdefault(m.addr, []).append(m)
+
+    cab_addr = P.Addr.pattern(args.patron - 1, F.HEADER_TR)
+    if cab_addr not in por_addr:
+        log("No llego la cabecera. Si MIDI CONTROL esta encendido el QY100")
+        log("inunda la entrada de reloj y se pierden bloques: ponlo en Off.")
+        log("Y si no contesta nada, apaga y enciende la interfaz antes que nada.")
+        return 1
+    nombre, compases = F.decode_header(bytes(por_addr[cab_addr][0].data))
+    log("Patron %d (%r), compases por seccion: %s"
+        % (args.patron, nombre, " ".join(str(x) for x in compases)))
+
+    # Prefijos: se prefiere una pista REAL del mismo indice —asi los bytes que
+    # todavia no sabemos leer vienen del equipo y de una pista del mismo papel—,
+    # luego cualquier otra, y solo si el patron esta vacio la plantilla.
+    def base_para(idx):
+        for (_a, _b, tr), grupo in por_addr.items():
+            if tr != F.HEADER_TR and tr % F.TRACKS_PER_SECTION == idx:
+                return F.unpack(bytes(grupo[0].data))[:F.EVENT_STREAM_START], "misma pista"
+        for (_a, _b, tr), grupo in por_addr.items():
+            if tr != F.HEADER_TR:
+                return F.unpack(bytes(grupo[0].data))[:F.EVENT_STREAM_START], "otra pista"
+        return F.PREFIJO_BASE, "plantilla"
+
+    pedidas = ([int(x) for x in args.pistas.split(",")] if args.pistas else None)
+    piezas = E.construir(compases, semilla=args.semilla, pistas=pedidas)
+
+    nuevos, total_notas, total_bloques = {}, 0, 0
+    for (s, idx) in sorted(piezas):
+        notas, total = piezas[(s, idx)]
+        _i, nom, papel, tipo, voz, es_bat = E.PISTAS[idx]
+        base, origen = base_para(idx)
+        prog = (G.kit_por_nombre(voz)[1] if es_bat else G.voz_por_nombre(voz))
+        prefijo = F.build_prefix(
+            base=base, compases=compases[s], nombre=("%s%s" % (nom, s + 1))[:8],
+            tipo=tipo, pista=idx, voz=prog,
+            banco=(F.BANK_DRUMS if es_bat else F.BANK_NORMAL))
+        bloques = G.a_bloques(notas, total, prefijo)
+        nuevos[F.track_byte(s, idx)] = bloques
+        total_notas += len(notas)
+        total_bloques += len(bloques)
+
+    log("")
+    log("%-8s %s" % ("seccion", "  ".join("%-4s" % p[1] for p in E.PISTAS)))
+    for s, (nom_s, inten, que) in enumerate(E.SECCIONES):
+        fila = []
+        for idx, nom, *_ in E.PISTAS:
+            n = piezas.get((s, idx))
+            fila.append("%-4s" % (len(n[0]) if n else "-"))
+        log("%-8s %s   %.0f%%  %s" % (nom_s, "  ".join(fila), inten * 100, que))
+    log("")
+    log("%d notas, %d bloques (~%d KB de los 128 KB del equipo)"
+        % (total_notas, total_bloques, total_bloques * F.BLOCK_BYTES / 1024.0))
+
+    if not args.escribir:
+        log("")
+        log("Previsualizacion. Anade --escribir para mandarlo al equipo.")
+        return 0
+
+    malos = [m for m in dumps if P.build_dump(m.addr, m.data) != m.raw]
+    if malos:
+        log("PREVUELO FALLIDO: %d bloque(s) no se reproducen byte a byte. "
+            "No se escribe nada." % len(malos))
+        return 1
+    log("Prevuelo OK: %d bloques reconstruidos exactos." % len(dumps))
+
+    if not args.yes:
+        try:
+            if input("Escribe 'si' para escribir el estilo: ").strip().lower() \
+                    not in ("si", "s\u00ed"):
+                log("Cancelado.")
+                return 1
+        except EOFError:
+            log("Cancelado (sin terminal; usa --yes si estas seguro).")
+            return 1
+
+    # Pistas primero y las 5 cabeceras al final: ese orden es parte del trato con
+    # el equipo. Mandarlo de otra forma deja el patron borrado.
+    pistas_out, cab_msgs, vistos = [], [], set()
+    for m in dumps:
+        tr = m.addr[2]
+        if tr == F.HEADER_TR:
+            cab_msgs.append(m)
+        elif tr in nuevos:
+            if tr not in vistos:
+                vistos.add(tr)
+                pistas_out.extend(P.build_dump(m.addr, b) for b in nuevos[tr])
+        else:
+            pistas_out.append(m.raw)
+    for tr, bloques in sorted(nuevos.items()):
+        if tr not in vistos:
+            addr = P.Addr.pattern(args.patron - 1, tr)
+            pistas_out.extend(P.build_dump(addr, b) for b in bloques)
+
+    # Las dos tablas del registro, o el panel muestra las secciones vacias aunque
+    # los datos esten escritos y se relean enteros.
+    reg = {}
+    for m in dumps:
+        if m.addr[2] != F.HEADER_TR:
+            s, t = divmod(m.addr[2], F.TRACKS_PER_SECTION)
+            reg.setdefault(s, set()).add(t)
+    for (s, idx) in piezas:
+        reg.setdefault(s, set()).add(idx)
+    cab = F.set_registry([bytes(m.data) for m in cab_msgs],
+                         {s: sorted(v) for s, v in reg.items()})
+    # El mezclador es POR PATRON, no por seccion: una voz por indice de pista.
+    for idx, _nom, _papel, _tipo, voz, es_bat in E.PISTAS:
+        if pedidas is not None and idx not in pedidas:
+            continue
+        prog = (G.kit_por_nombre(voz)[1] if es_bat else G.voz_por_nombre(voz))
+        cab = F.set_mixer_voice(cab, idx, prog, bateria=es_bat)
+    salida = pistas_out + [P.build_dump(m.addr, cab[k])
+                           for k, m in enumerate(cab_msgs)]
+
+    _, outp = open_ports(args, need_in=False)
+    try:
+        n = transfer.send_pattern(outp, salida, log=log)
+        log("Escritos %d bloques en una sola transferencia." % n)
+    finally:
+        outp.close()
+    return 0
+
+
+def cmd_frases(args):
+    """Busca entre las 4.285 frases preset por nombre, estilo o categoria.
+
+    Devuelve los **tres campos con los que se direcciona una frase** —categoria,
+    beat y numero (manual p. 54)—, que son justo los que hay que escribir en la
+    cabecera del patron para referenciarla: la categoria y el beat van en la
+    bandera del registro y el numero, menos uno, en la segunda tabla.
+
+    El sufijo del nombre dice para que seccion es: `-I` intro, `-a` Main A,
+    `-b` Main B, `-c` fill AB, `-d` fill BA, `-E` ending.
+    """
+    import json
+    import os
+    import re
+
+    ruta = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "frases.json")
+    d = json.load(open(ruta))
+    cats = d["categorias"]
+
+    texto = (args.texto or "").lower()
+    quiere_cat = args.categoria
+    quiere_beat = args.beat
+
+    hits = []
+    for cat in sorted(cats):
+        if quiere_cat and cat.lower() != quiere_cat.lower():
+            continue
+        for beat, frases in cats[cat]["beats"].items():
+            if quiere_beat and quiere_beat.lower() not in beat.lower():
+                continue
+            for num, nombre in sorted(frases.items()):
+                if texto and texto not in nombre.lower():
+                    continue
+                hits.append((cat, beat, num, nombre, cats[cat]["nombre"]))
+
+    if not hits:
+        log("Nada. Categorias: %s" % " ".join(sorted(cats)))
+        return 1
+
+    # Agrupar por estilo hace la salida util: una frase suelta no dice nada, y
+    # ver las seis secciones del mismo estilo juntas es lo que permite montar un
+    # patron completo con material coherente.
+    log("%-4s %-9s %-5s %-9s  %s" % ("cat", "beat", "num", "nombre", "categoria"))
+    log("-" * 62)
+    for cat, beat, num, nombre, desc in hits[:args.limite]:
+        log("%-4s %-9s %-5s %-9s  %s" % (cat, beat, num, nombre, desc))
+    if len(hits) > args.limite:
+        log("... y %d mas (usa --limite)" % (len(hits) - args.limite))
+    log("")
+    log("%d frases de 4285" % len(hits))
+
+    # El desglose por seccion solo tiene sentido cuando se busca un estilo.
+    if texto:
+        SUF = [("-I", "Intro"), ("-a", "Main A"), ("-b", "Main B"),
+               ("-c", "Fill AB"), ("-d", "Fill BA"), ("-E", "Ending")]
+        falta = [n for s, n in SUF
+                 if not any(h[3].rstrip().endswith(s) for h in hits)]
+        if falta:
+            log("Secciones sin frase para esta busqueda: %s" % ", ".join(falta))
+        else:
+            log("Juego completo: las seis secciones tienen frase.")
+    return 0
+
+
 def cmd_voces(args):
     from . import generar as G
     b = G.banco()
@@ -554,4 +798,5 @@ def main(argv=None):
 
     return {"dump": cmd_dump, "monitor": cmd_monitor, "inspect": cmd_inspect,
             "diff": cmd_diff, "send": cmd_send, "generar": cmd_generar,
+            "estilo": cmd_estilo, "frases": cmd_frases,
             "voces": cmd_voces}[args.cmd](args)
