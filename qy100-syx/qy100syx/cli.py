@@ -101,7 +101,7 @@ def build_parser():
 
     an = sub.add_parser("andina", parents=[conn],
                         help="estilo de musica andina colombiana en 3/4")
-    an.add_argument("genero", help="bambuco o pasillo")
+    an.add_argument("genero", help="bambuco (salon), fiestero (santandereano) o pasillo")
     an.add_argument("--patron", type=int, default=1)
     an.add_argument("--bpm", type=float)
     an.add_argument("--escribir", action="store_true")

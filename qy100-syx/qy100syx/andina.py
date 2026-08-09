@@ -226,6 +226,69 @@ class Bambuco(Genero):
     )
 
 
+# --- Bambuco fiestero (santandereano) ------------------------------------
+#
+# El bambuco tiene variantes regionales documentadas —de salon, fiestero,
+# sureño, sanjuanero, caucano, patiano, del litoral— y el caracter sigue a la
+# geografia: lento y melancolico en el Cauca, **fiestero en el Tolima y los
+# Santanderes**, campesino en el altiplano cundiboyacense.
+#
+# `brisas-del-pamplonita-bambuco.mid` es santandereano (el Pamplonita es un rio
+# de Norte de Santander) y su acompanamiento es **otro patron**, no otra
+# transcripcion del mismo:
+#
+#     corchea      1      2      3      4      5      6
+#     brisas      BAJO  ACORDE  BAJO  ACORDE  BAJO  ACORDE     fiestero
+#     te-ofrezco    ·   ACORDE  BAJO  ACORDE  BAJO    ·        de salon
+#
+# Medido: graves en 1/3/5 (51, 51, 65 ataques) frente a 2/4/6 (14, 12, 12), y
+# agudos al reves. **Alternancia estricta bajo-acorde en las seis corcheas.**
+#
+# La diferencia es la que cabria esperar de los nombres: **el fiestero no deja
+# huecos y empuja; el de salon deja vacias la 1 y la 6 y respira.** Que la
+# variante fiestera este notada en 3/4 y la de salon en 6/8 deja de ser una
+# eleccion del transcriptor y pasa a ser consecuencia del patron.
+#
+# La celda de tambora se comparte: es el mismo genero.
+
+
+def _fiestero_bajo(g, compases, intensidad):
+    """Bajo en las tres negras. Fundamental, quinta, fundamental."""
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for k, (i, alt) in enumerate(((0, raiz), (2, raiz + 7), (4, raiz))):
+            notas.append(F.Note(alt, 104 if k == 0 else 88, CORCHEA - 20,
+                                base + i * CORCHEA))
+    return notas
+
+
+def _fiestero_tiple(g, compases, intensidad):
+    """Acorde en las tres contras. Nunca coincide con el bajo."""
+    posiciones = (1, 3, 5) if intensidad > 0.4 else (1, 5)
+    notas = []
+    for c in range(compases):
+        _n, _r, voces = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i in posiciones:
+            for alt in voces:
+                notas.append(F.Note(alt, 86 if i == 1 else 76, CORCHEA - 30,
+                                    base + i * CORCHEA))
+    return notas
+
+
+class BambucoFiestero(Bambuco):
+    nombre = "BAMBFIES"
+    bpm = 168.0
+    pistas = (
+        (0, "D1", "tambora: papa con yuca", "Rock Kit", True,  _bambuco_tambora),
+        (2, "PC", "guache continuo",        "Rock Kit", True,  _bambuco_sonajas),
+        (3, "BA", "bajo en las tres negras", "Aco.Bass", False, _fiestero_bajo),
+        (4, "C1", "acordes en las contras", "NylonGtr", False, _fiestero_tiple),
+    )
+
+
 # --- Pasillo -------------------------------------------------------------
 #
 # **Sin sesquialtera**, y eso sale de los datos: en ACMUS-MIR los 57 pasillos
@@ -304,4 +367,5 @@ class Pasillo(Genero):
     )
 
 
-GENEROS = {"bambuco": Bambuco, "pasillo": Pasillo}
+GENEROS = {"bambuco": Bambuco, "fiestero": BambucoFiestero,
+           "pasillo": Pasillo}

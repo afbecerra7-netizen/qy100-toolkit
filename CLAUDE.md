@@ -219,6 +219,29 @@ una melodia generada suena a maquina aunque las notas sean correctas. Alturas:
 la coleccion de La menor natural, con `E` y `A` como las mas frecuentes, ambito
 de dos octavas.
 
+**Las diferencias entre partituras son VARIANTES REGIONALES, no criterio del
+transcriptor.** El bambuco tiene variantes documentadas —de salon, fiestero,
+sureño, sanjuanero, caucano, patiano, del litoral— y el caracter sigue a la
+geografia: lento y melancolico en el Cauca, **fiestero en el Tolima y los
+Santanderes**, campesino en el altiplano. `brisas-del-pamplonita` es
+santandereano (el Pamplonita es un rio de Norte de Santander) y su patron es
+otro:
+
+```
+corchea      1      2      3      4      5      6
+fiestero    BAJO  ACORDE  BAJO  ACORDE  BAJO  ACORDE    santandereano
+de salon      ·   ACORDE  BAJO  ACORDE  BAJO    ·       te-ofrezco
+```
+
+**El fiestero no deja huecos y empuja; el de salon deja vacias la 1 y la 6 y
+respira.** La celda de tambora se comparte: es el mismo genero.
+
+Y con eso **la notacion deja de ser arbitraria**: en el fiestero el bajo cae en
+las tres negras, asi que el 3/4 es lo natural; en el de salon el peso esta en las
+contras del 6/8. La eleccion de compas es **consecuencia del patron**, no del
+gusto de quien transcribe. Hipotesis con dos partituras; confirmarla necesita
+mas de cada variante.
+
 `qy100syx/andina.py`. **El pasillo del mismo modulo sigue construido por el
 metodo 3 y esta sin verificar contra ninguna partitura**: tratarlo como hipotesis
 hasta comprobarlo.
