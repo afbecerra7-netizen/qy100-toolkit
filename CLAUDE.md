@@ -140,7 +140,16 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **`bulk mode` locks the front panel.** Leave it on and the device appears dead to its own buttons — `dump` now always sends OFF in a `finally`, including on failure.
 - **A panel-initiated dump is self-framing**: `bulk mode ON → CLEAR ALL → data blocks → bulk mode OFF`. The CLEAR ALL is part of the payload so a restore wipes before writing. That framing also makes it possible to split a capture containing several dumps.
 - **`MIDI CONTROL` must be `Off` while dumping** (2026-07-29). With it on, the QY100 emits ~49 clock messages per second continuously and bulk captures lose whole blocks: the same pattern returned 8 blocks, then 3, then 2, then a different subset each attempt — the 5-block pattern header came back as 2. Everything that arrives is well-formed with a valid checksum, so it looks like the data changed rather than like loss. Filtering the clock in the driver (`rtmidi.ignore_types(timing=True)`, now applied automatically in `transfer.silenciar_reloj`) is **not sufficient** — it must be turned off at the device. Practical workflow: `In/Out` to sync a recording, `Off` to dump.
-- **Antes de culpar al QY100, apaga y enciende la interfaz.** Tras una transferencia larga la interfaz USB-MIDI puede quedarse con el puerto a medias y desde el software se ve exactamente igual que un aparato que no contesta: el volcado de verificacion no recibe respuesta y las pistas no salen por MIDI OUT aunque suenen. Ciclarla lo arregla. Costo dos diagnosticos falsos el 2026-08-08 —se reviso `MIDI CONTROL`, la pantalla del panel y el cableado— porque el sintoma es indistinguible de los fallos reales que si estan documentados aqui. **Es la comprobacion mas barata y va primero.**
+- **Antes de culpar al QY100, apaga y enciende la interfaz.** Tras una transferencia larga la interfaz USB-MIDI puede quedarse con el puerto a medias y desde el software se ve exactamente igual que un aparato que no contesta: el volcado de verificacion no recibe respuesta y las pistas no salen por MIDI OUT aunque suenen. Ciclarla lo arregla.
+
+  **Y se traga las ESCRITURAS igual de silenciosamente** (2026-08-08, segunda
+  vez el mismo dia). Dos estilos se escribieron con la interfaz ya a medias: el
+  software mando los bloques, reporto "escritos 47 bloques", y el aparato no
+  recibio nada. El unico sintoma fue que el volcado posterior seguia mostrando
+  el contenido anterior. **Una escritura reportada como exitosa a traves de un
+  puerto medio abierto no prueba nada**; lo unico que lo prueba es releer.
+
+  Costo dos diagnosticos falsos el 2026-08-08 —se reviso `MIDI CONTROL`, la pantalla del panel y el cableado— porque el sintoma es indistinguible de los fallos reales que si estan documentados aqui. **Es la comprobacion mas barata y va primero.**
 
 - **The QY100 transmits MIDI Clock even while stopped.** So incoming clock is *not* evidence that the sequencer is running, and no tool should infer "playing" from it. A recording script that auto-started after seeing clock without a Start fired 32 notes at a device sitting in the utility menu and recorded nothing. Wait for an actual Start.
 - **Capture must be callback-driven, not polled.** The QY100 streams MIDI clock continuously (48 ticks/s) and that flood makes a polling loop drop whole SysEx messages. The symptom is deceptive: everything that arrives is well-formed with a valid checksum, only some blocks are missing. The tell was that single-block items (setup, guitar effect) came back identical every time while anything multi-block varied.
@@ -149,6 +158,85 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **The QY100 is deterministic** — five consecutive `setup` requests returned identical bytes once the device was cleared. The earlier chaos was volume: long multi-block transfers were losing whole messages under the polling capture. Small dumps were always reliable, which is why single-block items (setup, guitar effect) matched every time.
 - **An empty pattern or song returns nothing at all.** That makes a cleared device the ideal reverse-engineering baseline: there is no background to subtract, so anything that appears after recording is the recorded data.
 - **`CLEAR ALL` also resets the utility settings** — it silently reverted `MIDI CONTROL`, which stopped clock transmission. Re-check page 127/128 settings after any clear.
+
+### El bambuco: la celda real, y por que la teoria no la daba
+
+**"Papa con yuca"** es la onomatopeya del patron base de la tambora andina, y es
+la identidad ritmica del bambuco: sin el, todo lo demas puede estar bien y no
+sonar al genero. Felipe lo detecto oyendo la primera version generada.
+
+La celda se extrajo de una **transcripcion real** —los grooves del Colombia
+Bundle de Tribe, doblando los ataques por compas de seis corcheas, instrumento a
+instrumento— y el reparto armonico lo dio el, cantandolo:
+
+```
+corchea    1       2     3       4      5       6
+silaba     PA      ·     PA      CON    YU      CA
+           acorde        acorde  bajo   acorde  bajo
+
+Bombo     78       .    89      89    113       .
+Tambora   68       .    73      76     98       .
+Llamador  93       .    77      84     87      86
+```
+
+Tres cosas que **ninguna lectura del manual ni del dataset habria dado**:
+
+- **El bombo va en 1, 3 y 5**, no en 1 y 4. Poner 1 y 4 es lo que sale de razonar
+  la sesquialtera sobre el papel (los dos grupos de `3+3` empiezan ahi). Suena
+  coherente y es falso.
+- **El acento fuerte esta en la corchea 5** (velocity 113 contra 78 del primer
+  tiempo). Un generador pone el acento en el 1 por defecto, y ahi se pierde el
+  genero entero.
+- **Los acordes caen en 1, 3 y 5 y el bajo en 4 y 6.** El acompanamiento marca el
+  pulso ternario y **el bajo sincopa contra el, sin tocar nunca el tiempo
+  fuerte**. Esa es la sesquialtera repartida entre instrumentos, no deducida.
+
+**La corchea 2 esta vacia en los once instrumentos.** El silencio es estructural.
+
+**Como se llego a la version equivocada, que es lo reutilizable.** Se busco el
+patron por internet y aparecio una descripcion con precision de corchea
+—"chasquido, rasgueo, bajo, rasgueo, bajo, rasgueo"— que se implemento tal cual.
+Era de otro patron. **Lo que la hizo convincente fue justo lo que la hacia
+peligrosa**: venia con detalle suficiente para parecer medida.
+
+Lo corrigio en una frase la persona que lo toca. Para como suena un genero, la
+fuente primaria es quien lo toca y una transcripcion MIDI de quien lo grabo — no
+la prosa, ni el manual, ni la teoria metrica. `qy100syx/andina.py`.
+
+**Y al bajar la intensidad se quitan capas, nunca se mueven golpes.** La celda es
+la identidad; desplazarla para "hacer variaciones" la destruye. El Intro es el
+mismo patron con menos instrumentos.
+
+### Los estilos de fabrica estan en OTRO CHIP, y por eso no cuestan memoria
+
+Del diagrama de bloques del service manual (p. 9), leyendo las capacidades en
+**megabits**, que es como se especifican los chips de memoria:
+
+```
+IC6   SRAM 1M        =  128 KB    datos de usuario, con respaldo de pila
+IC4   Mask/FlashROM 8M  =   1 MB    los 128 estilos y las 4.285 frases
+IC3   FlashROM 16M   =    2 MB    programa principal (el firmware ocupa 1,38)
+IC27  Mask/FlashROM 64M =   8 MB    generador de tonos y muestras
+```
+
+**`SRAM 1M` son 128 KB, no 1 MB.** Los numeros de parte lo confirman:
+`uPD431000` y `M5M51008` son 128K x 8 bits. Eso **confirma por una via
+independiente** la cifra de 128 KB que se habia deducido contando bloques de 128
+bytes contra la barra de `USED MEMORY`, que no da numero. Dos caminos que no se
+hablan dando lo mismo.
+
+**El catalogo de fabrica tiene ocho veces mas memoria que el usuario**, y en un
+chip distinto. Por eso referenciar una frase preset no cuesta nada: no es un
+truco de ahorro, es **usar el megabyte de IC4 en vez de gastar los 128 KB de
+IC6**. Son memorias fisicamente separadas.
+
+Consecuencia practica: **las frases preset no se pueden leer del firmware.**
+`_QY100_v137.mid` reescribe unicamente IC3; buscar los nombres de estilo
+(`80MRk`, `DncSw`, `AfrJz`, `Bossa`...) en la imagen extraida da **cero
+apariciones**. Para leer una frase de fabrica nota a nota hay que pasarla a
+memoria de usuario con el **Job 15 (*Copiar frase*)** y volcarla desde ahi. Es
+lento —una por una, desde el panel— pero es la unica ruta, y convierte el
+catalogo en material estudiable.
 
 ### The Data Filer is the ground truth
 
@@ -450,6 +538,41 @@ Job 17 carries a trap worth remembering: *"los datos de patrón fuente **se rear
 **From SysEx none of these jobs are needed**: copying a phrase to another pattern is writing the same blocks to a different `12 nn tr`. The three standing rules still apply — the 26-byte prefix travels with the blocks and its byte 19 is role-dependent (copy into a track of the same role, or rebuild with `build_prefix(pista=...)`), the destination pattern's two registry tables must be updated or the track reads as empty, and the whole pattern goes in one framed transfer with tracks first and the 5 header blocks last.
 
 For generated material the better framing is that **the engine is the library, not the slots** — `syx.py generar` renders straight into any (pattern, section, track), so varying seed, length or section is a parameter rather than a copy.
+
+### Las transiciones de seccion son del modo CANCION, no del modo patron
+
+Medido el 2026-08-08, y decide donde se toca en vivo:
+
+```
+Modo PATTERN   secciones como bucles crudos. El Intro no salta a Main A, los
+               fills no vuelven solos y el **Ending repite**.
+Modo SONG      Intro -> Main A, Fill AB -> Main B, Fill BA -> Main A, y el
+               **Ending cierra y para la reproduccion**.
+```
+
+El manual describe las transiciones automaticas (p. 1211-1214) sin repetir en que
+modo, pero la pagina abre con *"los estilos predefinidos se seleccionan y
+reproducen en el **modo de cancion**"*. Se leyo como comportamiento general de la
+maquina de estilos y era de una pantalla concreta. **Una instruccion sin su
+contexto de modo no es una instruccion**: la frase era correcta y se aplico al
+sitio equivocado durante una sesion entera, con el usuario reportando tres veces
+que el Ending seguia en bucle.
+
+Practicamente: **el modo patron es para editar y probar; para tocar hay que estar
+en modo cancion** con una cancion vacia apuntando al estilo de usuario. Ahi el
+footswitch (p. 121) mas las transiciones automaticas dan estructura real — se
+pisa el fill y el aparato lleva solo a Main B.
+
+**Y esa cancion se escribe entera por SysEx.** Verificado: cabecera con nombre y
+tempo mas la pista `Pt` apuntando a `U05`, releida exacta y sonando, con las
+transiciones y la parada final. `songfmt.encode_pattern_track`. Tope **~21
+compases**, porque el encadenado de bloques en canciones no esta comprobado y la
+pista tiene que caber en uno.
+
+Consecuencia para el set en vivo: **un tema es un estilo de usuario mas una
+cancion corta que lo dispara**, no una cancion con las notas escritas. La cancion
+cuesta un bloque; el estilo, lo que ocupe su material — y con referencias a
+frases preset, muy poco.
 
 ### Playing a user style live — ABC, and Yamaha's rules for reharmonizable phrases
 

@@ -85,15 +85,28 @@ def build_parser():
     es.add_argument("--semilla", type=int, default=0)
     es.add_argument("--pistas", help="indices 0-7 separados por coma; "
                                      "por defecto D1,D2,PC,BA,C1,C2")
-    es.add_argument("--receta", default="base", choices=["base", "afrobeat"],
+    es.add_argument("--receta", default="base", choices=["base", "afrobeat", "enka"],
                     help="que tipo de estilo generar")
-    es.add_argument("--compases", type=int,
-                    help="compases por seccion (1-32). El panel solo llega a 8; "
-                         "el equipo honra hasta 32, pero al bajarlo desde el "
-                         "panel ya no se puede volver a subir sin reescribir")
+    es.add_argument("--compases",
+                    help="compases por seccion (1-32): un numero para las seis, "
+                         "o seis separados por coma en el orden Intro, MainA, "
+                         "MainB, FillAB, FillBA, Ending. Por defecto 4,8,8,1,1,2 "
+                         "— **solo MAIN A y MAIN B hacen loop**; las otras cuatro "
+                         "suenan una vez, asi que un fill de 8 compases no es un "
+                         "fill (manual p. 1211-1214). El panel solo llega a 8; el "
+                         "equipo honra hasta 32")
     es.add_argument("--escribir", action="store_true")
     es.add_argument("--yes", action="store_true")
     es.set_defaults(func=cmd_estilo)
+
+    an = sub.add_parser("andina", parents=[conn],
+                        help="estilo de musica andina colombiana en 3/4")
+    an.add_argument("genero", help="bambuco o pasillo")
+    an.add_argument("--patron", type=int, default=1)
+    an.add_argument("--bpm", type=float)
+    an.add_argument("--escribir", action="store_true")
+    an.add_argument("--yes", action="store_true")
+    an.set_defaults(func=cmd_andina)
 
     fr = sub.add_parser("frases",
                         help="buscar entre las 4.285 frases preset "
@@ -570,13 +583,20 @@ def cmd_estilo(args):
             return 1
     cab_bytes = [bytes(m.data) for m in por_addr[cab_addr]]
     if args.compases:
-        if not 1 <= args.compases <= F.MAX_MEASURES:
-            log("compases fuera de rango 1-%d" % F.MAX_MEASURES)
+        try:
+            trozos = [int(x) for x in str(args.compases).split(",")]
+        except ValueError:
+            log("--compases: numeros separados por coma")
+            return 1
+        if len(trozos) == 1:
+            trozos = trozos * 6
+        if len(trozos) != 6 or not all(1 <= x <= F.MAX_MEASURES for x in trozos):
+            log("--compases: uno o seis valores, cada uno entre 1 y %d"
+                % F.MAX_MEASURES)
             return 1
         # encode_header solo toca el primer bloque, que es donde viven
         # nombre y longitudes.
-        cab_bytes[0] = F.encode_header(cab_bytes[0],
-                                       measures=[args.compases] * 6)
+        cab_bytes[0] = F.encode_header(cab_bytes[0], measures=trozos)
         for k, m in enumerate(por_addr[cab_addr]):
             m.data = list(cab_bytes[k])
     nombre, compases = F.decode_header(cab_bytes[0])
@@ -763,6 +783,143 @@ def cmd_frases(args):
     return 0
 
 
+def cmd_andina(args):
+    """Escribe un estilo de musica andina colombiana: seis secciones, una escritura.
+
+    Sigue las tres reglas que `cmd_estilo` aprendio por las malas y que los
+    primeros `bambuco.py`/`pasillo.py` incumplian: **leer el patron de destino
+    antes de escribir**, mandar las seis secciones **de una vez**, y usar
+    `set_registry` en vez de poner `0xF8` a mano — que es lo que preserva las
+    referencias a frases de fabrica que hubiera en el patron.
+    """
+    from . import andina as A
+    from . import generar as G
+    from . import patternfmt as F
+
+    if args.genero not in A.GENEROS:
+        log("generos: %s" % " ".join(sorted(A.GENEROS)))
+        return 1
+    g = A.GENEROS[args.genero]()
+    bpm = args.bpm or g.bpm
+
+    inp, outp = open_ports(args)
+    try:
+        outp.send(mido.Message("sysex", data=P.bulk_mode(True)[1:-1]))
+        time.sleep(0.3)
+        log("Leyendo el patron %d..." % args.patron)
+        blob, _ = transfer.request(outp, inp,
+                                   P.Addr.pattern(args.patron - 1, F.HEADER_TR),
+                                   args.quiet_for, args.timeout, log)
+    finally:
+        try:
+            outp.send(mido.Message("sysex", data=P.bulk_mode(False)[1:-1]))
+            time.sleep(0.2)
+        except Exception:
+            pass
+        for pt in (inp, outp):
+            if pt:
+                pt.close()
+
+    msgs, _ = P.parse_all(blob)
+    dumps = [m for m in msgs if m.sub == P.SUB_DUMP]
+    cab_addr = P.Addr.pattern(args.patron - 1, F.HEADER_TR)
+    cab_msgs = [m for m in dumps if m.addr[2] == F.HEADER_TR]
+    if not cab_msgs:
+        # Un patron vacio no devuelve nada, ni la cabecera. Se arranca de la
+        # plantilla en vez de exigir grabar una nota desde el panel.
+        log("El patron %d esta vacio: se crea desde la plantilla." % args.patron)
+        cab_bytes = list(F.CABECERA_BASE)
+        previas = []
+    else:
+        cab_bytes = [bytes(m.data) for m in cab_msgs]
+        previas = [m for m in dumps if m.addr[2] != F.HEADER_TR]
+
+    compases = A.compases_por_seccion()
+    cab_bytes[0] = F.encode_header(cab_bytes[0], name=g.nombre, measures=compases)
+    cab_bytes[0] = F.set_tempo(cab_bytes[0], bpm)
+    cab_bytes[0] = F.set_time_signature(cab_bytes[0], g.beats, 4)
+
+    log("")
+    log("%s — %.0f bpm, %d/4, progresion %s"
+        % (g.nombre, bpm, g.beats, " ".join(p[0] for p in g.progresion)))
+    log("")
+
+    nuevos, total_notas, total_bloques = {}, 0, 0
+    for s, (nom_s, intensidad, comp) in enumerate(A.SECCIONES):
+        piezas = g.construir(s, comp, intensidad)
+        total = g.total(comp)
+        fila = []
+        for idx, nom, _papel, voz, es_bat, _m in g.pistas:
+            notas = sorted((n for n in piezas[idx] if n.time < total),
+                           key=lambda n: n.time)
+            prog = (G.kit_por_nombre(voz)[1] if es_bat else G.voz_por_nombre(voz))
+            pre = F.build_prefix(base=F.PREFIJO_BASE, compases=comp,
+                                 nombre="%s%d" % (nom, s + 1), tipo="Bypass",
+                                 pista=idx, voz=prog,
+                                 banco=F.BANK_DRUMS if es_bat else F.BANK_NORMAL)
+            bl = G.a_bloques(notas, total, pre)
+            nuevos[F.track_byte(s, idx)] = bl
+            total_notas += len(notas)
+            total_bloques += len(bl)
+            fila.append("%s:%d" % (nom, len(notas)))
+        log("  %-8s %2d cp   %s" % (nom_s, comp, "  ".join(fila)))
+
+    log("")
+    log("%d notas, %d bloques (~%.1f KB)"
+        % (total_notas, total_bloques + 5, (total_bloques + 5) * 128 / 1024.0))
+
+    if not args.escribir:
+        log("")
+        log("Previsualizacion. Anade --escribir.")
+        return 0
+
+    if not args.yes:
+        try:
+            if input("Escribe 'si' para escribir: ").strip().lower() not in ("si", "s\u00ed"):
+                log("Cancelado.")
+                return 1
+        except EOFError:
+            log("Cancelado (sin terminal; usa --yes).")
+            return 1
+
+    # Pistas primero, cabecera al final. Las pistas previas que no regeneramos
+    # se reenvian intactas: el patron va entero o no va.
+    salida, vistos = [], set()
+    for m in previas:
+        tr = m.addr[2]
+        if tr in nuevos:
+            if tr not in vistos:
+                vistos.add(tr)
+                salida += [P.build_dump(m.addr, b) for b in nuevos[tr]]
+        else:
+            salida.append(m.raw)
+    for tr, bl in sorted(nuevos.items()):
+        if tr not in vistos:
+            salida += [P.build_dump(P.Addr.pattern(args.patron - 1, tr), b)
+                       for b in bl]
+
+    reg = {}
+    for m in previas:
+        s, t = divmod(m.addr[2], F.TRACKS_PER_SECTION)
+        reg.setdefault(s, set()).add(t)
+    for tr in nuevos:
+        s, t = divmod(tr, F.TRACKS_PER_SECTION)
+        reg.setdefault(s, set()).add(t)
+    cab_f = F.set_registry(cab_bytes, {s: sorted(v) for s, v in reg.items()})
+    for idx, _n, _p, voz, es_bat, _m in g.pistas:
+        prog = (G.kit_por_nombre(voz)[1] if es_bat else G.voz_por_nombre(voz))
+        cab_f = F.set_mixer_voice(cab_f, idx, prog, bateria=es_bat)
+    salida += [P.build_dump(cab_addr, b) for b in cab_f]
+
+    _, outp = open_ports(args, need_in=False)
+    try:
+        n = transfer.send_pattern(outp, salida, log=log)
+        log("Escritos %d bloques en una sola transferencia." % n)
+    finally:
+        outp.close()
+    return 0
+
+
 def cmd_voces(args):
     from . import generar as G
     b = G.banco()
@@ -836,5 +993,5 @@ def main(argv=None):
 
     return {"dump": cmd_dump, "monitor": cmd_monitor, "inspect": cmd_inspect,
             "diff": cmd_diff, "send": cmd_send, "generar": cmd_generar,
-            "estilo": cmd_estilo, "frases": cmd_frases,
+            "estilo": cmd_estilo, "frases": cmd_frases, "andina": cmd_andina,
             "voces": cmd_voces}[args.cmd](args)

@@ -118,7 +118,14 @@ def decode_pattern_track(payload, max_compases=512):
 def encode_pattern_track(compases):
     """Construye la pista Pt. Devuelve los 147 bytes listos para `build_dump`.
 
-    **Sin verificar contra el equipo**: leer esta comprobado, escribir no.
+    **Verificado contra el equipo** (2026-08-08): una cancion escrita entera por
+    SysEx —cabecera con nombre y tempo, mas esta pista apuntando a un estilo de
+    usuario— se releyo exacta y sono, con sus transiciones de seccion y parando
+    sola al final.
+
+    Ojo con el tamano: el encadenado de bloques en canciones **no** esta
+    comprobado, asi que la pista tiene que caber en uno. Son 4 bytes la primera
+    entrada y 6 cada una despues, mas inicio y fin: **unos 21 compases de tope**.
     """
     out = bytearray([EV_INICIO, 0x00])
     for k, c in enumerate(compases):

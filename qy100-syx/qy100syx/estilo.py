@@ -332,7 +332,61 @@ PISTAS_AFRO = [
     (5, "C2", "afro_vientos",  "Chord 1", "BrssSect",   False),
 ]
 
-RECETAS = {"base": PISTAS, "afrobeat": PISTAS_AFRO}
+
+# --- Receta enka ---------------------------------------------------------
+# El enka es la balada sentimental japonesa de posguerra, y en este catalogo no
+# es una rareza exotica: **es musica domestica**. El QY100 se hizo en Japon para
+# vender en Japon, asi que enka esta ahi por la misma razon que el country esta
+# en un teclado americano.
+#
+# El catalogo cubre casi todo el estilo —bajo y acordes de teclado completos en
+# las seis secciones—, asi que aqui solo se genera **la melodia**, que es lo
+# unico que las frases de acompanamiento no traen y lo que en este genero lleva
+# el tema.
+
+# Escala: pentatonica menor sin cuarta ni septima —el *yonanuki* que le da su
+# color—, pero **restringida a notas del acorde** porque la pista va en
+# `Chord 1` y el aparato la rearmoniza. La regla 2 de Yamaha (fundamental, 3a,
+# 5a) y la pentatonica coinciden en 1, b3 y 5; la 4 entra solo de paso.
+ENKA_GRADOS = [0, 3, 7, 12, 7, 3]
+ENKA_PASO = 5
+
+
+def enka_melodia(compases, intensidad, semilla, G):
+    """Frases largas con silencio entre ellas, no una linea continua.
+
+    Lo que hace que suene a canto y no a secuencia es **el hueco**: dos compases
+    de frase y uno de aire. Una melodia que no respira delata la maquina antes
+    que cualquier eleccion de notas.
+    """
+    import random
+    negra = F.CLOCKS_PER_QUARTER
+    rnd = random.Random(semilla)
+    notas = []
+    for c in range(compases):
+        if c % 3 == 2 and intensidad < 0.8:      # el compas de aire
+            continue
+        base = c * negra * 4
+        # Figura de cuatro notas por compas, con la ultima sostenida: el gesto
+        # de caida al final de frase que caracteriza al genero.
+        pasos = [0, 1, 2, 3] if intensidad > 0.6 else [0, 2]
+        for k, i in enumerate(pasos):
+            g = ENKA_GRADOS[(c * 2 + k) % len(ENKA_GRADOS)]
+            if rnd.random() < 0.15:
+                g = ENKA_PASO
+            largo = negra * 2 - 40 if k == len(pasos) - 1 else negra - 40
+            notas.append(F.Note(60 + g, 92 if k == 0 else 78, largo,
+                                base + i * negra))
+    total = F.section_clocks(compases)
+    return _dentro(notas, total), total
+
+
+MOTORES["enka_melodia"] = enka_melodia
+
+# Solo la melodia: todo lo demas sale del catalogo por referencia.
+PISTAS_ENKA = [(4, "C1", "enka_melodia", "Chord 1", "Oboe", False)]
+
+RECETAS = {"base": PISTAS, "afrobeat": PISTAS_AFRO, "enka": PISTAS_ENKA}
 
 
 def construir(compases_por_seccion, semilla=0, pistas=None, secciones=None,
