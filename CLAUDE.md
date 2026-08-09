@@ -360,86 +360,68 @@ mezclar frases de fabrica referenciadas (gratis) con frases generativas propias
 (que si ocupan)**, y pagar memoria solo por lo segundo. Con 128 KB compartidos
 entre canciones, patrones y frases, eso cambia cuanto cabe.
 
-**La referencia completa son DOS BYTES**, los dos en el registro de la cabecera
-del patron, y **escribirla por SysEx funciona**: verificado el 2026-08-08
-escribiendo `09`/`00` y leyendo en el panel `Da 001 80MRk-1I`, que es
-exactamente lo que el catalogo extraido del PDF predice para esa combinacion.
-Dos fuentes que no se hablan —la ROM del aparato y la conversion del manual—
-dando lo mismo.
+**La referencia a una frase preset son DOS BYTES del registro de la cabecera, y
+esta RESUELTA** (2026-08-08). Escribirla por SysEx funciona y no cuesta memoria
+de usuario: las notas se quedan en la ROM.
 
 ```
-bandera  (bytes 21-68)    = <categoria:4 bits> <estado/beat:4 bits>
+bandera  (bytes 21-68)    = (indice_de_categoria << 3) | estado
 tabla tr (bytes 69-116)   = numero de frase - 1
 
-nibble bajo, MEDIDO entero barriendo los 16 valores:
-   8        la pista tiene contenido propio
-   9        frase preset, 16 beat        (Da 001 -> 80MRk-1I)
-   A        frase preset, 8 beat         (Da 001 -> Mixt -1I)
-   B        frase preset, 3/4 beat       (Da 001 -> R&BWz-I)
-   E        vacia
-   0-7, C, D, F   no producen frase
+   estado 0   la pista tiene contenido propio
+   estado 1   frase preset, 16 beat
+   estado 2   frase preset, 8 beat
+   estado 3   frase preset, 3/4 beat
+   estado 6   vacia
 ```
 
-**Por eso no cuesta memoria: no hay nada mas que guardar.** Y la segunda tabla
-esta **sobrecargada** —guarda el `tr` cuando la pista tiene contenido propio y el
-numero de frase cuando referencia una preset—, asi que `set_registry` **preserva
-toda ranura cuyo nibble bajo no sea `8` ni `E`**. Sin eso, escribir una sola
-pista generativa borraba en silencio las frases preset asignadas desde el panel.
-
-**El patron mixto esta verificado de extremo a extremo** (2026-08-08). Main A del
-patron 3, sonando:
+**Cinco bits de categoria y tres de estado, no cuatro y cuatro.** La tabla de
+categorias sale del **firmware**, offset `0x11AE24` de la imagen que produce
+`extraer_rom.py`: 32 entradas de 3 bytes con los quince codigos y huecos `__`
+reservados por Yamaha.
 
 ```
-D1  09  referencia de fabrica   Da 132  DncSw-1a     0 bytes
-PC  49  referencia de fabrica   PC 040  DncSw-a      0 bytes
-BA  69  referencia de fabrica   Ba 106  DncSw-a      0 bytes
-C1  F8  frase de usuario        48 notas generadas
-C2  F8  frase de usuario        16 notas generadas   3 KB
+-- Da Db __ __ Fa Fb __ __ PC __ __ __ Ba Bb __ __ __ Ga Gb GR __ __ KC KR __ __ __ PD BR SE US
 ```
 
-Las tres referencias **sobrevivieron a escribir las pistas generativas encima**,
-que es justo lo que fallaba antes del arreglo de `set_registry`. El reparto es el
-punto: la base ritmica completa cuesta cero y solo se paga el material propio.
+Cuadra con las **ocho banderas medidas en el equipo, 8 de 8**, y explica los ocho
+valores que parecian invalidos: los ocho caen en huecos `__`.
 
-La receta practica: base ritmica de fabrica en D1/D2/PC/BA, material generativo
-en C1-C4 con TYPE `Chord 1` para que ABC lo rearmonice desde un teclado externo.
+Y encaja lo que llevaba semanas anotado como caso especial: **`F8` y `FE` no son
+valores magicos**. Son la categoria `US` —frase de usuario, indice 31— con estado
+0 y 6. El formato nunca tuvo excepciones; las teniamos nosotros.
 
-**PENDIENTE — solo 7 de las 15 categorias son escribibles por SysEx.** Mientras
-el nibble alto no se cierre, se pueden referenciar `Da` `Fa` `PC` `Ba` `Gb` `KC`
-`BR` y no las otras ocho. En frases:
+`patternfmt.bandera_frase(categoria, beat)` y `leer_bandera(b)`.
 
-```
-ritmico    alcanzable  Ba Da Fa PC       1364      fuera  Bb Db Fb        806   63%
-melodico   alcanzable  BR Gb KC           994      fuera  GR Ga KR PD SE 1121   47%
-```
+La segunda tabla esta **sobrecargada**: guarda el `tr` cuando la pista tiene
+contenido propio y el numero de frase cuando referencia una preset. Por eso
+`set_registry` **preserva toda ranura cuyo estado no reconozca**; sin eso,
+escribir una sola pista generativa borraba en silencio las frases preset
+asignadas desde el panel — sin error y sin señal.
 
-El reparto no es neutro. En lo ritmico lo que se pierde son las variantes
-*Specific* (`Db` `Fb` `Bb`) —generos concretos: bossa, ska, march— mientras que la
-variante `a` de cada par es Pop&Rock, la generica, **y esa si esta**. Por eso
-montar la base ritmica de un estilo funciona hoy sin notar la falta.
+**Por que costo una tarde entera, que es lo unico reutilizable de esto.** Se
+asumio una particion 4+4 y se barrio el nibble alto. Con el nibble bajo fijo en
+`9`, el indice resultante es `(k<<1)|1` — **solo los impares**. Las ocho
+categorias que "no existian" estaban todas en indices pares y el barrido no podia
+alcanzarlas jamas. Misma trampa que el denominador de compas: **un barrido que no
+cubre el rango entero no prueba una ausencia.**
 
-En lo melodico se cae `Ga` (guitarra de acordes Pop&Rock, la mas util del grupo),
-`GR`, `KR` y `PD`, y ahi **no hay una generica que cubra el hueco**. Importa poco
-para el uso previsto —en C1-C4 el material lo pone el generativo, asi que las
-categorias melodicas de fabrica son competencia y no complemento— pero cierra la
-puerta a tirar de un riff de guitarra de Yamaha desde software. El panel si llega
-a las quince, asi que no es un bloqueo, es un rodeo.
+Por el camino se dieron por buenas tres lecturas falsas, todas por lo mismo: leer
+un campo mirando una sola variable. `09` frente a `B9` se atribuyo al rol de la
+pista por analogia con el byte 19 del prefijo (era la categoria); el nibble bajo
+`9` se leyo como "es una frase preset" (era el beat, quieto porque nunca se movio
+esa variable); y "vacio" se uso para dos cosas distintas —fila en blanco y fila
+con categoria pero sin nombre— lo que refuto en falso una hipotesis correcta.
 
-**El nibble alto sigue sin cerrarse, y es lo que bloquea el patron mixto por
-software.** Barriendo los 16 valores con beat y numero fijos solo 7 dieron frase:
-`0 Da`, `2 Fa`, `4 PC`, `6 Ba`, `9 Gb`, `B KC`, `E BR`. Siete no pueden
-direccionar quince categorias, asi que **la categoria no cabe entera ahi**.
+**Lo que lo resolvio fue dejar de preguntarle a la pantalla y mirar el firmware.**
+Doce lecturas de panel contra un `grep` que lo cerro entero. Cuando un campo
+resiste varias tandas de medicion, buscar su tabla en la ROM antes que seguir
+sondeando: el equipo tiene la respuesta escrita.
 
-Encajaban sospechosamente bien en una lista ordenada por funcion (Da Db Fa Fb PC
-_ Ba Bb Ga Gb GR KC KR PD BR SE), pero escribir los ocho restantes en pistas de
-bateria no produjo nada y la lista quedo refutada.
-
-**Con una reserva sobre esa refutacion.** "Vacio" se uso para dos cosas
-distintas: una fila totalmente en blanco, y una fila que muestra categoria y
-numero **con la columna del nombre vacia** —que es lo que hacen los nibbles bajos
-C, D, F—. Si aquellos ocho indices eran del segundo tipo, no estaban invalidos y
-la conclusion es otra. Repetir preguntando por las dos columnas por separado
-antes de dar la lista por muerta.
+**Verificado de extremo a extremo**: un estilo afrobeat en el patron 4 con
+bateria, percusion y bajo de `AfrJz` referenciados —incluidas `Db`, `Bb` y `Fb`,
+que son de las que antes no se alcanzaban— y guitarra y vientos generativos
+encima. **De 25,0 KB a 8,4.**
 
 ### User phrases are slots, not a bank — and `Us—NNN` is our `tr` byte
 

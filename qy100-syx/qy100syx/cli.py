@@ -85,6 +85,12 @@ def build_parser():
     es.add_argument("--semilla", type=int, default=0)
     es.add_argument("--pistas", help="indices 0-7 separados por coma; "
                                      "por defecto D1,D2,PC,BA,C1,C2")
+    es.add_argument("--receta", default="base", choices=["base", "afrobeat"],
+                    help="que tipo de estilo generar")
+    es.add_argument("--compases", type=int,
+                    help="compases por seccion (1-32). El panel solo llega a 8; "
+                         "el equipo honra hasta 32, pero al bajarlo desde el "
+                         "panel ya no se puede volver a subir sin reescribir")
     es.add_argument("--escribir", action="store_true")
     es.add_argument("--yes", action="store_true")
     es.set_defaults(func=cmd_estilo)
@@ -419,7 +425,8 @@ def cmd_generar(args):
     # Se comprueba contra todos los bloques del patron, no solo el de destino:
     # si la pista es nueva no hay bloque original con el que comparar, y en ese
     # caso sin esto el prevuelo no verificaria nada.
-    malos = [m for m in dumps if P.build_dump(m.addr, m.data) != m.raw]
+    malos = [m for m in dumps
+             if m.raw is not None and P.build_dump(m.addr, m.data) != m.raw]
     if malos:
         log("PREVUELO FALLIDO: %d bloque(s) no se reproducen byte a byte "
             "(el primero, %s)." % (len(malos), P.addr_name(malos[0].addr)))
@@ -541,11 +548,38 @@ def cmd_estilo(args):
 
     cab_addr = P.Addr.pattern(args.patron - 1, F.HEADER_TR)
     if cab_addr not in por_addr:
-        log("No llego la cabecera. Si MIDI CONTROL esta encendido el QY100")
-        log("inunda la entrada de reloj y se pierden bloques: ponlo en Off.")
-        log("Y si no contesta nada, apaga y enciende la interfaz antes que nada.")
-        return 1
-    nombre, compases = F.decode_header(bytes(por_addr[cab_addr][0].data))
+        # **Un patron vacio no devuelve nada**, ni siquiera la cabecera, asi que
+        # "no contesto" no distingue entre patron vacio y fallo de comunicacion.
+        # Se resuelve arrancando de `CABECERA_BASE` —captura literal de un patron
+        # vacio— en vez de exigir que el usuario vaya al panel a grabar una nota.
+        # Si de verdad hubiera un fallo de linea, la escritura posterior lo
+        # delata: el prevuelo no tiene bloques que reconstruir y el read-back
+        # queda como comprobacion.
+        if not dumps:
+            log("El patron %d esta vacio: se crea desde la plantilla."
+                % args.patron)
+            cab_msgs_iniciales = [
+                type("M", (), {"addr": cab_addr, "data": list(b), "raw": None})()
+                for b in F.CABECERA_BASE]
+            for m in cab_msgs_iniciales:
+                por_addr.setdefault(cab_addr, []).append(m)
+                dumps.append(m)
+        else:
+            log("Llegaron bloques pero no la cabecera. Con MIDI CONTROL encendido")
+            log("el QY100 inunda la entrada de reloj y se pierden bloques.")
+            return 1
+    cab_bytes = [bytes(m.data) for m in por_addr[cab_addr]]
+    if args.compases:
+        if not 1 <= args.compases <= F.MAX_MEASURES:
+            log("compases fuera de rango 1-%d" % F.MAX_MEASURES)
+            return 1
+        # encode_header solo toca el primer bloque, que es donde viven
+        # nombre y longitudes.
+        cab_bytes[0] = F.encode_header(cab_bytes[0],
+                                       measures=[args.compases] * 6)
+        for k, m in enumerate(por_addr[cab_addr]):
+            m.data = list(cab_bytes[k])
+    nombre, compases = F.decode_header(cab_bytes[0])
     log("Patron %d (%r), compases por seccion: %s"
         % (args.patron, nombre, " ".join(str(x) for x in compases)))
 
@@ -562,12 +596,14 @@ def cmd_estilo(args):
         return F.PREFIJO_BASE, "plantilla"
 
     pedidas = ([int(x) for x in args.pistas.split(",")] if args.pistas else None)
-    piezas = E.construir(compases, semilla=args.semilla, pistas=pedidas)
+    piezas = E.construir(compases, semilla=args.semilla, pistas=pedidas,
+                         receta=args.receta)
 
+    pistas_receta = {p[0]: p for p in E.RECETAS[args.receta]}
     nuevos, total_notas, total_bloques = {}, 0, 0
     for (s, idx) in sorted(piezas):
         notas, total = piezas[(s, idx)]
-        _i, nom, papel, tipo, voz, es_bat = E.PISTAS[idx]
+        _i, nom, papel, tipo, voz, es_bat = pistas_receta[idx]
         base, origen = base_para(idx)
         prog = (G.kit_por_nombre(voz)[1] if es_bat else G.voz_por_nombre(voz))
         prefijo = F.build_prefix(
@@ -580,10 +616,11 @@ def cmd_estilo(args):
         total_bloques += len(bloques)
 
     log("")
-    log("%-8s %s" % ("seccion", "  ".join("%-4s" % p[1] for p in E.PISTAS)))
+    log("%-8s %s" % ("seccion", "  ".join("%-4s" % p[1]
+                                          for p in E.RECETAS[args.receta])))
     for s, (nom_s, inten, que) in enumerate(E.SECCIONES):
         fila = []
-        for idx, nom, *_ in E.PISTAS:
+        for idx, nom, *_ in E.RECETAS[args.receta]:
             n = piezas.get((s, idx))
             fila.append("%-4s" % (len(n[0]) if n else "-"))
         log("%-8s %s   %.0f%%  %s" % (nom_s, "  ".join(fila), inten * 100, que))
@@ -596,7 +633,8 @@ def cmd_estilo(args):
         log("Previsualizacion. Anade --escribir para mandarlo al equipo.")
         return 0
 
-    malos = [m for m in dumps if P.build_dump(m.addr, m.data) != m.raw]
+    malos = [m for m in dumps
+             if m.raw is not None and P.build_dump(m.addr, m.data) != m.raw]
     if malos:
         log("PREVUELO FALLIDO: %d bloque(s) no se reproducen byte a byte. "
             "No se escribe nada." % len(malos))
@@ -624,7 +662,7 @@ def cmd_estilo(args):
             if tr not in vistos:
                 vistos.add(tr)
                 pistas_out.extend(P.build_dump(m.addr, b) for b in nuevos[tr])
-        else:
+        elif m.raw is not None:
             pistas_out.append(m.raw)
     for tr, bloques in sorted(nuevos.items()):
         if tr not in vistos:
@@ -643,7 +681,7 @@ def cmd_estilo(args):
     cab = F.set_registry([bytes(m.data) for m in cab_msgs],
                          {s: sorted(v) for s, v in reg.items()})
     # El mezclador es POR PATRON, no por seccion: una voz por indice de pista.
-    for idx, _nom, _papel, _tipo, voz, es_bat in E.PISTAS:
+    for idx, _nom, _papel, _tipo, voz, es_bat in E.RECETAS[args.receta]:
         if pedidas is not None and idx not in pedidas:
             continue
         prog = (G.kit_por_nombre(voz)[1] if es_bat else G.voz_por_nombre(voz))

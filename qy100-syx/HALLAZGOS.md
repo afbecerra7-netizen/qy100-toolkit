@@ -341,17 +341,25 @@ aparecen los 5 de cabecera: el patrón guarda una referencia y las notas se qued
 en la ROM. **No cuesta memoria de usuario.**
 
 ```
-bandera  (21–68)    = <categoría:4 bits> <estado/beat:4 bits>
+bandera  (21–68)    = (índice de categoría << 3) | estado      5 bits + 3
 tabla tr (69–116)   = número de frase − 1
 
-nibble bajo, medido barriendo los 16 valores:
-   8        la pista tiene contenido propio      (la tabla tr guarda el `tr`)
-   9        frase preset, 16 beat                (la tabla tr guarda el número)
-   A        frase preset, 8 beat
-   B        frase preset, 3/4 beat
-   E        vacía
-   0–7, C, D, F   no producen frase
+   estado 0   contenido propio      (la tabla tr guarda el `tr`)
+   estado 1   frase preset, 16 beat (la tabla tr guarda el número)
+   estado 2   frase preset, 8 beat
+   estado 3   frase preset, 3/4 beat
+   estado 6   vacía
 ```
+
+La tabla de categorías sale del **firmware**, offset `0x11AE24`: 32 entradas de
+3 bytes, los quince códigos y huecos `__` reservados por Yamaha.
+
+```
+-- Da Db __ __ Fa Fb __ __ PC __ __ __ Ba Bb __ __ __ Ga Gb GR __ __ KC KR __ __ __ PD BR SE US
+```
+
+Con eso **`F8` y `FE` dejan de ser casos especiales**: son la categoría `US`
+—frase de usuario, índice 31— con estado 0 y 6.
 
 Verificado escribiendo `09`/`00` por SysEx y leyendo en el panel
 `Da 001 80MRk-1I`, que es exactamente lo que predice `frases.json`, extraído del
@@ -384,11 +392,7 @@ llamarlo constante es afirmar algo que no se ha probado.
 - El array del **byte 218** del mezclador (64 en todas las pistas)
 - El **bank LSB** de las 397 voces XG por encima del programa 127
 - Los estados `F1`, `F5`–`FF` (`F3` y `F4` se resolvieron en canciones)
-- **El nibble alto de la bandera del registro.** Barriendo los 16 valores con
-  beat y número fijos solo 7 dieron frase (`0 Da`, `2 Fa`, `4 PC`, `6 Ba`,
-  `9 Gb`, `B KC`, `E BR`), y categorías hay 15: la categoría no cabe entera ahí.
-  Mientras no se cierre, por SysEx solo se pueden referenciar esas siete — el 63%
-  del material rítmico y el 47% del melódico. El panel sí llega a las quince
+
 
 ---
 

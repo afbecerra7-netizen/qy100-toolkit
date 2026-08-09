@@ -1086,3 +1086,122 @@ def build_prefix(base=None, nombre=None, compases=None, voz=None,
 def section_clocks(measures, beats_per_bar=4):
     """Relojes que dura una seccion de `measures` compases."""
     return measures * beats_per_bar * CLOCKS_PER_QUARTER
+
+
+
+# Los 5 bloques de cabecera de un patron VACIO, capturados del equipo con el
+# registro puesto a cero. Existen porque **un patron vacio no devuelve nada**:
+# ni una pista, ni la cabecera. Sin esto, cualquier herramienta que quiera crear
+# un patron desde cero no tiene de donde leer, y hay que ir al panel a grabar
+# una nota antes de poder escribir nada — cosa que bloqueo al generador de
+# estilos dos veces antes de resolverlo asi.
+#
+# Como `PREFIJO_BASE`, es una captura literal y no una plantilla inventada: los
+# bytes que todavia no sabemos leer vienen del QY100. Lo unico puesto a mano es
+# el registro, que si sabemos escribir.
+CABECERA_BASE = [bytes.fromhex(h) for h in (
+    # bloque 0
+    "022c00000000002010080402010040200e002010080000017f3f5f6f777b7d7e7f3f"
+    "5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f"
+    "777b7d7e7f3f5f6f777b7c0000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000",
+    # bloque 1
+    "000301406030180c000000077b7d7e00000000000000000000000000000000000008"
+    "000000000001004020000000000032190c4623114864321008040201004020100f77"
+    "7b7d7e7f3f5f6f70000000000000000001205028140a050241200000000000000000"
+    "00402010080402010040201008040201004020100804020100402010080402010040"
+    "2010080402010040201000",
+    # bloque 2
+    "20100824120904422110482778010040201008040201004020100804020100402a5a"
+    "2f776b7d7e553f5e4f762b3960532c174804020100402010080402011a4d26484562"
+    "737d7e203f4804077b7d7e7f100804077b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d"
+    "7e7f3f50080402010040201008040201004020100804020100402010080402010040"
+    "2010080402010040201000",
+    # bloque 3
+    "20100804020100402010080402000a0006412068184e101344000920000000000000"
+    "00000000006432190c462311486432190c4623114864320000000000000000001f6f"
+    "777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b"
+    "7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e"
+    "7f3f5f6f777b7d7e7f3f40",
+    # bloque 4
+    "7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777800000000"
+    "0000000000001e7f5f6f777b7d7e0025200a7802757e7f3f5f6f777b7d7e7f3f5f6f"
+    "777b7d7e7f3f5f6f777b7d7e7f3f5f6f700676006c7f5f6f777b7d7e004940134005"
+    "0f7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f777b7d7e7f3f5f6f70070200"
+    "103f5f6f77780156005600",
+)]
+
+
+
+# --- Referencia a frase, en el registro de la cabecera -------------------
+#
+# La bandera del registro **no se parte en dos nibbles**, aunque lo pareciera
+# durante toda una tarde de mediciones: son **5 bits de categoria y 3 de
+# estado**.
+#
+#     bandera = (indice_de_categoria << 3) | estado
+#
+#     estado 0        la pista tiene contenido propio
+#     estado 1        frase preset, 16 beat
+#     estado 2        frase preset, 8 beat
+#     estado 3        frase preset, 3/4 beat
+#     estado 6        vacia
+#
+# Y el numero de frase menos uno va en la **segunda tabla** del registro (bytes
+# 69-116), la misma que guarda el `tr` cuando la pista tiene contenido propio.
+# Esta sobrecargada segun el estado.
+#
+# Asi `F8` y `FE` encajan sin ser casos especiales: son la categoria `US` (31)
+# con estado 0 y 6 — una frase de **usuario** con contenido o vacia.
+#
+# La tabla sale del **firmware**, offset 0x11AE24 de la imagen que produce
+# `extraer_rom.py`, y los `__` son huecos reservados por Yamaha. Cuadra con las
+# ocho banderas medidas en el equipo, 8 de 8.
+#
+# **Por que costo tanto**: se asumio una particion 4+4 y se barrio el nibble
+# alto. Con el bajo fijo en 9, el indice resultante es `(k<<1)|1` — **solo los
+# impares**, la mitad de la tabla. Las ocho categorias que "no existian" estaban
+# todas en indices pares. El barrido no podia alcanzarlas y el resultado se leyo
+# como que el formato no llegaba. Misma trampa que la del denominador de compas:
+# **un barrido que no cubre el rango entero no prueba una ausencia.**
+CATEGORIAS_FRASE = ['--', 'Da', 'Db', '__', '__', 'Fa', 'Fb', '__', '__', 'PC', '__', '__', '__', 'Ba', 'Bb', '__', '__', '__', 'Ga', 'Gb', 'GR', '__', '__', 'KC', 'KR', '__', '__', '__', 'PD', 'BR', 'SE', 'US']
+
+FRASE_ESTADO_PROPIO = 0
+FRASE_ESTADO_16BEAT = 1
+FRASE_ESTADO_8BEAT = 2
+FRASE_ESTADO_34BEAT = 3
+FRASE_ESTADO_VACIA = 6
+
+BEATS_FRASE = {"16 beat": FRASE_ESTADO_16BEAT,
+               "8 beat": FRASE_ESTADO_8BEAT,
+               "3/4 beat": FRASE_ESTADO_34BEAT}
+
+
+def indice_categoria(codigo):
+    """`Da` -> 1. Levanta ValueError si el codigo no existe."""
+    for k, c in enumerate(CATEGORIAS_FRASE):
+        if c == codigo:
+            return k
+    raise ValueError("categoria desconocida: %r. Validas: %s"
+                     % (codigo, " ".join(sorted(c for c in CATEGORIAS_FRASE
+                                                 if c not in ("__", "--")))))
+
+
+def bandera_frase(categoria, beat):
+    """Bandera de registro para referenciar una frase preset."""
+    if beat not in BEATS_FRASE:
+        raise ValueError("beat desconocido: %r. Validos: %s"
+                         % (beat, ", ".join(sorted(BEATS_FRASE))))
+    return (indice_categoria(categoria) << 3) | BEATS_FRASE[beat]
+
+
+def leer_bandera(b):
+    """Devuelve (categoria, estado). `estado` es el nombre del beat si aplica."""
+    cat = CATEGORIAS_FRASE[b >> 3]
+    estado = b & 0x7
+    nombre = {v: k for k, v in BEATS_FRASE.items()}.get(estado)
+    if nombre is None:
+        nombre = {FRASE_ESTADO_PROPIO: "propio",
+                  FRASE_ESTADO_VACIA: "vacia"}.get(estado, "?%d" % estado)
+    return cat, nombre
