@@ -404,6 +404,27 @@ punto: la base ritmica completa cuesta cero y solo se paga el material propio.
 La receta practica: base ritmica de fabrica en D1/D2/PC/BA, material generativo
 en C1-C4 con TYPE `Chord 1` para que ABC lo rearmonice desde un teclado externo.
 
+**PENDIENTE — solo 7 de las 15 categorias son escribibles por SysEx.** Mientras
+el nibble alto no se cierre, se pueden referenciar `Da` `Fa` `PC` `Ba` `Gb` `KC`
+`BR` y no las otras ocho. En frases:
+
+```
+ritmico    alcanzable  Ba Da Fa PC       1364      fuera  Bb Db Fb        806   63%
+melodico   alcanzable  BR Gb KC           994      fuera  GR Ga KR PD SE 1121   47%
+```
+
+El reparto no es neutro. En lo ritmico lo que se pierde son las variantes
+*Specific* (`Db` `Fb` `Bb`) —generos concretos: bossa, ska, march— mientras que la
+variante `a` de cada par es Pop&Rock, la generica, **y esa si esta**. Por eso
+montar la base ritmica de un estilo funciona hoy sin notar la falta.
+
+En lo melodico se cae `Ga` (guitarra de acordes Pop&Rock, la mas util del grupo),
+`GR`, `KR` y `PD`, y ahi **no hay una generica que cubra el hueco**. Importa poco
+para el uso previsto —en C1-C4 el material lo pone el generativo, asi que las
+categorias melodicas de fabrica son competencia y no complemento— pero cierra la
+puerta a tirar de un riff de guitarra de Yamaha desde software. El panel si llega
+a las quince, asi que no es un bloqueo, es un rodeo.
+
 **El nibble alto sigue sin cerrarse, y es lo que bloquea el patron mixto por
 software.** Barriendo los 16 valores con beat y numero fijos solo 7 dieron frase:
 `0 Da`, `2 Fa`, `4 PC`, `6 Ba`, `9 Gb`, `B KC`, `E BR`. Siete no pueden
@@ -486,11 +507,11 @@ Three things it has to get right, all learned the hard way:
 - **A Program Change rewrites the loaded song's mixer voice for that channel.** Play on channels the target song does not use, or select an empty song slot first.
 - **Stuck notes need `All Sound Off` (CC 120), not just `All Notes Off` (CC 123).** 123 only releases the keys: anything already in its release phase keeps sounding, and with long tails — SFX-kit textures, pads, a `Stream` on a three-bar gate — that can ring indefinitely. 120 cuts it regardless. Sending only 123 left the device beeping for an entire afternoon.
 
-  **And the beep was mistaken for a fault in the music.** Six tracks were played back in isolation, each ruled out by ear, and three separate hypotheses about the arrangement were built and discarded before anyone suspected the tooling. The tell was there early and got ignored: an `All Notes Off` silenced it once, and it came back **right after the next write** — twice. When a symptom disappears on a global reset and returns after your own action, the fault is yours, not the data's. `ep-escribir.py` now sends both CCs on all 16 channels after every write.
+  **And the beep was mistaken for a fault in the music.** Six tracks were played back in isolation, each ruled out by ear, and three separate hypotheses about the arrangement were built and discarded before anyone suspected the tooling. The tell was there early and got ignored: an `All Notes Off` silenced it once, and it came back **right after the next write** — twice. When a symptom disappears on a global reset and returns after your own action, the fault is yours, not the data's. The write script now sends both CCs on all 16 channels after every write.
 
 **[`exportar_midi.py`](qy100-syx/exportar_midi.py) writes a standard `.mid`, and for getting notes into a DAW it beats the transfer outright.** The engines run at 480 clocks per quarter, which is set directly as the file's `ticks_per_beat` — the conversion is 1:1 with no rounding. Against recording the QY100 into Ableton it is exact, instant, needs no `MIDI Sync` / `MIDI control` / `Rec Count` dance, and cannot silently drop blocks. **The QY100 route still earns its keep for playing live, for its voices, and for pattern mode; for moving notes it does not.**
 
-`--cuantizar 16` snaps to sixteenths. That is the right grid for this material because every deliberate placement — euclidean hits, the bass on odd sixteenths, off-beat stabs — already lands on exact sixteenths; only `humanizar()`'s few-millisecond jitter is removed. **Quantising coarser destroys the music**: it would drag the bass from sixteenth 3 onto the downbeat. `ep-escribir.py` takes the same argument so the device and the DAW hold the identical version.
+`--cuantizar 16` snaps to sixteenths. That is the right grid for this material because every deliberate placement — euclidean hits, the bass on odd sixteenths, off-beat stabs — already lands on exact sixteenths; only `humanizar()`'s few-millisecond jitter is removed. **Quantising coarser destroys the music**: it would drag the bass from sixteenth 3 onto the downbeat. The write script takes the same argument so the device and the DAW hold the identical version.
 
 ### Two traps in note numbering
 

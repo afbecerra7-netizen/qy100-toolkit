@@ -30,12 +30,14 @@ en el dispositivo y el decodificador del Data Filer oficial de Yamaha.
 
 | Archivo | Para qué |
 | --- | --- |
-| [`syx.py`](syx.py) | La herramienta principal: volcar, inspeccionar, restaurar, generar, buscar voces. |
+| [`syx.py`](syx.py) | La herramienta principal: volcar, inspeccionar, restaurar, generar pistas y estilos enteros, buscar voces y frases. |
 | [`tocar.py`](tocar.py) | Toca el generador de tonos en tiempo real. **Aquí el maestro del reloj somos nosotros**, al revés que en `qy100-arp`. No escribe nada en el equipo. |
 | [`exportar_midi.py`](exportar_midi.py) | Escribe un `.mid` estándar. Para mover notas a un DAW **le gana a la transferencia**: exacto, instantáneo, y no pierde bloques en silencio. |
 | [`extraer_rom.py`](extraer_rom.py) | Decodifica la ROM del firmware; de aquí salió `voces.json`. |
 | [`extraer_frases.py`](extraer_frases.py) | Extrae las 4.285 frases preset del Data List. Se valida solo. |
 | [`test_protocol.py`](test_protocol.py) | 117 comprobaciones, sin hardware. |
+| [`pantalla.py`](pantalla.py) | Escribe texto y mapas de bits de 16x16 en la pantalla, por XG Display Data. |
+| [`barrer_categorias.py`](barrer_categorias.py) | Barre valores de una referencia a frase preset **escribiendo y oyendo**, sin volcar. Guarda el método aunque su lectura acabara siendo el panel. |
 | `probe.py` | Sondas sueltas de ingeniería inversa. |
 
 Datos de referencia, todos generados y verificados, no transcritos a mano:
@@ -148,6 +150,44 @@ ordena las pistas antes de los cinco bloques de cabecera y pide confirmación.
 Las secciones son `0=Intro`, `1=Main A`, `2=Main B`, `3=Fill AB`,
 `4=Fill BA`, `5=Ending`. Las pistas son `0–7`: D1, D2, PC, BA y C1–C4.
 
+### Generar un estilo entero
+
+```bash
+.venv/bin/python syx.py estilo --patron 60 --in "M4" --out "M4"
+```
+
+Seis secciones por seis pistas **en una sola transferencia**. La diferencia con
+`generar` no es de tamaño: aquel lee el patrón, sustituye una pista y lo reescribe
+entero, así que montar un estilo serían 36 transferencias completas — y cada una
+es una ocasión de que un corte a medias corrompa la contabilidad de memoria del
+equipo. Aquí se lee una vez, se arma todo en memoria y se escribe una vez.
+
+Sin `--escribir` solo previsualiza. `--pistas 4,5` escribe solo esas, que es lo
+que permite **el patrón mixto**: frases de fábrica referenciadas en las pistas
+rítmicas y material generativo en las de acorde.
+
+Las secciones no son intercambiables y la receta lo respeta: `Fill AB` y `Fill BA`
+son transiciones **direccionales** y el footswitch cicla entre ellas en vivo, así
+que la forma la dictó Yamaha y lo único que se elige es la densidad.
+
+### Buscar frases preset
+
+```bash
+.venv/bin/python syx.py frases Bossa
+.venv/bin/python syx.py frases --categoria PC --beat 16
+```
+
+Devuelve **categoría, beat y número**, que son los tres campos con los que se
+direcciona una frase — y justo lo que hay que escribir en la cabecera del patrón
+para referenciarla. Avisa si el juego de las seis secciones está completo.
+
+**Una frase de fábrica es una referencia y no cuesta memoria de usuario**: son dos
+bytes del registro de la cabecera y nada más. Un estilo puede apoyar toda su base
+rítmica en las 4.285 de Yamaha y pagar solo por el material propio.
+
+Hoy se pueden escribir 7 de las 15 categorías (`Da` `Fa` `PC` `Ba` `Gb` `KC`
+`BR`); el resto solo desde el panel. Ver `CLAUDE.md`.
+
 ### Buscar voces
 
 ```bash
@@ -174,7 +214,7 @@ porque un Program Change reescribe la voz del mezclador de la canción cargada.
 ### Exportar a MIDI
 
 ```bash
-.venv/bin/python exportar_midi.py ep-quiebre --cuantizar 16
+.venv/bin/python exportar_midi.py mi-tema --cuantizar 16
 ```
 
 Los motores trabajan a 480 relojes por negra, que es el `ticks_per_beat` del

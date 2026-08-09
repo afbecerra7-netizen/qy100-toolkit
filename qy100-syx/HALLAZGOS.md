@@ -319,7 +319,7 @@ cada campo; el resumen:
 | Nombre | bytes 6–13 | medido |
 | Signatura completa | **byte 14** | 40 archivos de doffu, 0 fallos |
 | Compases por sección | bytes 15–20 | diff contra el archivo de 32 compases |
-| Registro de pistas | 21–68 banderas, 69–116 `tr` | medido — **sin esto la pista se ve vacía** |
+| Registro de pistas | 21–68 banderas, 69–116 `tr` | medido — **sin esto la pista se ve vacía**. Las dos tablas están **sobrecargadas**: ver abajo |
 | Acorde actual por sección | 117–122 raíz, 123–128 tipo | medido, 27 tipos |
 | Mezclador | 154 programa … 210 variation | medido |
 
@@ -329,6 +329,47 @@ La signatura cabe entera en el byte 14:
 
 El **byte 19 del prefijo** está medido para las ocho pistas: `PC` y `BA` valen
 3, las otras seis valen 7. La tanda llevaba `BA` de control.
+
+## El registro tiene tres estados, y las dos tablas están sobrecargadas
+
+Medido el 8 de agosto de 2026 sobre un equipo recién borrado — la línea base
+ideal, porque un patrón vacío no devuelve absolutamente nada y cualquier cosa que
+aparezca es lo que se acaba de hacer.
+
+**Una frase preset asignada a una pista no deja ni un bloque de pista.** Solo
+aparecen los 5 de cabecera: el patrón guarda una referencia y las notas se quedan
+en la ROM. **No cuesta memoria de usuario.**
+
+```
+bandera  (21–68)    = <categoría:4 bits> <estado/beat:4 bits>
+tabla tr (69–116)   = número de frase − 1
+
+nibble bajo, medido barriendo los 16 valores:
+   8        la pista tiene contenido propio      (la tabla tr guarda el `tr`)
+   9        frase preset, 16 beat                (la tabla tr guarda el número)
+   A        frase preset, 8 beat
+   B        frase preset, 3/4 beat
+   E        vacía
+   0–7, C, D, F   no producen frase
+```
+
+Verificado escribiendo `09`/`00` por SysEx y leyendo en el panel
+`Da 001 80MRk-1I`, que es exactamente lo que predice `frases.json`, extraído del
+PDF. Dos fuentes que no se hablan dando lo mismo.
+
+**Consecuencia para quien escriba el registro**: `set_registry` debe preservar
+toda ranura cuyo nibble bajo no reconozca. Antes ponía `F8`/`FE` en las 48 sin
+mirar, y escribir una sola pista generativa borraba en silencio todas las frases
+preset asignadas desde el panel — sin error, sin señal, solo desaparecían.
+
+**Tres lecturas equivocadas por el camino, las tres por el mismo motivo.** Se leyó
+`09` frente a `B9` como dependencia del rol de la pista (por analogía con el byte
+19 del prefijo); era la categoría. Se leyó el nibble bajo `9` como "es una frase
+preset"; era el **beat**, y salía siempre `9` porque en las pruebas anteriores el
+beat estaba fijo. Y se dio por refutada una lista ordenada de categorías usando
+"vacío" para dos cosas distintas —fila en blanco y fila con categoría pero sin
+nombre—. **Un campo que no varía en el experimento parece una constante**, y
+llamarlo constante es afirmar algo que no se ha probado.
 
 ## Lo que sigue sin resolver
 
@@ -343,6 +384,11 @@ El **byte 19 del prefijo** está medido para las ocho pistas: `PC` y `BA` valen
 - El array del **byte 218** del mezclador (64 en todas las pistas)
 - El **bank LSB** de las 397 voces XG por encima del programa 127
 - Los estados `F1`, `F5`–`FF` (`F3` y `F4` se resolvieron en canciones)
+- **El nibble alto de la bandera del registro.** Barriendo los 16 valores con
+  beat y número fijos solo 7 dieron frase (`0 Da`, `2 Fa`, `4 PC`, `6 Ba`,
+  `9 Gb`, `B KC`, `E BR`), y categorías hay 15: la categoría no cabe entera ahí.
+  Mientras no se cierre, por SysEx solo se pueden referenciar esas siete — el 63%
+  del material rítmico y el 47% del melódico. El panel sí llega a las quince
 
 ---
 
