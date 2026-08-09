@@ -455,100 +455,154 @@ class PasilloDenso(Pasillo):
 
 # --- Torbellino ----------------------------------------------------------
 #
-# Cundiboyacense, y **la celda mas consistente de todas las medidas**. En
-# `suite-colombiana-torbellino-micontrabajo.mid` el bombo toca las corcheas 1 y 5
-# en **96 de 99 compases: el 97%**. Para comparar: el bambuco daba 83%, los
-# pasillos 60% y 58%. Felipe lo dijo antes de medirlo — "el torbellino es super
-# unico y tiene una misma forma siempre".
+# Cundiboyacense. **"Tan tan tan taaaaan"**, y la clave es que eso se lee a
+# caballo del compas: las tres cortas son el final de un compas y la larga es el
+# tiempo fuerte del siguiente. Una anacrusa de tres golpes que aterriza.
 #
-#     corchea      1    2    3    4    5    6
-#     bombo        X    ·    ·    ·    X    ·      97% de los compases
-#     contrabajo   X    ·    ·    ·    X    ·      52%
-#     caja         X    ·    ·    X    X    X      58%
+#     corchea      1      2    3     4     5     6
+#     bombo      TAAAAN   ·    ·     ·   tan     ·        96% de los compases
+#     caja       TAAN     ·    ·    tan  tan   tan        58%
+#                 ^ aterriza aqui   ^^^^^^^^^^^^^^ empuja hacia el siguiente
 #
-# El bombo cae en el **primer y el tercer tiempo**, dejando el segundo vacio,
-# mientras la caja llena la segunda mitad del compas. Ese hueco en el tiempo 2 es
-# lo que produce el vaiven, y es lo que lo distingue del pasillo, que tambien es
-# 3/4 pero apoya en el 1.
+# Medido en `suite-colombiana-torbellino-micontrabajo.mid`: el bombo hace
+# `c0 durando 4 corcheas, c4 durando 2` en el 96% de sus 99 compases, y la caja
+# `c0:2 c3:1 c4:1 c5:1` en el 58%.
 #
-# Los instrumentos melodicos del arreglo se agrupan en 1, 3 y 5 —los tres
-# negros—, asi que los acordes van ahi.
+# **La primera version tenia las posiciones bien y el gesto perdido**: cuatro
+# golpes iguales, cortos, sin direccion. Se analizaron los ataques y no las
+# duraciones, y en este genero **la figura esta en las duraciones**. Felipe lo
+# canto en cuatro silabas y ahi se vio.
 #
-# Instrumentacion tradicional: tiple, guitarra, requinto, chucho, capador y
-# carraca. El arreglo medido es orquestal y sustituye timbres, pero el reparto
-# ritmico es el mismo.
+# Aviso de procedencia: el arreglo medido es **orquestal**, no de conjunto
+# tradicional (tiple, requinto, guitarra y chucho). El reparto ritmico se sostuvo
+# al contrastarlo de oido, pero el requinto —que lleva la figura rapida y
+# continua del torbellino— no tiene equivalente en una orquesta y **no esta
+# aqui**. Si al oirlo falta movimiento, es eso.
 
 TORB_BOMBO, TORB_CAJA, TORB_CHUCHO = 36, 38, 82
 
+#: La celda dura **dos compases** y la armonia cambia dentro de ella:
+#:
+#:     compas 1    tan(I)   tan(I)   tan(IV)      tres negras
+#:     compas 2    taaaaan(V) ---------------     una nota que llena el compas
+#:
+#: Termina en la dominante y por eso el ciclo pide volver a empezar. Lo canto
+#: Felipe: "tan(tonica) tan(tonica) tan(subdominante) tan(dominante)".
+#:
+#: Cuadra con lo medido en el arreglo, donde los instrumentos melodicos alternan
+#: `c0:2 c2:2 c4:2` (tres negras) con `c0:6` (una larga) — entre el 26% y el 37%
+#: de sus compases cada figura. **Estaba en los datos y no se supo leer**: se
+#: miraron las dos figuras como patrones alternativos en vez de como las dos
+#: mitades de una sola celda de dos compases.
+#:
+#: La version anterior movia la armonia cada dos compases: **seis veces mas
+#: lenta de lo que debe**.
+TORB_CELDA = [
+    (0, 0, 0), (0, 1, 0), (0, 2, 1),      # I, I, IV
+    (1, 0, 2),                            # V, sostenido todo el compas
+]
+
+
+def _torb_grado(g, c, t):
+    """Que acorde toca en el compas `c`, tiempo `t`. None si no hay ataque."""
+    for cc, tt, grado in TORB_CELDA:
+        if c % 2 == cc and t == tt:
+            return g.progresion[grado]
+    return None
+
 
 def _torbellino_bombo(g, compases, intensidad):
-    """Corcheas 1 y 5. El tiempo 2 vacio: ahi esta el vaiven."""
-    return [F.Note(TORB_BOMBO, 106 if i == 0 else 94, CORCHEA - 20,
-                   _bar(c, g.beats) + i * CORCHEA)
-            for c in range(compases) for i in (0, 4)]
+    """Tres golpes en el primer compas, uno largo en el segundo.
+
+    Que el segundo lleve **un solo golpe que dura tres tiempos** es lo que hace
+    de la figura una llegada. Rellenarlo la deja sin direccion.
+    """
+    notas = []
+    for c in range(compases):
+        base = _bar(c, g.beats)
+        for tiempo in range(g.beats):
+            if _torb_grado(g, c, tiempo) is None:
+                continue
+            largo = NEGRA * 3 - 40 if c % 2 else NEGRA - 30
+            notas.append(F.Note(TORB_BOMBO, 108 if tiempo == 0 else 92,
+                                largo, base + tiempo * NEGRA))
+    return notas
 
 
 def _torbellino_caja(g, compases, intensidad):
-    """1, 4, 5 y 6: llena la segunda mitad del compas."""
+    """Las tres cortas al final del segundo compas, empujando a la tonica.
+
+    En crescendo: lo que las hace anacrusa y no relleno es que crezcan hacia el
+    acorde que viene.
+    """
     if intensidad < 0.4:
         return []
-    posiciones = (0, 3, 4, 5) if intensidad > 0.5 else (0, 4)
-    return [F.Note(TORB_CAJA, 88 if i == 0 else 70, CORCHEA - 30,
-                   _bar(c, g.beats) + i * CORCHEA)
-            for c in range(compases) for i in posiciones]
+    notas = []
+    for c in range(compases):
+        if c % 2 == 0:
+            continue
+        base = _bar(c, g.beats)
+        for k, i in enumerate((3, 4, 5)):
+            notas.append(F.Note(TORB_CAJA, 70 + k * 10, CORCHEA - 30,
+                                base + i * CORCHEA))
+    return notas
 
 
 def _torbellino_chucho(g, compases, intensidad):
-    """El chucho, continuo y sin acentos."""
     if intensidad < 0.5:
         return []
-    return [F.Note(TORB_CHUCHO, 60, CORCHEA - 30,
+    return [F.Note(TORB_CHUCHO, 58, CORCHEA - 30,
                    _bar(c, g.beats) + i * CORCHEA)
             for c in range(compases) for i in range(6)]
 
 
 def _torbellino_bajo(g, compases, intensidad):
-    """Con el bombo, en 1 y 5. Fundamental y quinta."""
+    """La fundamental de cada acorde de la celda."""
     notas = []
     for c in range(compases):
-        _n, raiz, _v = g.acorde_de(c)
         base = _bar(c, g.beats)
-        for i, alt, vel in ((0, raiz, 104), (4, raiz + 7, 88)):
-            notas.append(F.Note(alt, vel, CORCHEA - 20, base + i * CORCHEA))
+        for tiempo in range(g.beats):
+            ac = _torb_grado(g, c, tiempo)
+            if ac is None:
+                continue
+            largo = NEGRA * 3 - 40 if c % 2 else NEGRA - 30
+            notas.append(F.Note(ac[1], 104 if tiempo == 0 else 88,
+                                largo, base + tiempo * NEGRA))
     return notas
 
 
 def _torbellino_tiple(g, compases, intensidad):
-    """Acordes en los tres negros, como los instrumentos melodicos medidos."""
-    posiciones = (0, 2, 4) if intensidad > 0.45 else (0, 4)
+    """El acorde en cada ataque. Aqui vive la armonia rapida."""
     notas = []
     for c in range(compases):
-        _n, _r, voces = g.acorde_de(c)
         base = _bar(c, g.beats)
-        for i in posiciones:
-            for alt in voces:
-                notas.append(F.Note(alt, 86 if i == 0 else 74, CORCHEA - 30,
-                                    base + i * CORCHEA))
+        for tiempo in range(g.beats):
+            ac = _torb_grado(g, c, tiempo)
+            if ac is None:
+                continue
+            largo = NEGRA * 3 - 60 if c % 2 else NEGRA - 50
+            for alt in ac[2]:
+                notas.append(F.Note(alt, 90 if tiempo == 0 else 76,
+                                    largo, base + tiempo * NEGRA))
     return notas
 
 
 class Torbellino(Genero):
     nombre = "TORBELLI"
     bpm = 120.0
-    compases_por_acorde = 2
-    # El torbellino es de armonia simple, casi siempre entre la tonica y la
-    # dominante. Se deja en dos acordes a proposito: meterle mas movimiento
-    # armonico lo saca del genero.
+    # Los tres grados en orden I, IV, V. La celda los recorre; `acorde_de` no se
+    # usa aqui porque la armonia va por tiempo, no por compas.
     progresion = (
-        ("Am", 45, [57, 60, 64]),
-        ("E7", 52, [56, 59, 62]),
+        ("Am", 45, [57, 60, 64]),      # I  tonica
+        ("Dm", 50, [57, 62, 65]),      # IV subdominante
+        ("E7", 52, [56, 59, 62]),      # V  dominante
     )
     pistas = (
-        (0, "D1", "bombo en 1 y 5",       "Rock Kit", True,  _torbellino_bombo),
-        (1, "D2", "caja en 1, 4, 5 y 6",  "Rock Kit", True,  _torbellino_caja),
-        (2, "PC", "chucho continuo",      "Rock Kit", True,  _torbellino_chucho),
-        (3, "BA", "bajo con el bombo",    "Aco.Bass", False, _torbellino_bajo),
-        (4, "C1", "acordes en los negros", "NylonGtr", False, _torbellino_tiple),
+        (0, "D1", "bombo con la celda",  "Rock Kit", True,  _torbellino_bombo),
+        (1, "D2", "caja: tan tan tan",   "Rock Kit", True,  _torbellino_caja),
+        (2, "PC", "chucho continuo",     "Rock Kit", True,  _torbellino_chucho),
+        (3, "BA", "bajo con la celda",   "Aco.Bass", False, _torbellino_bajo),
+        (4, "C1", "acordes I I IV | V",  "NylonGtr", False, _torbellino_tiple),
     )
 
 

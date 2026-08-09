@@ -151,6 +151,14 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 
   Costo dos diagnosticos falsos el 2026-08-08 —se reviso `MIDI CONTROL`, la pantalla del panel y el cableado— porque el sintoma es indistinguible de los fallos reales que si estan documentados aqui. **Es la comprobacion mas barata y va primero.**
 
+- **"No contesta" tiene al menos tres causas distintas, y `setup` las separa.**
+  Vistas las tres el mismo dia: interfaz a medias (las escrituras tambien se
+  pierden), **patron vacio** —que no devuelve nada y es indistinguible de un
+  fallo— y **aparato reproduciendo**, que ignora peticiones y escrituras en
+  silencio. Pedir `dump setup` es un solo bloque: **si contesta, el equipo y el
+  cable estan bien** y hay que buscar en el otro lado. Es la comprobacion mas
+  barata despues de ciclar la interfaz.
+
 - **The QY100 transmits MIDI Clock even while stopped.** So incoming clock is *not* evidence that the sequencer is running, and no tool should infer "playing" from it. A recording script that auto-started after seeing clock without a Start fired 32 notes at a device sitting in the utility menu and recorded nothing. Wait for an actual Start.
 - **Capture must be callback-driven, not polled.** The QY100 streams MIDI clock continuously (48 ticks/s) and that flood makes a polling loop drop whole SysEx messages. The symptom is deceptive: everything that arrives is well-formed with a valid checksum, only some blocks are missing. The tell was that single-block items (setup, guitar effect) came back identical every time while anything multi-block varied.
 - Identical payloads legitimately appear under different addresses — empty patterns share the same `7F` header block. That is not corruption.
