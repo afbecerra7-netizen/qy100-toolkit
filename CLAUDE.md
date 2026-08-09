@@ -246,6 +246,36 @@ mas de cada variante.
 metodo 3 y esta sin verificar contra ninguna partitura**: tratarlo como hipotesis
 hasta comprobarlo.
 
+### Medir cuan invariante es un genero
+
+De sacar celdas de cuatro partituras salio un metodo que sirve para cualquiera:
+**contar que porcentaje de compases repiten exactamente el mismo patron de
+ataques.** Separa la celda del genero de las decisiones del arreglista.
+
+```
+torbellino   97%   (bombo en 1 y 5, 96 de 99 compases)
+bambuco      83%
+pasillo      60%
+vino tinto   58%   (otra celda del mismo genero)
+```
+
+Por debajo de la mitad no hay celda que extraer, solo un arreglo. Y el numero
+dice algo musical, no tecnico: **cuanto margen tiene el interprete**. En el
+torbellino, ninguno; en el pasillo, cuatro de cada diez compases son del
+arreglista. Explica por que el pasillo costo tres intentos y el torbellino salio
+a la primera.
+
+Celdas medidas, todas en 3/4 sobre seis corcheas:
+
+```
+                1      2      3      4       5       6
+torbellino    BOMBO    ·      ·    caja   BOMBO    caja
+bambuco salon   ·   ACORDE  BAJO  ACORDE   BAJO      ·
+bambuco fiest BAJO  ACORDE  BAJO  ACORDE   BAJO   ACORDE
+pasillo       BAJO     ·      ·   ACORDE  ACORDE     ·
+pasillo denso  linea continua en corcheas, velocity plana
+```
+
 ### Los estilos de fabrica estan en OTRO CHIP, y por eso no cuestan memoria
 
 Del diagrama de bloques del service manual (p. 9), leyendo las capacidades en

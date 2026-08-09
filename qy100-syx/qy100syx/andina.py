@@ -453,5 +453,105 @@ class PasilloDenso(Pasillo):
     )
 
 
+# --- Torbellino ----------------------------------------------------------
+#
+# Cundiboyacense, y **la celda mas consistente de todas las medidas**. En
+# `suite-colombiana-torbellino-micontrabajo.mid` el bombo toca las corcheas 1 y 5
+# en **96 de 99 compases: el 97%**. Para comparar: el bambuco daba 83%, los
+# pasillos 60% y 58%. Felipe lo dijo antes de medirlo — "el torbellino es super
+# unico y tiene una misma forma siempre".
+#
+#     corchea      1    2    3    4    5    6
+#     bombo        X    ·    ·    ·    X    ·      97% de los compases
+#     contrabajo   X    ·    ·    ·    X    ·      52%
+#     caja         X    ·    ·    X    X    X      58%
+#
+# El bombo cae en el **primer y el tercer tiempo**, dejando el segundo vacio,
+# mientras la caja llena la segunda mitad del compas. Ese hueco en el tiempo 2 es
+# lo que produce el vaiven, y es lo que lo distingue del pasillo, que tambien es
+# 3/4 pero apoya en el 1.
+#
+# Los instrumentos melodicos del arreglo se agrupan en 1, 3 y 5 —los tres
+# negros—, asi que los acordes van ahi.
+#
+# Instrumentacion tradicional: tiple, guitarra, requinto, chucho, capador y
+# carraca. El arreglo medido es orquestal y sustituye timbres, pero el reparto
+# ritmico es el mismo.
+
+TORB_BOMBO, TORB_CAJA, TORB_CHUCHO = 36, 38, 82
+
+
+def _torbellino_bombo(g, compases, intensidad):
+    """Corcheas 1 y 5. El tiempo 2 vacio: ahi esta el vaiven."""
+    return [F.Note(TORB_BOMBO, 106 if i == 0 else 94, CORCHEA - 20,
+                   _bar(c, g.beats) + i * CORCHEA)
+            for c in range(compases) for i in (0, 4)]
+
+
+def _torbellino_caja(g, compases, intensidad):
+    """1, 4, 5 y 6: llena la segunda mitad del compas."""
+    if intensidad < 0.4:
+        return []
+    posiciones = (0, 3, 4, 5) if intensidad > 0.5 else (0, 4)
+    return [F.Note(TORB_CAJA, 88 if i == 0 else 70, CORCHEA - 30,
+                   _bar(c, g.beats) + i * CORCHEA)
+            for c in range(compases) for i in posiciones]
+
+
+def _torbellino_chucho(g, compases, intensidad):
+    """El chucho, continuo y sin acentos."""
+    if intensidad < 0.5:
+        return []
+    return [F.Note(TORB_CHUCHO, 60, CORCHEA - 30,
+                   _bar(c, g.beats) + i * CORCHEA)
+            for c in range(compases) for i in range(6)]
+
+
+def _torbellino_bajo(g, compases, intensidad):
+    """Con el bombo, en 1 y 5. Fundamental y quinta."""
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i, alt, vel in ((0, raiz, 104), (4, raiz + 7, 88)):
+            notas.append(F.Note(alt, vel, CORCHEA - 20, base + i * CORCHEA))
+    return notas
+
+
+def _torbellino_tiple(g, compases, intensidad):
+    """Acordes en los tres negros, como los instrumentos melodicos medidos."""
+    posiciones = (0, 2, 4) if intensidad > 0.45 else (0, 4)
+    notas = []
+    for c in range(compases):
+        _n, _r, voces = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i in posiciones:
+            for alt in voces:
+                notas.append(F.Note(alt, 86 if i == 0 else 74, CORCHEA - 30,
+                                    base + i * CORCHEA))
+    return notas
+
+
+class Torbellino(Genero):
+    nombre = "TORBELLI"
+    bpm = 120.0
+    compases_por_acorde = 2
+    # El torbellino es de armonia simple, casi siempre entre la tonica y la
+    # dominante. Se deja en dos acordes a proposito: meterle mas movimiento
+    # armonico lo saca del genero.
+    progresion = (
+        ("Am", 45, [57, 60, 64]),
+        ("E7", 52, [56, 59, 62]),
+    )
+    pistas = (
+        (0, "D1", "bombo en 1 y 5",       "Rock Kit", True,  _torbellino_bombo),
+        (1, "D2", "caja en 1, 4, 5 y 6",  "Rock Kit", True,  _torbellino_caja),
+        (2, "PC", "chucho continuo",      "Rock Kit", True,  _torbellino_chucho),
+        (3, "BA", "bajo con el bombo",    "Aco.Bass", False, _torbellino_bajo),
+        (4, "C1", "acordes en los negros", "NylonGtr", False, _torbellino_tiple),
+    )
+
+
 GENEROS = {"bambuco": Bambuco, "fiestero": BambucoFiestero,
-           "pasillo": Pasillo, "pasillodenso": PasilloDenso}
+           "pasillo": Pasillo, "pasillodenso": PasilloDenso,
+           "torbellino": Torbellino}
