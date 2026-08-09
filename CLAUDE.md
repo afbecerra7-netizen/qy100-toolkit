@@ -159,53 +159,69 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **An empty pattern or song returns nothing at all.** That makes a cleared device the ideal reverse-engineering baseline: there is no background to subtract, so anything that appears after recording is the recorded data.
 - **`CLEAR ALL` also resets the utility settings** — it silently reverted `MIDI CONTROL`, which stopped clock transmission. Re-check page 127/128 settings after any clear.
 
-### El bambuco: la celda real, y por que la teoria no la daba
+### El bambuco, medido sobre partituras — y tres versiones equivocadas antes
 
-**"Papa con yuca"** es la onomatopeya del patron base de la tambora andina, y es
-la identidad ritmica del bambuco: sin el, todo lo demas puede estar bien y no
-sonar al genero. Felipe lo detecto oyendo la primera version generada.
+**"Papa con yuca"** es la onomatopeya del patron base de la tambora andina y es
+la identidad ritmica del genero: sin el, lo demas puede estar bien y no sonar a
+bambuco. Felipe lo detecto de oido en la primera version generada.
 
-La celda se extrajo de una **transcripcion real** —los grooves del Colombia
-Bundle de Tribe, doblando los ataques por compas de seis corcheas, instrumento a
-instrumento— y el reparto armonico lo dio el, cantandolo:
+La celda sale de `te-ofrezco-mi-corazon-bambuco.mid` (coro, guitarra y tambora,
+6/8), doblando los ataques por compas:
 
 ```
-corchea    1       2     3       4      5       6
-silaba     PA      ·     PA      CON    YU      CA
-           acorde        acorde  bajo   acorde  bajo
-
-Bombo     78       .    89      89    113       .
-Tambora   68       .    73      76     98       .
-Llamador  93       .    77      84     87      86
+corchea      1      2       3      4       5      6
+silaba       PA     PA      CON    YU      CA      ·
+tambora     alto   alto    bajo   alto    bajo     ·
+guitarra      ·   ACORDE   BAJO  ACORDE   BAJO     ·
 ```
 
-Tres cosas que **ninguna lectura del manual ni del dataset habria dado**:
+En 31 compases la guitarra da **31 ataques de acorde en la 2 y 31 en la 4**, y
+**31 graves sueltos en la 3 y 31 en la 5**. Uno por compas, sin excepcion. Y el
+bajo hace **quinta en la 3, fundamental en la 5** — en ese orden, siempre. Poner
+la fundamental primero, que es lo natural, invierte el gesto: la llegada a la
+fundamental en la 5 es lo que cierra el compas.
 
-- **El bombo va en 1, 3 y 5**, no en 1 y 4. Poner 1 y 4 es lo que sale de razonar
-  la sesquialtera sobre el papel (los dos grupos de `3+3` empiezan ahi). Suena
-  coherente y es falso.
-- **El acento fuerte esta en la corchea 5** (velocity 113 contra 78 del primer
-  tiempo). Un generador pone el acento en el 1 por defecto, y ahi se pierde el
-  genero entero.
-- **Los acordes caen en 1, 3 y 5 y el bajo en 4 y 6.** El acompanamiento marca el
-  pulso ternario y **el bajo sincopa contra el, sin tocar nunca el tiempo
-  fuerte**. Esa es la sesquialtera repartida entre instrumentos, no deducida.
+**La corchea 6 esta vacia en todo el acompanamiento.**
 
-**La corchea 2 esta vacia en los once instrumentos.** El silencio es estructural.
+**Tres versiones equivocadas antes de esta, cada una por una fuente distinta:**
 
-**Como se llego a la version equivocada, que es lo reutilizable.** Se busco el
-patron por internet y aparecio una descripcion con precision de corchea
-—"chasquido, rasgueo, bajo, rasgueo, bajo, rasgueo"— que se implemento tal cual.
-Era de otro patron. **Lo que la hizo convincente fue justo lo que la hacia
-peligrosa**: venia con detalle suficiente para parecer medida.
+1. **Bombo en 1 y 4**, deducido de la sesquialtera sobre el papel: los dos grupos
+   de `3+3` empiezan ahi. Coherente y falso.
+2. **Bombo en 1, 3, 5**, sacado de los grooves de Tribe. Pero aquello es un
+   bambuco tocado con **tambores caribeños** —una adaptacion—, no el andino.
+   **Una transcripcion real de otro conjunto no es una transcripcion del genero.**
+3. **Acordes en 1, 3, 5 y bajo en 4 y 6**, de una descripcion en prosa encontrada
+   por internet con precision de corchea. Era de otro patron. Lo que la hizo
+   convincente fue justo lo que la hacia peligrosa: venia con detalle suficiente
+   para parecer medida.
 
-Lo corrigio en una frase la persona que lo toca. Para como suena un genero, la
-fuente primaria es quien lo toca y una transcripcion MIDI de quien lo grabo — no
-la prosa, ni el manual, ni la teoria metrica. `qy100syx/andina.py`.
+Para el ritmo de un genero, **una partitura del genero** gana a la teoria
+metrica, a la prosa y a una transcripcion de instrumentos que no son los suyos.
 
-**Y al bajar la intensidad se quitan capas, nunca se mueven golpes.** La celda es
-la identidad; desplazarla para "hacer variaciones" la destruye. El Intro es el
-mismo patron con menos instrumentos.
+**Y las partituras no coinciden entre si, lo cual es el dato.** Cuatro bambucos:
+
+```
+te-ofrezco     6/8   acordes 2,4       bajos 3,5
+y-un-cafe      6/8   acordes 1,2,4,6   bajos 3,5
+brisas         3/4   acordes 1,3,5
+```
+
+`te-ofrezco` pone los acordes en la contra y `brisas` en los tres negros. **No es
+que uno este mal: uno toca el lado de 6/8 de la sesquialtera y el otro el de
+3/4.** Por eso los transcriptores eligieron compases distintos para la misma
+musica. El invariante entre los dos de 6/8 es **el bajo en 3 y 5**.
+
+**La melodia no se pega a la celda.** La flauta de `y-un-cafe` reparte 367 notas
+casi por igual entre las seis corcheas (64/54/54/76/64/55), con una leve
+inclinacion por la 4. Flota por encima del acompanamiento. Es lo contrario de lo
+que hace un motor generativo, que alinea todo con la rejilla — y explica por que
+una melodia generada suena a maquina aunque las notas sean correctas. Alturas:
+la coleccion de La menor natural, con `E` y `A` como las mas frecuentes, ambito
+de dos octavas.
+
+`qy100syx/andina.py`. **El pasillo del mismo modulo sigue construido por el
+metodo 3 y esta sin verificar contra ninguna partitura**: tratarlo como hipotesis
+hasta comprobarlo.
 
 ### Los estilos de fabrica estan en OTRO CHIP, y por eso no cuestan memoria
 
