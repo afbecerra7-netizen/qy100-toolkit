@@ -361,42 +361,46 @@ mezclar frases de fabrica referenciadas (gratis) con frases generativas propias
 entre canciones, patrones y frases, eso cambia cuanto cabe.
 
 **La referencia completa son DOS BYTES**, los dos en el registro de la cabecera
-del patron. Medido campo por campo, cambiando una sola variable cada vez:
+del patron, y **escribirla por SysEx funciona**: verificado el 2026-08-08
+escribiendo `09`/`00` y leyendo en el panel `Da 001 80MRk-1I`, que es
+exactamente lo que el catalogo extraido del PDF predice para esa combinacion.
+Dos fuentes que no se hablan —la ROM del aparato y la conversion del manual—
+dando lo mismo.
 
 ```
-bandera  (bytes 21-68)    = <categoria:4 bits> <beat:4 bits>
+bandera  (bytes 21-68)    = <categoria:4 bits> <estado/beat:4 bits>
 tabla tr (bytes 69-116)   = numero de frase - 1
 
-   nibble bajo = 8      la pista tiene contenido propio
-   nibble bajo = E      vacia
-   nibble bajo = 9 / A  frase de fabrica; un valor por beat (falta medir el 3o)
+nibble bajo, MEDIDO entero barriendo los 16 valores:
+   8        la pista tiene contenido propio
+   9        frase preset, 16 beat        (Da 001 -> 80MRk-1I)
+   A        frase preset, 8 beat         (Da 001 -> Mixt -1I)
+   B        frase preset, 3/4 beat       (Da 001 -> R&BWz-I)
+   E        vacia
+   0-7, C, D, F   no producen frase
 ```
 
-Categoria, beat y numero —los tres campos con los que el manual (p. 54)
-identifica una frase— caben en dos bytes. **Por eso no cuesta memoria: no hay
-nada mas que guardar.**
+**Por eso no cuesta memoria: no hay nada mas que guardar.** Y la segunda tabla
+esta **sobrecargada** —guarda el `tr` cuando la pista tiene contenido propio y el
+numero de frase cuando referencia una preset—, asi que `set_registry` **preserva
+toda ranura cuyo nibble bajo no sea `8` ni `E`**. Sin eso, escribir una sola
+pista generativa borraba en silencio las frases preset asignadas desde el panel.
 
-Lo notable de la segunda tabla es que **esta sobrecargada**. Documentada como "el
-valor `tr` de cada pista presente", guarda el `tr` cuando la pista tiene
-contenido propio y el numero de frase cuando referencia una preset. Hay que
-respetarlo al escribir el registro.
+**El nibble alto sigue sin cerrarse, y es lo que bloquea el patron mixto por
+software.** Barriendo los 16 valores con beat y numero fijos solo 7 dieron frase:
+`0 Da`, `2 Fa`, `4 PC`, `6 Ba`, `9 Gb`, `B KC`, `E BR`. Siete no pueden
+direccionar quince categorias, asi que **la categoria no cabe entera ahi**.
 
-**Dos lecturas equivocadas por el camino, y las dos por el mismo motivo.**
-Primero se leyo `09` frente a `B9` como dependencia del rol de la pista, por
-analogia con el byte 19 del prefijo; era la categoria. Despues se leyo el nibble
-bajo `9` como "es una frase de fabrica"; es el **beat**, y salia siempre `9`
-porque en todas las pruebas anteriores el beat estaba fijo. **Un campo que no
-varia en el experimento parece una constante**, y llamarlo constante es afirmar
-algo que no se ha probado. Solo aparecio al mover esa variable a proposito.
+Encajaban sospechosamente bien en una lista ordenada por funcion (Da Db Fa Fb PC
+_ Ba Bb Ga Gb GR KC KR PD BR SE), pero escribir los ocho restantes en pistas de
+bateria no produjo nada y la lista quedo refutada.
 
-Queda sin explicar el byte 26 del bloque 1: sigue al numero de frase pero no
-linealmente (`11`, `71`, `00` para 001, 002 y 010) y es independiente de la
-categoria. **No hace falta para la referencia**, ya que los tres campos estan
-localizados sin el; probablemente sea cache.
-
-Para escribir referencias por SysEx falta solo el diccionario: que indice de
-categoria corresponde a cada una de las 15, y que valor de nibble a cada beat.
-Es un barrido mecanico, no un problema.
+**Con una reserva sobre esa refutacion.** "Vacio" se uso para dos cosas
+distintas: una fila totalmente en blanco, y una fila que muestra categoria y
+numero **con la columna del nombre vacia** —que es lo que hacen los nibbles bajos
+C, D, F—. Si aquellos ocho indices eran del segundo tipo, no estaban invalidos y
+la conclusion es otra. Repetir preguntando por las dos columnas por separado
+antes de dar la lista por muerta.
 
 ### User phrases are slots, not a bank — and `Us—NNN` is our `tr` byte
 

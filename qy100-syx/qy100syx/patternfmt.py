@@ -484,17 +484,36 @@ def decode_registry(header_payloads):
 def set_registry(header_payloads, por_seccion):
     """Reescribe el registro. `por_seccion` es {seccion: [pistas]}.
 
+    **Solo pisa lo que es nuestro.** Una ranura cuyo nibble bajo no sea `8`
+    (contenido propio) ni `E` (vacia) esta en un estado que no escribimos
+    nosotros —hoy, una frase preset referenciada, cuyo nibble bajo lleva el beat—
+    y se deja intacta junto con su byte de la segunda tabla.
+
+    Sin esto, escribir una sola pista generativa borra en silencio todas las
+    frases de fabrica que hubiera asignadas desde el panel: la version anterior
+    ponia `F8`/`FE` y el `tr` en las 48 ranuras sin mirar lo que habia. La
+    escritura "funciona", no da error, y las frases desaparecen.
+
+    La regla es conservadora a proposito: **se preserva todo lo que no
+    reconocemos**, no solo los valores de referencia medidos. Del beat solo
+    tenemos dos de los tres nibbles, y no vamos a borrar datos por no haber
+    medido el tercero.
+
     Devuelve los 5 bloques de la cabecera.
     """
     d = bytearray(b"".join(unpack(p) for p in header_payloads))
     for sec in range(len(SECTIONS)):
         pistas = set(por_seccion.get(sec, []))
         for k in range(REGISTRY_SLOTS):
-            hay = k in pistas
-            d[REGISTRY_FLAGS_OFF + sec * REGISTRY_SLOTS + k] = (
-                FLAG_PRESENTE if hay else FLAG_VACIA)
-            d[REGISTRY_OFF + sec * REGISTRY_SLOTS + k] = (
-                sec * TRACKS_PER_SECTION + k) if hay else 0
+            i_flag = REGISTRY_FLAGS_OFF + sec * REGISTRY_SLOTS + k
+            i_tr = REGISTRY_OFF + sec * REGISTRY_SLOTS + k
+            if k in pistas:
+                d[i_flag] = FLAG_PRESENTE
+                d[i_tr] = sec * TRACKS_PER_SECTION + k
+            elif d[i_flag] in (FLAG_PRESENTE, FLAG_VACIA):
+                d[i_flag] = FLAG_VACIA
+                d[i_tr] = 0
+            # else: estado ajeno (frase preset referenciada) -> no se toca
     return [pack(bytes(d[i:i + UNPACKED_BYTES]))
             for i in range(0, len(d), UNPACKED_BYTES)]
 
