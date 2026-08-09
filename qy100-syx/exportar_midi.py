@@ -1,6 +1,6 @@
 """Escribe un tema del EP como archivo MIDI estandar, para arrastrar a Ableton.
 
-    .venv/bin/python exportar_midi.py ep-quiebre --cuantizar 16
+    .venv/bin/python exportar_midi.py mi-tema --cuantizar 16
 
 **Es la ruta corta hacia el DAW.** Pasar por el QY100 tiene sentido cuando se
 quiere su secuenciador o sus voces, o para tocarlo en vivo; pero si lo unico
@@ -76,7 +76,7 @@ def escribir(tema, pistas, bpm, destino):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("modulo", help="ep-quiebre, ep-conjuro, ep-levante, ep-bajon")
+    ap.add_argument("modulo", help="nombre del modulo del tema, sin .py")
     ap.add_argument("--cuantizar", type=int, default=0,
                     help="subdivision, p.ej. 16 para semicorcheas. 0 = sin tocar")
     ap.add_argument("--salida", default="midi")
