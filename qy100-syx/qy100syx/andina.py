@@ -692,6 +692,110 @@ class Guabina(Genero):
     )
 
 
+# --- Bambuco melancolico (caucano) ---------------------------------------
+#
+# La tercera variante: **lento y melancolico en el Cauca**, frente al fiestero
+# del Tolima y los Santanderes y al de salon. Aqui las fuentes dan **menos** de
+# lo habitual y conviene decirlo.
+#
+# Las dos partituras disponibles —el Bambuco No. 1 en Si menor de Adolfo Mejia y
+# `y-un-cafe-a-las-8`— tienen consistencia del **30% y 37%**, por debajo del
+# umbral: son una pieza de concierto y una cancion arreglada, no acompanamientos
+# repetidos. **No hay celda que extraer.**
+#
+# Lo que si esta medido:
+#
+#     tempo            68 bpm      contra 152 (salon) y 168 (santandereano)
+#     bajo             evita el 1  19 ataques en la corchea 1 contra 113 en la 2
+#     acompanamiento   casi continuo, las seis corcheas en el 37% de los compases
+#
+# **Un bajo que rehuye el tiempo fuerte es lo que produce la sensacion de
+# flotar**, y es la diferencia mas clara con las otras dos variantes, donde el
+# bajo cae en 3 y 5 (salon) o en 1, 3 y 5 (fiestero).
+#
+# El reparto concreto de las corcheas **es criterio, no medicion**. Con dos
+# fuentes por debajo del umbral no da para mas, y forzar una celda de un material
+# que no la tiene es exactamente el error que costo tres intentos en el bambuco
+# de salon. Si aparece una partitura de bambuco caucano con acompanamiento
+# repetido, esto se mide y se sustituye.
+
+
+def _melanc_bajo(g, compases, intensidad):
+    """Nunca en el tiempo fuerte: corcheas 2 y 5.
+
+    Medido — 19 ataques en la 1 contra 113 en la 2. El hueco en el 1 es lo que
+    lo hace flotar.
+    """
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i, alt, vel in ((1, raiz, 88), (4, raiz + 7, 74)):
+            notas.append(F.Note(alt, vel, NEGRA - 40, base + i * CORCHEA))
+    return notas
+
+
+def _melanc_tiple(g, compases, intensidad):
+    """Acompanamiento casi continuo y flojo: acompana sin marcar.
+
+    A 68 bpm una corchea dura medio segundo, asi que "continuo" aqui no es
+    denso: es un colchon. Las velocities son bajas y planas a proposito — si
+    acentuara, marcaria un pulso y el genero es justamente el que no lo marca.
+    """
+    posiciones = (0, 2, 3, 5) if intensidad > 0.45 else (0, 3)
+    notas = []
+    for c in range(compases):
+        _n, _r, voces = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i in posiciones:
+            for alt in voces:
+                notas.append(F.Note(alt, 66, CORCHEA * 2 - 40, base + i * CORCHEA))
+    return notas
+
+
+def _melanc_tambora(g, compases, intensidad):
+    """El **papa con yuca completo**, solo que flojo. Es el mismo genero.
+
+    La primera version quitaba dos de los cinco golpes "para aligerar" y con eso
+    dejaba de sonar a bambuco — Felipe lo detecto de oido en cuanto sono. Es la
+    misma regla que ya estaba escrita tres modulos mas arriba y que se incumplio
+    igual: **al bajar la intensidad se quitan capas, nunca se mueven ni se borran
+    golpes de la celda**. Aligerar es bajar velocities.
+
+    En las secciones desnudas desaparece entera, que si es quitar una capa: un
+    bambuco caucano se sostiene solo con cuerdas.
+    """
+    if intensidad < 0.5:
+        return []
+    # Las mismas cinco posiciones que `_bambuco_tambora`, a ~70% de velocity.
+    return [F.Note(nota, int(vel * 0.7), CORCHEA - 20,
+                   _bar(c, g.beats) + i * CORCHEA)
+            for c in range(compases)
+            for i, nota, vel in ((0, TAMB_ALTO, 104), (1, TAMB_ALTO, 84),
+                                 (2, TAMB_BAJO, 92), (3, TAMB_ALTO, 88),
+                                 (4, TAMB_BAJO, 96))]
+
+
+class BambucoMelancolico(Bambuco):
+    nombre = "BAMBMELA"
+    bpm = 68.0
+    compases_por_acorde = 2
+    # Mas movimiento armonico que las otras variantes, y con el sexto grado
+    # menor: es de donde sale el color. Em - Am - C - B7.
+    progresion = (
+        ("Em", 40, [52, 55, 59]),
+        ("Am", 45, [52, 57, 60]),
+        ("C",  48, [52, 55, 60]),
+        ("B7", 47, [51, 54, 59]),
+    )
+    pistas = (
+        (0, "D1", "tambora, muy floja",   "Rock Kit", True,  _melanc_tambora),
+        (3, "BA", "bajo fuera del tiempo", "Aco.Bass", False, _melanc_bajo),
+        (4, "C1", "colchon continuo",     "NylonGtr", False, _melanc_tiple),
+    )
+
+
 GENEROS = {"bambuco": Bambuco, "fiestero": BambucoFiestero,
            "pasillo": Pasillo, "pasillodenso": PasilloDenso,
-           "torbellino": Torbellino, "guabina": Guabina}
+           "torbellino": Torbellino, "guabina": Guabina,
+           "melancolico": BambucoMelancolico}
