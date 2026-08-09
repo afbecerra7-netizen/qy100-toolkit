@@ -552,6 +552,92 @@ class Torbellino(Genero):
     )
 
 
+# --- Guabina -------------------------------------------------------------
+#
+# Medida en `santo-guabina.mid`, y **empata con el torbellino en consistencia:
+# 35 de 36 compases, el 97%**, en las tres capas a la vez.
+#
+#     corchea      1      2      3      4      5      6
+#     bajo       BAJO     ·      ·      ·    BAJO     ·
+#     acorde       ·      ·   ACORDE    ·      ·   ACORDE
+#     tambora    grave    ·    agudo    ·    grave  agudo
+#
+# El bajo cae en 1 y 5 **igual que en el torbellino**; lo que separa los dos
+# generos es la respuesta armonica. El torbellino pone los acordes en los tres
+# negros y la guabina en las contras, justo detras de cada bajo. Mismo esqueleto,
+# distinto eco.
+#
+# La tambora dobla las dos capas con timbres distintos —grave con el bajo, agudo
+# con el acorde—, que es lo que hace audible el reparto sin que haya dos
+# instrumentos.
+#
+# El coro del original canta sobre todo en 1 y 3 (42% de los compases): la
+# melodia se apoya en el bajo y en el primer acorde, no en el segundo.
+
+GUAB_BAJO, GUAB_ALTO = 41, 45      # tambora grave y aguda
+
+
+def _guabina_tambora(g, compases, intensidad):
+    """Grave en 1 y 5 con el bajo, agudo en 3 y 6 con el acorde."""
+    notas = []
+    for c in range(compases):
+        base = _bar(c, g.beats)
+        for i, nota, vel in ((0, GUAB_BAJO, 104), (2, GUAB_ALTO, 84),
+                             (4, GUAB_BAJO, 96), (5, GUAB_ALTO, 78)):
+            notas.append(F.Note(nota, vel, CORCHEA - 20, base + i * CORCHEA))
+    return notas
+
+
+def _guabina_chucho(g, compases, intensidad):
+    if intensidad < 0.5:
+        return []
+    return [F.Note(82, 58, CORCHEA - 30, _bar(c, g.beats) + i * CORCHEA)
+            for c in range(compases) for i in range(6)]
+
+
+def _guabina_bajo(g, compases, intensidad):
+    """Corcheas 1 y 5. Fundamental y quinta."""
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i, alt, vel in ((0, raiz, 104), (4, raiz + 7, 88)):
+            notas.append(F.Note(alt, vel, CORCHEA - 20, base + i * CORCHEA))
+    return notas
+
+
+def _guabina_tiple(g, compases, intensidad):
+    """Acordes en 3 y 6: detras de cada bajo, nunca encima."""
+    posiciones = (2, 5) if intensidad > 0.35 else (2,)
+    notas = []
+    for c in range(compases):
+        _n, _r, voces = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for k, i in enumerate(posiciones):
+            for alt in voces:
+                notas.append(F.Note(alt, 88 if k == 0 else 76, CORCHEA - 30,
+                                    base + i * CORCHEA))
+    return notas
+
+
+class Guabina(Genero):
+    nombre = "GUABINA"
+    bpm = 120.0
+    compases_por_acorde = 2
+    progresion = (
+        ("Am", 45, [57, 60, 64]),
+        ("Dm", 50, [57, 62, 65]),
+        ("Am", 45, [57, 60, 64]),
+        ("E7", 52, [56, 59, 62]),
+    )
+    pistas = (
+        (0, "D1", "tambora grave y aguda", "Rock Kit", True,  _guabina_tambora),
+        (2, "PC", "chucho continuo",       "Rock Kit", True,  _guabina_chucho),
+        (3, "BA", "bajo en 1 y 5",         "Aco.Bass", False, _guabina_bajo),
+        (4, "C1", "acordes en 3 y 6",      "NylonGtr", False, _guabina_tiple),
+    )
+
+
 GENEROS = {"bambuco": Bambuco, "fiestero": BambucoFiestero,
            "pasillo": Pasillo, "pasillodenso": PasilloDenso,
-           "torbellino": Torbellino}
+           "torbellino": Torbellino, "guabina": Guabina}

@@ -253,6 +253,7 @@ De sacar celdas de cuatro partituras salio un metodo que sirve para cualquiera:
 ataques.** Separa la celda del genero de las decisiones del arreglista.
 
 ```
+guabina      97%   (35 de 36 compases, en las tres capas a la vez)
 torbellino   97%   (bombo en 1 y 5, 96 de 99 compases)
 bambuco      83%
 pasillo      60%
@@ -270,11 +271,17 @@ Celdas medidas, todas en 3/4 sobre seis corcheas:
 ```
                 1      2      3      4       5       6
 torbellino    BOMBO    ·      ·    caja   BOMBO    caja
+guabina       BAJO     ·   ACORDE    ·    BAJO   ACORDE
 bambuco salon   ·   ACORDE  BAJO  ACORDE   BAJO      ·
 bambuco fiest BAJO  ACORDE  BAJO  ACORDE   BAJO   ACORDE
 pasillo       BAJO     ·      ·   ACORDE  ACORDE     ·
 pasillo denso  linea continua en corcheas, velocity plana
 ```
+
+**Guabina y torbellino comparten el bajo en 1 y 5**; lo que los separa es donde
+responde la armonia — el torbellino en los tres negros, la guabina en las contras
+detras de cada bajo. Mismo esqueleto, distinto eco. Y **el bambuco fiestero es el
+unico que ocupa las seis corcheas**: por eso empuja.
 
 ### Los estilos de fabrica estan en OTRO CHIP, y por eso no cuestan memoria
 
