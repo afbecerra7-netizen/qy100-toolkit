@@ -386,6 +386,24 @@ numero de frase cuando referencia una preset—, asi que `set_registry` **preser
 toda ranura cuyo nibble bajo no sea `8` ni `E`**. Sin eso, escribir una sola
 pista generativa borraba en silencio las frases preset asignadas desde el panel.
 
+**El patron mixto esta verificado de extremo a extremo** (2026-08-08). Main A del
+patron 3, sonando:
+
+```
+D1  09  referencia de fabrica   Da 132  DncSw-1a     0 bytes
+PC  49  referencia de fabrica   PC 040  DncSw-a      0 bytes
+BA  69  referencia de fabrica   Ba 106  DncSw-a      0 bytes
+C1  F8  frase de usuario        48 notas generadas
+C2  F8  frase de usuario        16 notas generadas   3 KB
+```
+
+Las tres referencias **sobrevivieron a escribir las pistas generativas encima**,
+que es justo lo que fallaba antes del arreglo de `set_registry`. El reparto es el
+punto: la base ritmica completa cuesta cero y solo se paga el material propio.
+
+La receta practica: base ritmica de fabrica en D1/D2/PC/BA, material generativo
+en C1-C4 con TYPE `Chord 1` para que ABC lo rearmonice desde un teclado externo.
+
 **El nibble alto sigue sin cerrarse, y es lo que bloquea el patron mixto por
 software.** Barriendo los 16 valores con beat y numero fijos solo 7 dieron frase:
 `0 Da`, `2 Fa`, `4 PC`, `6 Ba`, `9 Gb`, `B KC`, `E BR`. Siete no pueden
