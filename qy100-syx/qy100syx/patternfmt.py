@@ -119,7 +119,7 @@ class Note:
                 (o.pitch, o.velocity, o.gate, o.time))
 
 
-def decode_track(payload, start=EVENT_STREAM_START, max_events=512):
+def decode_track(payload, start=EVENT_STREAM_START, max_events=512, estricto=True):
     """Decodifica una pista de UN bloque. Devuelve (notas, duracion_en_relojes).
 
     `payload` son los 147 bytes crudos del bloque; el desempaquetado se hace
@@ -129,10 +129,10 @@ def decode_track(payload, start=EVENT_STREAM_START, max_events=512):
     Para una pista que ocupe varios bloques usa `decode_blocks`: aqui el flujo
     se corta en el borde del bloque y se pierden los eventos siguientes.
     """
-    return decode_events(unpack(payload), start, max_events)
+    return decode_events(unpack(payload), start, max_events, estricto)
 
 
-def decode_blocks(payloads, start=EVENT_STREAM_START, max_events=4096):
+def decode_blocks(payloads, start=EVENT_STREAM_START, max_events=4096, estricto=True):
     """Decodifica una pista repartida en varios bloques.
 
     **Verificado**: solo el PRIMER bloque lleva el prefijo de 26 bytes. Los
@@ -146,10 +146,10 @@ def decode_blocks(payloads, start=EVENT_STREAM_START, max_events=4096):
     if not trozos:
         return [], 0
     flujo = trozos[0][start:] + b"".join(trozos[1:])
-    return decode_events(flujo, 0, max_events)
+    return decode_events(flujo, 0, max_events, estricto)
 
 
-def decode_events(d, start=EVENT_STREAM_START, max_events=512):
+def decode_events(d, start=EVENT_STREAM_START, max_events=512, estricto=True):
     """Recorre un flujo YA desempaquetado. Devuelve (notas, relojes_totales).
 
     Comprueba que cada evento quepa entero antes de leerlo: un evento partido
@@ -168,7 +168,7 @@ def decode_events(d, start=EVENT_STREAM_START, max_events=512):
     alguien haya tocado con rueda de modulacion o pedal.
     """
     i, t = start, 0
-    notas = []
+    notas, desconocidos = [], []
     for _ in range(max_events):
         if i >= len(d):
             break
@@ -199,7 +199,19 @@ def decode_events(d, start=EVENT_STREAM_START, max_events=512):
         elif s == 0xF0:                             # marcador, no avanza el tiempo
             i += 2
         else:
-            i += 1                                  # estado no identificado
+            # **Un estado desconocido no se salta.** Avanzar un byte y seguir
+            # deja el flujo desalineado, y a partir de ahi las notas salen con
+            # la altura y el tiempo equivocados sin que nada lo delate. Es
+            # preferible parar y decir donde.
+            desconocidos.append((i, s))
+            if estricto:
+                raise ValueError(
+                    "evento no reconocido 0x%02X en el byte %d. El flujo admite "
+                    "control change, aftertouch, pitch bend y cambio de voz, que "
+                    "este decodificador no entiende; saltarlos desalinea todo lo "
+                    "que venga despues. Usa estricto=False para leer solo hasta "
+                    "aqui." % (s, i))
+            break
     return notas, t
 
 

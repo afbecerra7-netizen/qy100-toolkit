@@ -680,13 +680,21 @@ hipótesis frágil del contenedor, y era falsa.
 
 **Lo que tienen y no tenemos** — abierto, por si interesa:
 
-- `[V]` **Los eventos que no son notas.** Documentan control change, aftertouch,
-  RPN/NRPN, program change, bank select, pitch bend y cambio de voz a mitad de
-  pista. **Nuestro decodificador solo entiende notas y tiempos**, y ante un byte
-  desconocido avanza uno y sigue — o sea que una pista con cualquiera de esos
-  eventos se desincroniza en silencio. No nos ha mordido porque todo lo que
-  hemos decodificado son pistas de notas, pero es una limitación real y no está
-  anotada en el código.
+- `[M]` **Los eventos que no son notas — y ya nos habían mordido.** Documentan
+  control change, aftertouch, RPN/NRPN, program change, bank select, pitch bend
+  y cambio de voz a mitad de pista. Nuestro decodificador solo entiende notas y
+  tiempos, y ante un byte desconocido **avanzaba uno y seguía**, con lo que todo
+  lo posterior sale con la altura y el tiempo equivocados sin dar error.
+
+  Al hacerlo fallar en voz alta y pasarle nuestros propios volcados: **772 de
+  806 pistas de patrón decodifican bien y 34 no.** Llevábamos todo el proyecto
+  leyendo mal esas 34 sin saberlo, porque el decodificador siempre devolvía algo
+  y ese algo parecía plausible. Son de dos formas — unas ni siquiera arrancan
+  con `F0 00`, y otras sí pero traen un `0xFB` a los dos o tres bytes.
+
+  `decode_events(..., estricto=True)` es ahora el defecto: para y dice en qué
+  byte. Con `estricto=False` devuelve lo leído hasta ahí, que es lo que hay que
+  usar para inspeccionar material viejo.
 - **Un directorio de canciones y patrones** en la familia de direcciones
   `15 xx xx`, que nunca hemos usado: pide la lista de lo que hay en el aparato
   sin volcar el contenido.
