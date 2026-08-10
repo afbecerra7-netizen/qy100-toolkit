@@ -7,6 +7,7 @@ Dónde está cada documento y cómo leerlo sin abrir el PDF.
 | File | What it is |
 | --- | --- |
 | `QY100S.pdf` | Owner's manual, **Spanish** (*Manual del Usuario*). Operating instructions for the end user. |
+| `Produccion_musical_contemporanea_Paz_2005.pdf` | **Tesis sobre las células rítmicas del Pacífico colombiano** (San Buenaventura, 2005), asesorada por Javier Martínez Maya. 105 páginas. No trae notación: es análisis en prosa más organología. Lo aprovechable es qué instrumentos forman el conjunto de marimba y qué hace cada uno. Convertida en `manuales-md/Paz2005_Celulas_Ritmicas_Pacifico.md` |
 | `QY100_Folleto_2000.pdf` | **Folleto comercial**, inglés (dic. 2000). Dos páginas, pero trae **los 128 estilos de fábrica con su nombre completo** — el aparato solo muestra abreviaturas de cinco caracteres. Extraídos a [`docs/estilos-de-fabrica.md`](estilos-de-fabrica.md). También el panel trasero y las especificaciones. |
 | `QY100E2.pdf` | **Data List**, English (2000) — the separate booklet the owner's manual keeps referring to as *"el manual adjunto de listas"*. XG normal and drum voice lists with program numbers, effect types and parameters, preset style and phrase lists, chord type list, drum table, amp simulator list, and its own MIDI data format section. Converted at `manuales-md/QY100_Data_List.md`. |
 | `219610235-YAMAHA-QY100-Service-Manual.pdf` | Official Yamaha service manual, English (SY 011558, printed 2000.12). Hardware-level reference. |

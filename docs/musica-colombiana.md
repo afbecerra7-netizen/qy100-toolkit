@@ -231,3 +231,37 @@ la mitad del asunto.
 > mayor más grave**. Tomar sus alturas tal cual pondría la pieza un tono arriba,
 > y sonaría perfectamente bien en el tono equivocado — el error no se oye si no
 > hay nada con qué comparar.
+
+## El conjunto de marimba, según la fuente académica
+
+De la tesis de **Paz Hernández (2005)**, *Producción musical contemporánea
+utilizando las células rítmicas del Pacífico colombiano* (San Buenaventura,
+Bogotá) — asesorada por **Javier Martínez Maya**, el mismo que firma la
+partitura del bombo golpeador. Está en
+`manuales-md/Paz2005_Celulas_Ritmicas_Pacifico.md`.
+
+`[M]` **La marimba de chonta son 24 tablillas y dos instrumentos en uno:**
+
+```
+16 tablillas cortas   el TIPLERO      la melodía
+ 8 tablillas largas   el BORDONERO    el acompañamiento
+```
+
+Cuatro bolillos en manos de **dos tocadores**. Eso corrige un intercambio
+anterior en el proyecto: al medir 4 voces solapadas en la transcripción de Tribe
+se objetó que con dos golpeadores no era posible, y sobre *esa* transcripción era
+cierto —solo trae la parte del tiplero, y su máximo de ataques simultáneos es 2—
+pero **en el instrumento real cuatro golpes a la vez sí son posibles**. La
+objeción era correcta sobre la fuente y equivocada sobre el instrumento.
+
+Consecuencia para el muestreo al EP–40: las 34 tablillas que se muestrearon de
+Tribe cubren el ámbito entero, pero **el instrumento tiene dos registros con
+funciones distintas**. Al escribirle material conviene tratarlos como dos voces
+—melodía arriba, acompañamiento abajo— y no como un teclado uniforme.
+
+`[M]` **El conjunto completo**: marimba de chontas, dos cununos (macho y
+hembra), dos bombos (**golpeador** y **arrullador**), redoblante y guasás. La
+propia tesis, al producir en estudio, **graba congas emulando los cununos**
+—porque el cununo es difícil de conseguir y de microfonear— y usa arrullador y
+tambora reales. Es la misma decisión que tenemos delante con el EP–40: qué se
+muestrea de verdad y qué se sustituye.
