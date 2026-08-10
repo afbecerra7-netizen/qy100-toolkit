@@ -298,13 +298,38 @@ The panel's length counter renders the value with a **single digit**, so 16 disp
 
 ```
 offset 0     16 bytes   "YQ1PAT     V1.00"   magic + version, ASCII
-offset 114    2 bytes   big-endian length of the meaningful payload (546)
+offset 114    2 bytes   `02 22` — CONSTANTE, no una longitud (ver abajo)
 offset 128    N bytes   the blocks, ALREADY UNPACKED to 8 bits
 ```
 
 The body is **byte-for-byte the same data our decoder produces after `unpack()`** — 640 bytes for a 5-block pattern header, differing only in the pattern name and in padding past the declared length. So `patternfmt` reads a `.q1p` directly with the 7→8 step skipped, and both files decode to 32 measures in all six sections, confirming bytes 15–20 by an independent route.
 
-`[D]` The length field at 114–115 is inferred from a single file: 546 is exactly where the two files stop agreeing. Re-check it against another `.q1p` before relying on it.
+**Los bytes 114–115 NO son una longitud. Refutado** (2026-08-10) por la hoja de
+datos de [qyTools](https://github.com/Max-Coppola/qyTools), un trabajo
+independiente sobre el mismo protocolo: son la **constante `0x02 0x22`** que
+cierra la tabla de recuentos por página del bloque de metadatos.
+
+Se dedujo de que 546 era justo donde dos archivos dejaban de coincidir, y 546 es
+`0x0222`. Coincidencia. **Los 41 `.q1p` que tenemos miden exactamente 768 bytes
+los 41**, así que con este material la hipótesis no era comprobable ni
+refutable — y aun así se escribió como si lo fuera. Se había marcado para
+re-comprobar contra otro archivo; lo que faltaba era un archivo *de otro
+tamaño*, no otro archivo.
+
+Su lectura del contenedor, más completa que la nuestra:
+
+```
+offset 0     16 bytes   magia "YQ1PAT     V1.00"
+offset 16   112 bytes   metadatos: byte 0 = ranura destino (base 0)
+                        byte 19+2*(pagina-8) = paquetes de esa pagina
+                        bytes 98-99 = constante 02 22   <- nuestros 114-115
+offset 128        N     las paginas, ya desempaquetadas
+final       640 bytes   lo que nosotros llamamos la cabecera del patron
+```
+
+Y una consecuencia que no habíamos visto: **los 768 bytes de los archivos de
+doffu son 128 + 0 + 640.** No tienen ni una página de datos — son patrones
+vacíos, y por eso el «cuerpo» que comparamos era solo la cabecera.
 
 Practically this matters a lot: **a SmartMedia card reader turns every experiment offline.** No `bulk mode`, no panel lock, no clock flooding the capture, no half-written transfers corrupting the memory accounting, no power cycles. Diff-and-extrapolate on files is what doffu has been doing all along, and it is strictly safer and faster than doing it over SysEx. SysEx remains necessary for playing the device live and for songs; for *decoding pattern structure*, files win.
 
@@ -630,3 +655,58 @@ The **chord type list** (p. 36–37, rendered to `manuales-md/diagramas/qy100-ac
 
 The wall for actual firmware modification is the **SWX00B (HG73C205AFD)** CPU — Yamaha proprietary, two of them (IC1 main / IC2 sub), instruction set not publicly documented. Reading and rewriting the flash is solved; disassembling it is not. Prefer external augmentation (qy100-arp) or data-level changes over firmware patching.
 
+## qyTools — una segunda implementación, y qué dice de la nuestra
+
+[qyTools](https://github.com/Max-Coppola/qyTools) (Max Coppola, AGPLv3) es una
+herramienta de navegador que sustituye al Data Filer de Yamaha: habla con el
+QY100 y el QY70 por MIDI o por el puerto serie ToHost, y lee y escribe `.BLK`,
+`.q1a`, `.q1p`, `.q1s`, `.syx` y `.mid`. Trae una **hoja de datos del protocolo
+independiente de su código**, que es lo que permite contrastar.
+
+**Lo que coincide, y por qué importa que coincida.** La gramática de eventos es
+idéntica a la nuestra: el delta de un byte (`0x80|n`, n<32), el de dos
+(`0xA0|hi5, lo7`), y las notas de 3, 4 y 5 bytes según la duración (`0xC0`,
+`0xD0`, `0xE0`) seguidas de altura y velocity. También el byte 14 del compás con
+la misma fórmula, las longitudes por sección en 15–20 menos uno, y las dos tablas
+de registro en 21–68 y 69–115.
+
+**Las dos deducciones vinieron por caminos que no se tocan**: la nuestra del
+decodificador de Yamaha dentro de `QY100.exe`, la suya de 22.682 registros
+capturados del aparato. Cuando dos derivaciones independientes convergen byte a
+byte, eso vale mucho más que cualquiera de las dos por separado.
+
+**Lo que nos corrige.** Los bytes 114–115 del `.q1p` (ver arriba). Nuestra única
+hipótesis frágil del contenedor, y era falsa.
+
+**Lo que tienen y no tenemos** — abierto, por si interesa:
+
+- `[V]` **Los eventos que no son notas.** Documentan control change, aftertouch,
+  RPN/NRPN, program change, bank select, pitch bend y cambio de voz a mitad de
+  pista. **Nuestro decodificador solo entiende notas y tiempos**, y ante un byte
+  desconocido avanza uno y sigue — o sea que una pista con cualquiera de esos
+  eventos se desincroniza en silencio. No nos ha mordido porque todo lo que
+  hemos decodificado son pistas de notas, pero es una limitación real y no está
+  anotada en el código.
+- **Un directorio de canciones y patrones** en la familia de direcciones
+  `15 xx xx`, que nunca hemos usado: pide la lista de lo que hay en el aparato
+  sin volcar el contenido.
+- **Los formatos `.q1s` (canción), `.q1a` y `.BLK`**, que no hemos tocado.
+- **Una región de la cabecera que el controlador de flash reescribe en cada
+  guardado**, cerca del offset 443, que no se puede derivar del contenido del
+  patrón. Explica por qué dos guardados del mismo patrón no son idénticos.
+
+**Lo que tenemos y no tienen**, por si sirve devolverlo:
+
+- **El mezclador desglosado.** Ellos agrupan los bytes 85–511 como «datos de
+  parámetros por pista»; nosotros tenemos programa en 154, bandera de batería en
+  162, volumen en 170, pan en 178, chorus en 194, reverb en 202 y variación en
+  210, medidos uno a uno.
+- **`CURRENT CHORD` es por sección**, raíces en 117–122 y tipos en 123–128, con
+  los 27 tipos medidos.
+- **El formato de referencia a frases de fábrica** — `(categoría << 3) | estado`
+  en la tabla de banderas — con la tabla de categorías sacada del firmware. Es lo
+  que permite que un estilo referencie material de fábrica sin gastar memoria.
+- **El desbloqueo de 32 compases verificado escribiéndolo**, no solo cargando el
+  archivo de doffu.
+- **La aritmética de memoria**: 128 bytes por bloque contra 128 KB de SRAM,
+  confirmada por dos vías independientes.

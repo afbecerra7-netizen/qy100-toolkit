@@ -154,6 +154,18 @@ def decode_events(d, start=EVENT_STREAM_START, max_events=512):
 
     Comprueba que cada evento quepa entero antes de leerlo: un evento partido
     por el final del buffer solia reventar con IndexError.
+
+    **Solo entiende notas y tiempos, y eso es una limitacion real.** El flujo
+    admite ademas control change, aftertouch, RPN/NRPN, program change, bank
+    select, pitch bend y cambio de voz a mitad de pista — documentados en la
+    hoja de datos de qyTools, no aqui. Ante un byte que no reconoce este
+    decodificador avanza uno y sigue, asi que **una pista con cualquiera de esos
+    eventos se desincroniza en silencio**: las notas posteriores salen con la
+    altura y el tiempo equivocados, sin error y sin señal.
+
+    No ha mordido todavia porque todo lo decodificado han sido pistas de notas,
+    grabadas o generadas por nosotros. Muerde en cuanto se lea una pista que
+    alguien haya tocado con rueda de modulacion o pedal.
     """
     i, t = start, 0
     notas = []
