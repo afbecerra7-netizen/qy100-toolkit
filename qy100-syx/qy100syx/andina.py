@@ -805,8 +805,18 @@ class BambucoMelancolico(Bambuco):
 # salon 83.
 #
 #     corchea     1      2      3      4      5      6
-#     golpe      ALTO    ·     ALTO   ALTO    ·     BAJO
+#     silaba     Con           laor   ques          ta        (y luego de-le-du-ro)
+#     mano       IZQ           IZQ    IZQ           DER
+#     golpe     madera        madera madera        cuero
 #     altura     C#2           C#2    C#2           C2
+#
+# **"Con la orquesta dele duro"** es su onomatopeya, como el *papa con yuca* del
+# bambuco: ocho silabas sobre dos compases de cuatro golpes. El reparto de
+# silabas por corchea es `[D]`, deducido del texto bajo el pentagrama; los
+# golpes y las alturas son `[M]`.
+#
+# `[M]` **Las dos alturas son dos superficies, no dos parches**: la partitura
+# dice que la izquierda golpea la madera (cabezas en X) y la derecha el cuero.
 #
 # Tres golpes altos y **el grave en la sexta**, que es justo donde el bambuco de
 # salon calla. Los dos generos reparten las mismas seis corcheas y se separan en
@@ -821,7 +831,15 @@ class BambucoMelancolico(Bambuco):
 # percusion y la armonia, y la marimba entra por el EP-40 desde la partitura o
 # tocada en vivo.
 
-BOMBO_ALTO, BOMBO_BAJO = 45, 41     # los mismos parches que la tambora del bambuco
+# **No son parche agudo y grave: son dos superficies.** La partitura lo dice
+# expreso — *"la mano izquierda toca en la madera la X y la derecha el cuero del
+# bombo"*. Las tres X son madera y el golpe restante es el parche.
+#
+# El transcriptor lo escribio con semantica GM y por eso el MIDI ya lo traia:
+# `C#2 = 37` es el **side stick**, el golpe seco en el aro, y `C2 = 36` es el
+# **bombo**. Mapearlo a dos toms —que fue el primer intento— borra justo lo que
+# distingue el golpe: uno es madera seca y el otro es cuero.
+MADERA, CUERO = 37, 36
 GUASA = 82                          # sonaja: el shaker del kit XG
 CURR_ALTO = (0, 2, 3)               # corcheas 1, 3 y 4
 CURR_BAJO = 5                       # la sexta
@@ -833,9 +851,9 @@ def _currulao_bombo(g, compases, intensidad):
     for c in range(compases):
         base = _bar(c, g.beats)
         for i in CURR_ALTO:
-            notas.append(F.Note(BOMBO_ALTO, 100 if i == 0 else 88,
+            notas.append(F.Note(MADERA, 100 if i == 0 else 88,
                                 CORCHEA - 20, base + i * CORCHEA))
-        notas.append(F.Note(BOMBO_BAJO, 108, CORCHEA - 20,
+        notas.append(F.Note(CUERO, 108, CORCHEA - 20,
                             base + CURR_BAJO * CORCHEA))
     return notas
 
@@ -878,6 +896,7 @@ def _currulao_acordes(g, compases, intensidad):
 
 class Currulao(Genero):
     nombre = "CURRULAO"
+    # "Con la orquesta dele duro"
     bpm = 120.0
     beats = 3            # tres negras de duracion; la METRICA es 6/8
     denominador = 8

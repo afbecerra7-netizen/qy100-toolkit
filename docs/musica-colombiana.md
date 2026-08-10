@@ -150,9 +150,26 @@ dieciséis idénticos golpe por golpe. 100 % de repetición.** El torbellino dab
 
 ```
 corchea     1      2      3      4      5      6
-golpe      ALTO    ·     ALTO   ALTO    ·     BAJO
+sílaba     Con           laor   ques          ta      (y luego de-le-du-ro)
+mano       IZQ           IZQ    IZQ           DER
+golpe     madera        madera madera        cuero
 altura     C#2           C#2    C#2           C2
 ```
+
+`[M]` **Las dos alturas no son parche agudo y grave: son dos superficies.** La
+partitura (*Bombo «gopeador» o Macho-Currulao*, Javier Martínez / Wilmer Vente)
+lo dice expreso — «la mano izquierda toca en la madera la X y la derecha el
+cuero del bombo». Las cabezas en X son madera.
+
+Y el transcriptor lo escribió con semántica GM, así que el MIDI ya lo traía:
+`C#2 = 37` es el **side stick**, el golpe seco en el aro, y `C2 = 36` es el
+**bombo**. El primer mapeo lo mandó a dos toms y borró justo lo que distingue el
+golpe. **El dato estaba en el archivo y se perdió al interpretarlo**, no al
+medirlo.
+
+`[D]` Su onomatopeya es **«Con la orquesta dele duro»**, como el *papa con yuca*
+del bambuco: ocho sílabas sobre dos compases de cuatro golpes. El reparto por
+corchea es deducido del texto bajo el pentagrama.
 
 Tres golpes altos y **el grave en la sexta corchea**, que es exactamente donde el
 bambuco de salón calla. Los dos géneros reparten las mismas seis corcheas y se
