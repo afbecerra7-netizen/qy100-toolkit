@@ -101,6 +101,12 @@ def pack(data, size=BLOCK_BYTES) -> bytes:
 # reales, asi que se saltan en vez de inventarles significado.
 
 END_OF_TRACK = 0xF2
+TRACK_MARKER = b"\xf0\x00"   # toda pista arranca asi; sin esto el editor cuelga
+CONTROL_CHANGE = 0xFB         # `FB cc vv` — 3 bytes. **Medido**: 451 apariciones
+                              # en los volcados, 438 con cc=64 (pedal de
+                              # sostenido) y 13 con cc=71, y los valores solo 0 y
+                              # 127 — 224 sueltas contra 227 pisadas, emparejadas.
+                              # Alguien grabo tocando con pedal.
 
 
 class Note:
@@ -146,6 +152,17 @@ def decode_blocks(payloads, start=EVENT_STREAM_START, max_events=4096, estricto=
     if not trozos:
         return [], 0
     flujo = trozos[0][start:] + b"".join(trozos[1:])
+    # **Toda pista empieza por `F0 00`.** Si no, este no es el primer bloque:
+    # falta el que lleva el prefijo, y quitar 26 bytes cae a mitad de un evento.
+    # Es mejor comprobacion que esperar a un byte invalido — de las 42 pistas sin
+    # marcador en nuestros volcados, 27 acababan fallando y **15 se decodificaban
+    # sin quejarse, desalineadas**. Esas 15 son el caso peligroso.
+    if estricto and flujo[:2] != TRACK_MARKER:
+        raise ValueError(
+            "la pista no empieza por F0 00 (empieza por %s). Falta su primer "
+            "bloque: el volcado perdio datos, o estos bloques son continuacion "
+            "de otra cosa. Con estricto=False se lee igualmente, pero el "
+            "resultado no es fiable." % flujo[:2].hex(" "))
     return decode_events(flujo, 0, max_events, estricto)
 
 
@@ -198,6 +215,10 @@ def decode_events(d, start=EVENT_STREAM_START, max_events=512, estricto=True):
             break
         elif s == 0xF0:                             # marcador, no avanza el tiempo
             i += 2
+        elif s == CONTROL_CHANGE:                   # control change, 3 bytes
+            # No se guarda, pero **hay que consumirlo entero**: saltarlo como un
+            # byte desalinea todo lo que venga detras.
+            i += 3
         else:
             # **Un estado desconocido no se salta.** Avanzar un byte y seguir
             # deja el flujo desalineado, y a partir de ahi las notas salen con

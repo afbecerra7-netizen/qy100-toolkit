@@ -682,19 +682,29 @@ hipótesis frágil del contenedor, y era falsa.
 
 - `[M]` **Los eventos que no son notas — y ya nos habían mordido.** Documentan
   control change, aftertouch, RPN/NRPN, program change, bank select, pitch bend
-  y cambio de voz a mitad de pista. Nuestro decodificador solo entiende notas y
+  y cambio de voz a mitad de pista. Nuestro decodificador solo entendía notas y
   tiempos, y ante un byte desconocido **avanzaba uno y seguía**, con lo que todo
-  lo posterior sale con la altura y el tiempo equivocados sin dar error.
+  lo posterior salía con la altura y el tiempo equivocados sin dar error.
 
-  Al hacerlo fallar en voz alta y pasarle nuestros propios volcados: **772 de
-  806 pistas de patrón decodifican bien y 34 no.** Llevábamos todo el proyecto
-  leyendo mal esas 34 sin saberlo, porque el decodificador siempre devolvía algo
-  y ese algo parecía plausible. Son de dos formas — unas ni siquiera arrancan
-  con `F0 00`, y otras sí pero traen un `0xFB` a los dos o tres bytes.
+  Al hacerlo parar y pasarle nuestros propios volcados salieron 34 pistas malas
+  de 806. Mirándolas de cerca eran **dos problemas distintos**:
 
-  `decode_events(..., estricto=True)` es ahora el defecto: para y dice en qué
-  byte. Con `estricto=False` devuelve lo leído hasta ahí, que es lo que hay que
-  usar para inspeccionar material viejo.
+  **`FB cc vv` es un control change de 3 bytes.** `[M]` — 451 apariciones en los
+  volcados, 438 con `cc = 64` (pedal de sostenido) y 13 con `cc = 71`, y los
+  valores **solo 0 y 127**, 224 sueltas contra 227 pisadas. Prácticamente
+  emparejadas: es alguien que grabó tocando con pedal. Consumirlo entero en vez
+  de saltar un byte recupera 7 pistas.
+
+  **Y 42 pistas no empiezan por `F0 00`.** Su primer bloque falta — volcados de
+  la época en que la captura por sondeo perdía bloques, aunque también aparece en
+  alguno posterior. Lo grave es que **solo 27 de esas 42 fallaban**: las otras 15
+  se decodificaban sin quejarse, desalineadas. Comprobar el marcador es mejor
+  prueba que esperar a un byte inválido, porque **el caso peligroso no es el que
+  falla sino el que no falla**.
+
+  Estado tras las dos correcciones: **760 decodifican, 42 sin marcador y 4 con un
+  evento que sigue sin identificarse.**
+
 - **Un directorio de canciones y patrones** en la familia de direcciones
   `15 xx xx`, que nunca hemos usado: pide la lista de lo que hay en el aparato
   sin volcar el contenido.
