@@ -998,6 +998,89 @@ class Mapale(Genero):
     )
 
 
+# --- Cumbia --------------------------------------------------------------
+#
+# `[M]` De **`Pitos y tambores`, la cartilla de iniciacion musical de Victoriano
+# Valencia** (Plan Nacional de Musica para la Convivencia, Ministerio de
+# Cultura). Fuente pedagogica primaria, no una transcripcion suelta.
+#
+# La cartilla formaliza lo que este proyecto venia haciendo sin saber que tenia
+# nombre: la **matriz metrica**, binaria de ocho eventos o ternaria de seis. Las
+# tablas de ataques por corchea que se han ido midiendo *son* esa matriz — la
+# ternaria para el bambuco y el currulao, la binaria para el mapale y el chande.
+#
+# La base de cumbia, con las alineaciones que da la cartilla:
+#
+#     matriz binaria    1   2   3   4   5   6   7   8
+#     palmas (pulso)    X               X
+#     llamador                  X               X        contratiempo
+#     guacho            X       X       X       X
+#     alegre            X   X   X   X   X   X   X   X    "reproduce la matriz"
+#
+# El alegre tocando los ocho eventos es lo que la cartilla llama el patron
+# basico de cumbia **tipo soledeña**. La tambora necesita "matriz doble" —
+# dieciseis eventos— y no se implementa aqui: sus variaciones ocupan una pagina
+# entera de la cartilla y merecen medirse aparte.
+#
+# `[D]` **El bajo no viene en la cartilla**, que es material de percusion. El que
+# hay aqui es una linea sencilla en el pulso, deducida, no medida.
+
+CUM_LLAMADOR = (2, 6)              # contratiempo
+CUM_GUACHO = (0, 2, 4, 6)
+CUM_PULSO = (0, 4)
+
+
+def _cumbia_llamador(g, compases, intensidad):
+    """El contratiempo. Es lo que hace que una cumbia sea una cumbia."""
+    return [F.Note(MADERA, 104, SEMI, _bar(c, g.beats) + i * SEMI)
+            for c in range(compases) for i in CUM_LLAMADOR]
+
+
+def _cumbia_alegre(g, compases, intensidad):
+    """Los ocho eventos de la matriz; en secciones flojas, solo la mitad."""
+    pasos = range(8) if intensidad > 0.5 else CUM_GUACHO
+    return [F.Note(TAMB_ALTO, 96 if i in CUM_PULSO else 74, SEMI - 10,
+                   _bar(c, g.beats) + i * SEMI)
+            for c in range(compases) for i in pasos]
+
+
+def _cumbia_guacho(g, compases, intensidad):
+    return [F.Note(GUASA, 84 if i in CUM_PULSO else 68, SEMI - 10,
+                   _bar(c, g.beats) + i * SEMI)
+            for c in range(compases) for i in CUM_GUACHO]
+
+
+def _cumbia_bajo(g, compases, intensidad):
+    """`[D]` En el pulso. La cartilla es de percusion y no trae bajo."""
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for k, i in enumerate(CUM_PULSO):
+            notas.append(F.Note(raiz if k == 0 else raiz + 7, 108 if k == 0 else 92,
+                                SEMI * 3, base + i * SEMI))
+    return notas
+
+
+class Cumbia(Genero):
+    nombre = "CUMBIA"
+    bpm = 96.0
+    beats = 2                    # la matriz binaria son 8 semicorcheas de 2/4
+    compases_por_acorde = 4
+    progresion = (
+        ("Am", 45, [57, 60, 64]),
+        ("Am", 45, [57, 60, 64]),
+        ("E7", 40, [56, 59, 64]),
+        ("Am", 45, [57, 60, 64]),
+    )
+    pistas = (
+        (0, "D1", "llamador: el contratiempo", "Rock Kit", True,  _cumbia_llamador),
+        (1, "D2", "alegre: la matriz entera",  "Rock Kit", True,  _cumbia_alegre),
+        (2, "PC", "guacho",                    "Rock Kit", True,  _cumbia_guacho),
+        (3, "BA", "bajo en el pulso [D]",      "Aco.Bass", False, _cumbia_bajo),
+    )
+
+
 #: Los generos disponibles. **El modulo se llama `andina` y ya no todos lo son**:
 #: el currulao es del Pacifico y el mapale del Caribe. Comparten el armazon —seis
 #: secciones, celda medida, progresion escrita dentro— pero el nombre pide un
@@ -1012,4 +1095,5 @@ GENEROS = {
     "guabina":      Guabina,
     "currulao":     Currulao,
     "mapale":       Mapale,
+    "cumbia":       Cumbia,
 }

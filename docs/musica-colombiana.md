@@ -265,3 +265,57 @@ propia tesis, al producir en estudio, **graba congas emulando los cununos**
 —porque el cununo es difícil de conseguir y de microfonear— y usa arrullador y
 tambora reales. Es la misma decisión que tenemos delante con el EP–40: qué se
 muestrea de verdad y qué se sustituye.
+
+## La matriz métrica — lo que hacíamos tenía nombre
+
+De **`Pitos y tambores`, cartilla de iniciación musical de Victoriano Valencia**
+(Plan Nacional de Música para la Convivencia, Ministerio de Cultura).
+
+> *Dos matrices métricas reúnen los diferentes ritmos del eje de pitos y
+> tambores. Una, **binaria, de ocho eventos** definidos por acento, pulso,
+> primera división y segunda división. La otra, **ternaria, de seis eventos**.*
+
+**Las tablas de ataques que este proyecto lleva midiendo son exactamente eso.**
+La ternaria de seis para el bambuco, el currulao y el torbellino; la binaria de
+ocho para el mapalé, el chandé y la cumbia. Se llegó al mismo aparato analítico
+por medición, sin saber que la pedagogía colombiana ya lo tenía formalizado y le
+había puesto nombre.
+
+`[M]` **Y la convención de la X está documentada.** La cartilla da la clave de
+notación de la tambora:
+
+```
+♩    abierto o cuero — golpe con baqueta en parche
+♩̣    tapado — se percute presionando con la punta de la baqueta
+✗    MADERA — percusión en el vaso de la tambora
+⊗    aro
+```
+
+> *«Ejemplo de escritura a dos planos. **Arriba madera y abajo cuero**.»*
+
+Así que la lectura de la partitura del bombo golpeador —cabezas en X para la
+madera— **no era una nota al pie de aquel documento sino el estándar**. Eso
+respalda el mapeo del currulao con una fuente pedagógica, no con una inferencia.
+
+## La cumbia, de la cartilla del Ministerio
+
+`[M]` Las alineaciones sobre la matriz binaria, tal como las da la cartilla:
+
+```
+matriz binaria    1   2   3   4   5   6   7   8
+palmas (pulso)    X               X
+llamador                  X               X        contratiempo
+guacho            X       X       X       X
+alegre            X   X   X   X   X   X   X   X    «reproduce la matriz»
+```
+
+El alegre tocando los ocho eventos es el patrón básico de **cumbia tipo
+soledeña**. El llamador a contratiempo es lo que hace que una cumbia sea una
+cumbia.
+
+`[V]` **La tambora necesita «matriz doble»** —dieciséis eventos— y no está
+implementada: sus variaciones ocupan una página entera de la cartilla y merecen
+medirse aparte.
+
+`[D]` **El bajo no viene en la cartilla**, que es material de percusión. El del
+motor es una línea sencilla en el pulso, deducida.
