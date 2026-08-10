@@ -188,3 +188,46 @@ percusión y la armonía; la marimba entra por el EP–40 desde la partitura o
 tocada en vivo.
 
 Pesa **5,2 KB**, el más barato de los ocho géneros andinos.
+
+## El mapalé — un ostinato que oscila de octava
+
+`[M]` De `mapale-ashcolom.mid`, transcripción para piano a dos manos. La celda
+del acompañamiento, en semicorcheas de medio compás:
+
+```
+semicorchea    1    2    3    4    5    6    7    8
+ataques      142    0    0  120   10  120    0    0
+```
+
+Ataques en la **1, la 4 y la 6** — intervalos de **3+2+3**. Y las alturas dicen
+algo que el recuento por sí solo no ve:
+
+```
+compás 71   sc1 D3   sc4 D4   sc6 D3
+compás 72   sc1 D4   sc4 D3   sc6 D4
+```
+
+**La octava alterna en cada golpe.** Como son tres por compás, el ciclo se
+invierte al siguiente y vuelve al tercero. No es un pedal quieto: es una
+oscilación de octava sobre una rejilla fija, y ese desfase de dos compases es lo
+que lo hace respirar.
+
+`[M]` La armonía casi no se mueve: **126 compases sobre Re, 14 sobre Fa y uno
+sobre La**, con 29 cambios en 141 compases. Es un género de ostinato.
+
+`[V]` **El compás y el tempo no cuadran entre fuentes.** La transcripción de
+piano va a 100 en 4/4; el catálogo de Tribe da 180 en 2/2; el plan del directo
+dice 202,7. La partitura de clarinete de *La Mecedora* (José Camilo Gómez) está
+en **compasillo partido**, lo que apoya el 2/2. Lo más probable es que la
+transcripción de piano esté escrita a mitad de tiempo — 100 × 2 = 200, cerca de
+202,7 — pero no está comprobado.
+
+`[V]` **La percusión no está en ninguna de las dos fuentes.** Lo medido es la
+célula del acompañamiento y la armonía, no los tambores, que en este género son
+la mitad del asunto.
+
+> **Cuidado con las partituras de clarinete.** *La Mecedora* está escrita para
+> **clarinete en si bemol**, que es transpositor: lo escrito suena **una segunda
+> mayor más grave**. Tomar sus alturas tal cual pondría la pieza un tono arriba,
+> y sonaría perfectamente bien en el tono equivocado — el error no se oye si no
+> hay nada con qué comparar.

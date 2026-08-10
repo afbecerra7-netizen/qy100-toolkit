@@ -915,8 +915,101 @@ class Currulao(Genero):
     )
 
 
+# --- Mapale --------------------------------------------------------------
+#
+# De `mapale-ashcolom.mid` (piano a dos manos, 4/4 a 100). La celda del
+# acompanamiento, en semicorcheas de medio compas:
+#
+#     semicorchea    1    2    3    4    5    6    7    8
+#     ataques      142    0    0  120   10  120    0    0
+#
+# Ataques en la **1, la 4 y la 6**: intervalos de 3+2+3. Y las alturas dicen algo
+# que el recuento por si solo no ve:
+#
+#     compas 71   sc1 D3   sc4 D4   sc6 D3
+#     compas 72   sc1 D4   sc4 D3   sc6 D4
+#
+# **La octava alterna en cada golpe.** Como son tres por compas, el ciclo se
+# invierte al compas siguiente y vuelve al tercero. No es un pedal quieto sino
+# una oscilacion de octava sobre una rejilla fija.
+#
+# `[M]` La armonia casi no se mueve: 126 compases sobre Re, 14 sobre Fa y uno
+# sobre La, con 29 cambios en 141 compases. Es un genero de ostinato.
+#
+# `[V]` **El tempo no cuadra entre fuentes.** La partitura va a 100 en 4/4, el
+# plan del directo dice 202,7 y el catalogo de Tribe da 180 en 2/2. Lo mas
+# probable es que la partitura este escrita a mitad de tiempo —100 x 2 = 200, muy
+# cerca de 202,7— pero no esta comprobado. Aqui se usa el de la partitura.
+#
+# `[V]` **La percusion no esta en esta fuente**: es una transcripcion para piano.
+# Lo medido es la celda y la armonia, no los tambores, que en este genero son la
+# mitad del asunto.
+
+MAPALE_CELDA = (0, 3, 5)      # semicorcheas 1, 4 y 6 de cada medio compas
+
+
+def _mapale_ostinato(g, compases, intensidad):
+    """La oscilacion de octava sobre la celda de 3+2+3."""
+    notas, golpe = [], 0
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for mitad in range(g.beats // 2):
+            for i in MAPALE_CELDA:
+                notas.append(F.Note(raiz + (12 if golpe % 2 else 0),
+                                    108 if i == 0 else 92, SEMI * 2 - 10,
+                                    base + mitad * 2 * NEGRA + i * SEMI))
+                golpe += 1
+    return notas
+
+
+def _mapale_bombo(g, compases, intensidad):
+    """Bombo en la misma celda; en las secciones flojas solo en el apoyo."""
+    posiciones = MAPALE_CELDA if intensidad > 0.5 else (0,)
+    return [F.Note(CUERO, 112 if i == 0 else 96, SEMI,
+                   _bar(c, g.beats) + mitad * 2 * NEGRA + i * SEMI)
+            for c in range(compases) for mitad in range(g.beats // 2)
+            for i in posiciones]
+
+
+def _mapale_guasa(g, compases, intensidad):
+    """Sonaja continua: el colchon que hace correr el genero."""
+    paso = 1 if intensidad > 0.6 else 2
+    return [F.Note(GUASA, 70 if i % 4 else 84, SEMI - 10,
+                   _bar(c, g.beats) + i * SEMI)
+            for c in range(compases) for i in range(0, g.beats * 4, paso)]
+
+
+class Mapale(Genero):
+    nombre = "MAPALE"
+    bpm = 100.0
+    beats = 4
+    compases_por_acorde = 8      # casi no se mueve: 29 cambios en 141 compases
+    progresion = (
+        ("Dm", 50, [50, 53, 57]),
+        ("Dm", 50, [50, 53, 57]),
+        ("F",  53, [53, 57, 60]),
+        ("Dm", 50, [50, 53, 57]),
+    )
+    pistas = (
+        (0, "D1", "bombo en la celda",      "Rock Kit", True,  _mapale_bombo),
+        (2, "PC", "sonaja en semicorcheas", "Rock Kit", True,  _mapale_guasa),
+        (3, "BA", "ostinato de octavas",    "Aco.Bass", False, _mapale_ostinato),
+    )
+
+
+#: Los generos disponibles. **El modulo se llama `andina` y ya no todos lo son**:
+#: el currulao es del Pacifico y el mapale del Caribe. Comparten el armazon —seis
+#: secciones, celda medida, progresion escrita dentro— pero el nombre pide un
+#: cambio. Pendiente.
 GENEROS = {
-    "currulao": Currulao,"bambuco": Bambuco, "fiestero": BambucoFiestero,
-           "pasillo": Pasillo, "pasillodenso": PasilloDenso,
-           "torbellino": Torbellino, "guabina": Guabina,
-           "melancolico": BambucoMelancolico}
+    "bambuco":      Bambuco,
+    "fiestero":     BambucoFiestero,
+    "melancolico":  BambucoMelancolico,
+    "pasillo":      Pasillo,
+    "pasillodenso": PasilloDenso,
+    "torbellino":   Torbellino,
+    "guabina":      Guabina,
+    "currulao":     Currulao,
+    "mapale":       Mapale,
+}
