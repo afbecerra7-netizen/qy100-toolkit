@@ -129,10 +129,22 @@ ORDEN = ["kick", "snare1", "snare2", "tom_h", "tom_l",
 
 
 def leer_plantilla(ruta):
-    """Carga un `.drumbruteimpact`, tolerando la coma sobrante de Arturia."""
+    """Carga un `.drumbruteimpact`, en plano o comprimido con gzip.
+
+    La coma sobrante antes de la llave final es de Arturia, no un error: el
+    archivo **no es JSON estricto** y `json.load` lo rechaza tal cual.
+
+    Acepta `.gz` porque **estos archivos se guardan comprimidos**: son 209.090
+    claves de las que casi todas repiten el mismo valor, asi que pasan de 4,4 MB
+    a 0,5. Guardar el plano en git significaria 4,4 MB nuevos por cada
+    exportacion, para siempre.
+    """
+    import gzip
     import json
     import re
-    return json.loads(re.sub(r",(\s*})", r"\1", open(ruta).read()))
+    abrir = gzip.open if str(ruta).endswith(".gz") else open
+    with abrir(ruta, "rt") as fh:
+        return json.loads(re.sub(r",(\s*})", r"\1", fh.read()))
 
 
 def escribir_plantilla(datos, ruta):
@@ -151,10 +163,13 @@ def escribir_plantilla(datos, ruta):
     exactamente el mismo resultado. **Un round-trip solo demuestra comprension si
     el formato de salida se genera, no si puede haberse copiado.**
     """
+    import gzip
     import json
     cab = [k for k in ("device", "version") if k in datos]
     resto = sorted(k for k in datos if k not in cab)
-    with open(ruta, "w") as fh:
+    abrir = ((lambda r, m: gzip.open(r, "wt")) if str(ruta).endswith(".gz")
+             else (lambda r, m: open(r, m)))
+    with abrir(ruta, "w") as fh:
         fh.write("{\n")
         for k in cab + resto:
             fh.write('\t%s: %s,\n' % (json.dumps(k), json.dumps(datos[k])))

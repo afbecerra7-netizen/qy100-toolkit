@@ -40,12 +40,12 @@ Este archivo era de 1.146 líneas y mezclaba tres materias distintas. Ahora es e
 
 | Documento | Qué contiene |
 | --- | --- |
-| `docs/qy100-protocolo.md` | SysEx, formato de patrón y canción, frases de fábrica, firmware |
-| `docs/equipo.md` | Los aparatos, sus mapas de notas, el reparto de canales |
-| `docs/musica-colombiana.md` | Las células rítmicas medidas de cada género |
-| `docs/manuales.md` | Dónde está cada manual y cómo leerlo |
-| `qy100-syx/PLAN-LIVESET.md` | El set de 40 minutos: repertorio, memoria, mecánica |
-| `instrumentos-software.md` | Inventario de plugins, leído del disco |
+| [`docs/qy100-protocolo.md`](docs/qy100-protocolo.md) | SysEx, formato de patrón y canción, frases de fábrica, firmware |
+| *(no publicado)* | El inventario del estudio: qué aparatos hay y en qué canal. Es informacion personal y no aporta a un colaborador |
+| [`docs/musica-colombiana.md`](docs/musica-colombiana.md) | Las células rítmicas medidas de cada género |
+| [`docs/manuales.md`](docs/manuales.md) | Dónde está cada manual y cómo leerlo |
+| *(no publicado)* | El plan de un directo concreto. Las mediciones de memoria que salieron de él sí están, en el documento de protocolo |
+| *(no publicado)* | Inventario de plugins de un estudio concreto |
 
 ## Cómo se marca lo que se sabe
 
@@ -79,7 +79,7 @@ mapa de pads del EP–40 se resolvió así después de siete pruebas mal diseña
 
 Todas aprendidas por las malas y detalladas en los documentos.
 
-**Al escribir en el QY100** (protocolo):
+**Al escribir en el QY100** ([protocolo](docs/qy100-protocolo.md)):
 
 - El patrón va **entero y en el orden en que el aparato lo volcó** — pistas
   primero, las 5 cabeceras al final. Reordenarlo lo borra.
