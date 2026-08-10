@@ -869,15 +869,22 @@ CURR_BAJO = 5                       # la sexta
 
 
 def _currulao_bombo(g, compases, intensidad):
-    """La celula medida, sin variar. Es la identidad del genero."""
+    """La celula medida. El ultimo golpe es MADERA y CUERO **a la vez**.
+
+    Lo dice la cartilla del Pacifico Sur al describir la base 1: *"la ultima
+    silaba coincide con el golpe simultaneo ABIERTO-MADERA"*, y el pictograma lo
+    dibuja con un icono distinto de los otros tres. Antes se escribia solo el
+    cuero, que es la mitad del golpe.
+    """
     notas = []
     for c in range(compases):
         base = _bar(c, g.beats)
         for i in CURR_ALTO:
             notas.append(F.Note(MADERA, 100 if i == 0 else 88,
                                 CORCHEA - 20, base + i * CORCHEA))
-        notas.append(F.Note(CUERO, 108, CORCHEA - 20,
-                            base + CURR_BAJO * CORCHEA))
+        t = base + CURR_BAJO * CORCHEA
+        notas.append(F.Note(CUERO,  108, CORCHEA - 20, t))
+        notas.append(F.Note(MADERA,  92, CORCHEA - 20, t))   # simultaneo
     return notas
 
 

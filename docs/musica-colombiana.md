@@ -395,3 +395,45 @@ aparece una fuente nueva se ve de un vistazo qué confirma y qué contradice.
 
 Y deja visible lo incómodo: en el currulao **tres de las cuatro pistas son
 deducidas**, y solo el bombo está medido. Eso no se veía leyendo el código.
+
+## El bombo golpeador tiene cuatro bases, no una
+
+De la cartilla del Pacífico Sur, §5.2.1.1. Cada una con su onomatopeya:
+
+| | base | golpes |
+| --- | --- | --- |
+| 1 | **«Déle duro»** | ABIERTO + MADERA |
+| 2 | **«Con la horqueta»** | ABIERTO + MADERA |
+| 3 | **«Papa con yuca»** | ABIERTO + MADERA |
+| 4 | **«Cogé tu batea»** | ABIERTO, MADERA y CERRADO |
+
+**«Papa con yuca» también es una base del currulao.** La conocíamos como la
+onomatopeya del bambuco, medida sobre `te-ofrezco-mi-corazon`. Y el **bombo
+arrullador** —el segundo tambor— toca una base que la cartilla llama
+literalmente **«Bambuco»** (o «Totuma, totuma»), alternando CERRADO, MADERA y
+ABIERTO.
+
+Eso no es una casualidad de nombres: es la conexión que el documento
+*«similitudes entre bambuco y música del Pacífico»* señala, y que ya habíamos
+rozado al ver que las dos familias reparten las mismas seis corcheas.
+
+`[M]` **La variación que faltaba son los apoyos**, y son tres: *«Con la horqueta
+×3 + cierre»*, con cierres llamados **cierro**, **acompaño** y **marcando**. Eso
+completa el ciclo de cuatro compases.
+
+`[M]` **El último golpe es MADERA y CUERO a la vez** — *«la última sílaba
+coincide con el golpe simultáneo ABIERTO-MADERA»*, y el pictograma lo dibuja con
+un icono distinto de los otros tres. El motor escribía solo el cuero, que es la
+mitad del golpe. Corregido.
+
+`[V]` **Y hay una discrepancia sin resolver sobre el acento.** La cartilla dice
+que todas las formas de ejecución coinciden en *«un fuerte golpe ABIERTO (5ª
+corchea)»*; nuestra medición sobre el MIDI de Martínez y Vente lo pone en la
+**6ª**. Un desfase de una corchea, que movería la célula entera respecto al bajo
+y los acordes.
+
+No se puede zanjar desde la cartilla: su notación es **pictográfica** —iconos de
+bombo con baqueta— y el espaciado entre iconos es visual, no proporcional.
+Deducir posiciones de ahí sería exactamente el error que este proyecto ya ha
+cometido. Se resuelve de oído contra el corte 40 del disco de la cartilla, o
+tocando las dos versiones y comparando.
