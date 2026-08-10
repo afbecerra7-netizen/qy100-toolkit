@@ -437,3 +437,30 @@ bombo con baqueta— y el espaciado entre iconos es visual, no proporcional.
 Deducir posiciones de ahí sería exactamente el error que este proyecto ya ha
 cometido. Se resuelve de oído contra el corte 40 del disco de la cartilla, o
 tocando las dos versiones y comparando.
+
+## El conjunto de currulao, instrumento por instrumento
+
+Del índice del disco de la cartilla (cortes 40–45), que es texto y por tanto
+verificable sin leer pictogramas:
+
+| corte | instrumento | bases |
+| --- | --- | --- |
+| 40 | **bombo golpeador** | Déle duro · Con la horqueta · Papa con yuca · Cogé tu batea |
+| 41 | *apoyos* | Cierro · Acompaño · Marcando |
+| 42 | **bombo arrullador** | base «Bambuco» + variación «Empujá pa que suene el bambuco» |
+| 43 | **cununo apagador** | «Qué por qué» |
+| 44 | **cununo repicador** | «Tráigalo pa'cá», con golpe de dedos y golpe lateral |
+| 45 | *variaciones del repicador* | Tráigalo tra · Tráigalo ya · Tráigamelo ya · Traitraitrai |
+
+**Las onomatopeyas son el ritmo**, no un apoyo mnemotécnico añadido. «Qué por
+qué» son tres sílabas, «Déle duro» cuatro, «Tráigalo pa'cá» cinco: el número de
+sílabas y dónde cae el acento **son** la célula. Por eso se enseña así, y por eso
+sirven para verificar de oído sin saber leer música.
+
+Eso da además una vía para transcribir sin depender del pictograma: **contar
+sílabas acota el número de golpes**, y el acento prosódico dice cuál es el
+fuerte. No sustituye a medir, pero descarta lecturas imposibles.
+
+`[V]` **El corte 40 dura un minuto** y trae las cuatro bases seguidas. Ahí se
+resuelve de oído la discrepancia del acento —5ª o 6ª corchea— que la notación
+pictográfica no permite zanjar.
