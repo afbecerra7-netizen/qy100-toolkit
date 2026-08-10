@@ -42,6 +42,7 @@ Este archivo era de 1.146 líneas y mezclaba tres materias distintas. Ahora es e
 | --- | --- |
 | [`docs/qy100-protocolo.md`](docs/qy100-protocolo.md) | SysEx, formato de patrón y canción, frases de fábrica, firmware |
 | *(no publicado)* | El inventario del estudio: qué aparatos hay y en qué canal. Es informacion personal y no aporta a un colaborador |
+| [`docs/estilos-de-fabrica.md`](docs/estilos-de-fabrica.md) | Los 128 estilos de fábrica con su nombre completo |
 | [`docs/musica-colombiana.md`](docs/musica-colombiana.md) | Las células rítmicas medidas de cada género |
 | [`docs/manuales.md`](docs/manuales.md) | Dónde está cada manual y cómo leerlo |
 | *(no publicado)* | El plan de un directo concreto. Las mediciones de memoria que salieron de él sí están, en el documento de protocolo |
