@@ -75,6 +75,7 @@ class Genero:
     """
 
     beats = 3
+    denominador = 4     # 6/8 lo pone el currulao
     nombre = "?"
     bpm = 120.0
     progresion = ()
@@ -795,7 +796,108 @@ class BambucoMelancolico(Bambuco):
     )
 
 
-GENEROS = {"bambuco": Bambuco, "fiestero": BambucoFiestero,
+
+# --- Currulao ------------------------------------------------------------
+#
+# **La celula mas limpia que se ha medido en este proyecto: 100%.** Sale de
+# `bombo-golpeador-o-macho-currulao.mid`, 64 notas en 16 compases, y los
+# dieciseis son identicos golpe por golpe. El torbellino daba 97 y el bambuco de
+# salon 83.
+#
+#     corchea     1      2      3      4      5      6
+#     golpe      ALTO    ·     ALTO   ALTO    ·     BAJO
+#     altura     C#2           C#2    C#2           C2
+#
+# Tres golpes altos y **el grave en la sexta**, que es justo donde el bambuco de
+# salon calla. Los dos generos reparten las mismas seis corcheas y se separan en
+# esa nota: uno respira ahi y el otro apoya.
+#
+# **El currulao es 6/8 y no 3/4**, y esta vez la notacion coincide con la
+# celula: las cinco partituras de currulao vienen en 6/8. El QY100 lo admite —el
+# byte 14 codifica el denominador con 2 para /8— asi que se escribe como es.
+#
+# Lo melodico NO se genera: la marimba da 13% de repeticion y la guitarra 4%.
+# Son arreglos, no celulas, igual que el porro y el chande. Aqui el motor pone la
+# percusion y la armonia, y la marimba entra por el EP-40 desde la partitura o
+# tocada en vivo.
+
+BOMBO_ALTO, BOMBO_BAJO = 45, 41     # los mismos parches que la tambora del bambuco
+GUASA = 82                          # sonaja: el shaker del kit XG
+CURR_ALTO = (0, 2, 3)               # corcheas 1, 3 y 4
+CURR_BAJO = 5                       # la sexta
+
+
+def _currulao_bombo(g, compases, intensidad):
+    """La celula medida, sin variar. Es la identidad del genero."""
+    notas = []
+    for c in range(compases):
+        base = _bar(c, g.beats)
+        for i in CURR_ALTO:
+            notas.append(F.Note(BOMBO_ALTO, 100 if i == 0 else 88,
+                                CORCHEA - 20, base + i * CORCHEA))
+        notas.append(F.Note(BOMBO_BAJO, 108, CORCHEA - 20,
+                            base + CURR_BAJO * CORCHEA))
+    return notas
+
+
+def _currulao_guasa(g, compases, intensidad):
+    """Guasa en las seis corcheas; en las secciones flojas solo en las impares.
+
+    Se quitan corcheas, **nunca se mueven las que quedan**: la rejilla es la del
+    genero y desplazarla lo convierte en otra cosa.
+    """
+    paso = 1 if intensidad > 0.55 else 2
+    return [F.Note(GUASA, 64 if i % 2 else 76, CORCHEA - 30,
+                   _bar(c, g.beats) + i * CORCHEA)
+            for c in range(compases) for i in range(0, 6, paso)]
+
+
+def _currulao_bajo(g, compases, intensidad):
+    """Fundamental en la 1 y quinta en la 4 — los dos apoyos de un 6/8."""
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        notas.append(F.Note(raiz, 112, CORCHEA * 2 - 20, base))
+        notas.append(F.Note(raiz + 7, 96, CORCHEA * 2 - 20, base + 3 * CORCHEA))
+    return notas
+
+
+def _currulao_acordes(g, compases, intensidad):
+    """Acorde en las corcheas 2 y 5, las que el bombo deja libres."""
+    posiciones = (1, 4) if intensidad > 0.4 else (1,)
+    notas = []
+    for c in range(compases):
+        _n, _r, voces = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for i in posiciones:
+            for alt in voces:
+                notas.append(F.Note(alt, 82, CORCHEA - 30, base + i * CORCHEA))
+    return notas
+
+
+class Currulao(Genero):
+    nombre = "CURRULAO"
+    bpm = 120.0
+    beats = 3            # tres negras de duracion; la METRICA es 6/8
+    denominador = 8
+    compases_por_acorde = 2
+    progresion = (
+        ("Em", 40, [52, 55, 59]),
+        ("Am", 45, [57, 60, 64]),
+        ("Em", 40, [52, 55, 59]),
+        ("B7", 47, [51, 54, 59]),
+    )
+    pistas = (
+        (0, "D1", "bombo golpeador, celula medida", "Rock Kit", True,  _currulao_bombo),
+        (2, "PC", "guasa",                          "Rock Kit", True,  _currulao_guasa),
+        (3, "BA", "bajo en 1 y 4",                  "Aco.Bass", False, _currulao_bajo),
+        (4, "C1", "acordes en 2 y 5",               "NylonGtr", False, _currulao_acordes),
+    )
+
+
+GENEROS = {
+    "currulao": Currulao,"bambuco": Bambuco, "fiestero": BambucoFiestero,
            "pasillo": Pasillo, "pasillodenso": PasilloDenso,
            "torbellino": Torbellino, "guabina": Guabina,
            "melancolico": BambucoMelancolico}

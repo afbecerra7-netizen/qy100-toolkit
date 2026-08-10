@@ -142,3 +142,32 @@ responde la armonia — el torbellino en los tres negros, la guabina en las cont
 detras de cada bajo. Mismo esqueleto, distinto eco. Y **el bambuco fiestero es el
 unico que ocupa las seis corcheas**: por eso empuja.
 
+## El currulao — la célula más limpia medida hasta ahora
+
+`[M]` De `bombo-golpeador-o-macho-currulao.mid`: **64 notas en 16 compases, y los
+dieciséis idénticos golpe por golpe. 100 % de repetición.** El torbellino daba
+97 y el bambuco de salón 83.
+
+```
+corchea     1      2      3      4      5      6
+golpe      ALTO    ·     ALTO   ALTO    ·     BAJO
+altura     C#2           C#2    C#2           C2
+```
+
+Tres golpes altos y **el grave en la sexta corchea**, que es exactamente donde el
+bambuco de salón calla. Los dos géneros reparten las mismas seis corcheas y se
+separan en esa nota: uno respira ahí y el otro apoya. Eso no es una observación
+de oído — sale de comparar dos tablas de ataques medidas por separado.
+
+`[M]` **Es 6/8, y esta vez la notación coincide con la célula**: las cinco
+partituras de currulao vienen en 6/8. Se escribe así en el aparato, que lo
+admite — el byte 14 codifica el denominador con `2` para `/8`. Antes `cmd_andina`
+lo tenía fijo en `/4` y habría escrito 3/4 sobre una célula de seis corcheas:
+suena igual, pero la máquina cuenta los compases de otra forma en modo canción.
+
+**Lo melódico no se genera.** La marimba da 13 % de repetición y la guitarra 4 %:
+son arreglos, no células, igual que el porro y el chandé. El motor pone la
+percusión y la armonía; la marimba entra por el EP–40 desde la partitura o
+tocada en vivo.
+
+Pesa **5,2 KB**, el más barato de los ocho géneros andinos.

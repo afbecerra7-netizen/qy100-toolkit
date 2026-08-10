@@ -857,11 +857,16 @@ def cmd_andina(args):
     compases = A.compases_por_seccion()
     cab_bytes[0] = F.encode_header(cab_bytes[0], name=g.nombre, measures=compases)
     cab_bytes[0] = F.set_tempo(cab_bytes[0], bpm)
-    cab_bytes[0] = F.set_time_signature(cab_bytes[0], g.beats, 4)
+    # El denominador sale del genero: el currulao es 6/8 y no 3/4, y el
+    # byte 14 lo admite (2 = /8). Estaba fijo en /4 y habria escrito 3/4
+    # sobre una celula de seis corcheas — sonaria igual pero la maquina
+    # contaria los compases de otra forma en modo cancion.
+    num = g.beats * 2 if g.denominador == 8 else g.beats
+    cab_bytes[0] = F.set_time_signature(cab_bytes[0], num, g.denominador)
 
     log("")
-    log("%s — %.0f bpm, %d/4, progresion %s"
-        % (g.nombre, bpm, g.beats, " ".join(p[0] for p in g.progresion)))
+    log("%s — %.0f bpm, %d/%d, progresion %s"
+        % (g.nombre, bpm, num, g.denominador, " ".join(p[0] for p in g.progresion)))
     log("")
 
     nuevos, total_notas, total_bloques = {}, 0, 0
