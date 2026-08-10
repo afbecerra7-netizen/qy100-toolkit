@@ -77,6 +77,14 @@ class Genero:
     beats = 3
     denominador = 4     # 6/8 lo pone el currulao
     nombre = "?"
+    #: **De donde sale cada pista**: {indice: (marca, fuente, que aporta)}.
+    #: Existe porque la mezcla silenciosa de fuentes es el error caro de este
+    #: dominio: el bambuco tiene tres motores justo porque `te-ofrezco` y
+    #: `brisas-del-pamplonita` traen patrones distintos, y fundirlos habria dado
+    #: un bambuco que no existe en ninguna parte. Con la procedencia escrita,
+    #: cuando aparece una fuente nueva se ve al instante que confirma y que
+    #: contradice, sin releer comentarios.
+    fuentes = {}
     bpm = 120.0
     progresion = ()
     compases_por_acorde = 2
@@ -93,6 +101,11 @@ class Genero:
 
     def total(self, compases):
         return F.section_clocks(compases, beats_per_bar=self.beats)
+
+    def procedencia(self):
+        """Filas (pista, marca, fuente, aporte) para las pistas documentadas."""
+        return [(nom, ) + self.fuentes.get(idx, ("[V]", "sin documentar", ""))
+                for idx, nom, _p, _v, _b, _m in self.pistas]
 
 
 # --- Bambuco -------------------------------------------------------------
@@ -204,6 +217,16 @@ def _bambuco_tiple(g, compases, intensidad):
 
 class Bambuco(Genero):
     nombre = "BAMBUCO"
+    fuentes = {
+        0: ("[M]", "te-ofrezco-mi-corazon-bambuco.mid",
+                   "la celula del papa con yuca, medida en los 31 compases"),
+        2: ("[D]", "-", "guache continuo, deducido"),
+        3: ("[M]", "te-ofrezco-mi-corazon-bambuco.mid",
+                   "quinta en la corchea 3 y fundamental en la 5, en los 31 "
+                   "compases"),
+        4: ("[M]", "te-ofrezco-mi-corazon-bambuco.mid",
+                   "acordes en las corcheas 2 y 4"),
+    }
     bpm = 152.0
     compases_por_acorde = 1
     # La forma armonica de la partitura, trasladada a Mi menor por el tiple:
@@ -896,6 +919,26 @@ def _currulao_acordes(g, compases, intensidad):
 
 class Currulao(Genero):
     nombre = "CURRULAO"
+    fuentes = {
+        0: ("[M]", "bombo-golpeador-o-macho-currulao.mid (Javier Martinez / "
+                   "Wilmer Vente)",
+                   "la celula: 64 notas en 16 compases, 100% identicas. Las "
+                   "cabezas en X son madera y la nota normal es cuero, segun la "
+                   "propia partitura y la clave de `Pitos y tambores`"),
+        2: ("[D]", "-", "guasa continua, deducida. La cartilla del Pacifico Sur "
+                        "la nombra pero no se ha transcrito su patron"),
+        3: ("[D]", "-", "bajo en 1 y 4, deducido de los dos pulsos del 6/8"),
+        4: ("[D]", "-", "acordes en 2 y 5, elegidos por no pisar al bombo"),
+    }
+    #: `[V]` **Falta la variacion.** La cartilla `¡Que te pasa vo!` dice que el
+    #: ciclo son cuatro compases —tres bases mas una variacion— y esta fuente
+    #: trae solo la base repetida, por ser material de estudio. Este motor toca
+    #: la base sola: correcto pero incompleto.
+    #:
+    #: Las dos fuentes NO se contradicen en la onomatopeya, aunque lo parezca:
+    #: la partitura dice "Con la orquesta dele duro" (8 silabas, 2 compases) y la
+    #: cartilla "Dele duro" (4 silabas, 1 compas). La segunda es la cola de la
+    #: primera — la misma celula nombrada a dos escalas.
     # "Con la orquesta dele duro"
     bpm = 120.0
     beats = 3            # tres negras de duracion; la METRICA es 6/8
@@ -982,6 +1025,13 @@ def _mapale_guasa(g, compases, intensidad):
 
 class Mapale(Genero):
     nombre = "MAPALE"
+    fuentes = {
+        0: ("[D]", "-", "bombo sobre la misma celda del ostinato, deducido"),
+        2: ("[D]", "-", "sonaja continua, deducida"),
+        3: ("[M]", "mapale-ashcolom.mid",
+                   "la celda 3+2+3 y la alternancia de octava, medidas sobre la "
+                   "mano izquierda del piano"),
+    }
     bpm = 100.0
     beats = 4
     compases_por_acorde = 8      # casi no se mueve: 29 cambios en 141 compases
@@ -1064,6 +1114,16 @@ def _cumbia_bajo(g, compases, intensidad):
 
 class Cumbia(Genero):
     nombre = "CUMBIA"
+    fuentes = {
+        0: ("[M]", "Pitos y tambores (V. Valencia, Plan Nacional de Musica)",
+                   "llamador a contratiempo: eventos 3 y 7 de la matriz binaria"),
+        1: ("[M]", "Pitos y tambores",
+                   "el alegre 'reproduce la matriz metrica binaria' — los ocho "
+                   "eventos, patron basico tipo soledeña"),
+        2: ("[M]", "Pitos y tambores", "guacho en 1, 3, 5 y 7"),
+        3: ("[D]", "-", "bajo en el pulso. La cartilla es de percusion y no "
+                        "trae bajo"),
+    }
     bpm = 96.0
     beats = 2                    # la matriz binaria son 8 semicorcheas de 2/4
     compases_por_acorde = 4

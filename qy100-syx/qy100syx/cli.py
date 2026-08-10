@@ -106,6 +106,9 @@ def build_parser():
     an.add_argument("--bpm", type=float)
     an.add_argument("--escribir", action="store_true")
     an.add_argument("--yes", action="store_true")
+    an.add_argument("--fuentes", action="store_true",
+                    help="de donde sale cada pista, y con que marca. No toca el "
+                         "equipo")
     an.set_defaults(func=cmd_andina)
 
     re_ = sub.add_parser("referencia", parents=[conn],
@@ -821,6 +824,18 @@ def cmd_andina(args):
         return 1
     g = A.GENEROS[args.genero]()
     bpm = args.bpm or g.bpm
+
+    # **La procedencia se consulta sin hardware**, que es el punto: sirve para
+    # decidir en que confiar antes de escribir nada.
+    if args.fuentes:
+        num = g.beats * 2 if g.denominador == 8 else g.beats
+        log("%s — %d/%d, %.0f bpm\n" % (g.nombre, num, g.denominador, bpm))
+        log("%-4s %-4s %-44s %s" % ("pista", "", "fuente", "que aporta"))
+        for pista, marca, fuente, aporte in g.procedencia():
+            log("%-4s %-4s %-44s %s" % (pista, marca, fuente[:44], aporte))
+        log("")
+        log("[M] medido   [D] deducido de algo medido   [V] sin verificar")
+        return 0
 
     inp, outp = open_ports(args)
     try:

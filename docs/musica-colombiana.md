@@ -358,8 +358,40 @@ corcheas 1 y 4, y las dos son madera en la célula medida. La cartilla añade qu
 se aplaude o zapatea **sobre la sílaba «ro»**, que es el golpe de cuero de la
 sexta.
 
+**Y las dos fuentes no se contradicen, aunque lo parezca.** La partitura de
+Martínez y Vente dice «Con la orquesta dele duro» —ocho sílabas, dos compases— y
+la cartilla «Déle duro» —cuatro, uno—. La segunda es la cola de la primera: la
+misma célula nombrada a dos escalas. Dar por buena la cartilla y descartar la
+partitura habría sido un error de método; **una fuente nueva no invalida la
+anterior por ser más oficial, solo dice otra cosa**.
+
 `[V]` **El ciclo son cuatro compases, no uno**: *«base simple del bombo ×3 +
 variación»*. La fuente que medimos traía dieciséis compases idénticos porque es
 la base aislada; en la práctica **cada cuarto compás lleva variación**. La
 variación está notada en la cartilla pero no se ha transcrito — el motor
 `Currulao` toca la base sola, que es correcto pero incompleto.
+
+## De dónde sale cada pista
+
+Cada motor declara la procedencia de sus pistas, consultable sin hardware:
+
+```bash
+cd qy100-syx && .venv/bin/python syx.py andina currulao --fuentes
+```
+
+```
+pista      fuente                                 qué aporta
+D1   [M]  bombo-golpeador…mid (Martínez/Vente)   la célula, 100 % en 16 compases
+PC   [D]  -                                      guasá continua, deducida
+BA   [D]  -                                      bajo en 1 y 4, de los dos pulsos
+C1   [D]  -                                      acordes en 2 y 5
+```
+
+Existe porque **mezclar fuentes en silencio es el error caro de este dominio**.
+El bambuco tiene tres motores justamente porque `te-ofrezco-mi-corazon` y
+`brisas-del-pamplonita` traen patrones distintos: fundirlos habría producido un
+bambuco que no existe en ninguna parte. Con la procedencia escrita, cuando
+aparece una fuente nueva se ve de un vistazo qué confirma y qué contradice.
+
+Y deja visible lo incómodo: en el currulao **tres de las cuatro pistas son
+deducidas**, y solo el bombo está medido. Eso no se veía leyendo el código.
