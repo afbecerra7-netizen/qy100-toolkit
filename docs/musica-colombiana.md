@@ -319,3 +319,47 @@ medirse aparte.
 
 `[D]` **El bajo no viene en la cartilla**, que es material de percusión. El del
 motor es una línea sencilla en el pulso, deducida.
+
+## El Pacífico Sur son DOS sistemas, y el currulao es uno
+
+De **`¡Qué te pasa vo! Canto de piel, semilla y chonta`**, cartilla de Músicas
+del Pacífico Sur (Duque, Sánchez y Tascón — Plan Nacional de Música para la
+Convivencia). La hermana de *Pitos y tambores*, para marimba, cununos, guasá y
+bombos.
+
+`[M]` **La taxonomía**, que cambia cómo hay que pensar el repertorio:
+
+```
+sistema bunde       aires en 2/4
+sistema currulao    aires en 6/8    currulao, berejú, patacoré, pango, juga
+```
+
+No son géneros sueltos que casualmente comparten célula: **son aires de un mismo
+sistema**, y por eso la comparten. Confirma el 6/8 del currulao con fuente
+pedagógica, no solo con la partitura.
+
+`[M]` **La onomatopeya es «Déle duro», y corrige lo anotado antes.** Cuatro
+sílabas, un compás, un golpe cada una:
+
+```
+corchea    1     2     3     4     5     6
+sílaba    Dé          le    du          ro
+golpe   madera     madera madera     cuero
+pulso     ●                 ●
+```
+
+Se había deducido «Con la orquesta dele duro» del texto bajo el pentagrama de la
+partitura del bombo, repartido en ocho sílabas sobre dos compases. La cartilla
+dice que **la base simple es un compás**; la frase larga es otra cosa.
+
+Y encaja con lo medido por otra vía: *«cada base simple cuenta con dos pulsos…
+los pulsos coinciden con los golpes en la madera»*. En 6/8 los pulsos son las
+corcheas 1 y 4, y las dos son madera en la célula medida. La cartilla añade que
+se aplaude o zapatea **sobre la sílaba «ro»**, que es el golpe de cuero de la
+sexta.
+
+`[V]` **El ciclo son cuatro compases, no uno**: *«base simple del bombo ×3 +
+variación»*. La fuente que medimos traía dieciséis compases idénticos porque es
+la base aislada; en la práctica **cada cuarto compás lleva variación**. La
+variación está notada en la cartilla pero no se ha transcrito — el motor
+`Currulao` toca la base sola, que es correcto pero incompleto.
