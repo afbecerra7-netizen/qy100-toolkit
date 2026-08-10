@@ -63,18 +63,36 @@ PISTAS = [
 BOMBO, CAJA, CHARLES, ABIERTO, SHAKER = 36, 38, 42, 46, 82
 
 
+#: Compases que admite cada receta. **No es una limitacion tecnica sino
+#: musical**: un afrobeat en 3/4 no es un afrobeat, y un contragolpe de kit de
+#: rock no existe fuera del cuatro por cuatro. `construir` se niega en vez de
+#: producir algo con la aritmetica correcta y el genero equivocado. Lo andino
+#: vive en `andina.py`, que es 3/4 nativo.
+COMPASES_SOPORTADOS = {"base": (4,), "afrobeat": (4,), "enka": (4,)}
+
+
+def _semis(bpb):
+    """Semicorcheas por compas. 16 en 4/4, 12 en 3/4."""
+    return bpb * 4
+
+
+def _corcheas(bpb):
+    """Corcheas por compas. 8 en 4/4, 6 en 3/4."""
+    return bpb * 2
+
+
 def _pasos_activos(intensidad, minimo, maximo):
     """Reparte la intensidad 0..1 sobre un rango entero de pulsos."""
     return int(round(minimo + (maximo - minimo) * intensidad))
 
 
-def bombo(compases, intensidad, semilla, G):
+def bombo(compases, intensidad, semilla, G, bpb=4):
     pulsos = _pasos_activos(intensidad, 2, 7)
-    return G.euclidiano(compases, pulsos=pulsos, pasos=16, nota=BOMBO,
-                        velocity=108, semilla=semilla)
+    return G.euclidiano(compases, pulsos=pulsos, pasos=_semis(bpb), nota=BOMBO,
+                        velocity=108, semilla=semilla, beats_per_bar=bpb)
 
 
-def caja(compases, intensidad, semilla, G):
+def caja(compases, intensidad, semilla, G, bpb=4):
     """Contragolpe fijo en 2 y 4, mas charles que se densifica.
 
     El contragolpe **no** es euclidiano y esa es la diferencia entre que suene a
@@ -82,21 +100,26 @@ def caja(compases, intensidad, semilla, G):
     donde el oido los espera y el groove deja de leerse como bateria.
     """
     notas, total = G.euclidiano(compases, pulsos=_pasos_activos(intensidad, 4, 12),
-                                pasos=16, nota=CHARLES, velocity=64, semilla=semilla)
+                                pasos=_semis(bpb), nota=CHARLES, velocity=64,
+                                semilla=semilla, beats_per_bar=bpb)
     negra = F.CLOCKS_PER_QUARTER
+    # Los negros pares del compas: 2 y 4 en 4/4. En un compas de tres eso deja
+    # solo el 2, que es lo correcto — un contragolpe cada dos negros.
+    contras = [t for t in range(1, bpb, 2)]
     for c in range(compases):
-        for t in (1, 3):
-            notas.append(F.Note(CAJA, 104, negra // 2, c * negra * 4 + t * negra))
+        for t in contras:
+            notas.append(F.Note(CAJA, 104, negra // 2, c * negra * bpb + t * negra))
     return sorted(notas, key=lambda n: n.time), total
 
 
-def percusion(compases, intensidad, semilla, G):
+def percusion(compases, intensidad, semilla, G, bpb=4):
     nota = SHAKER if intensidad < 0.7 else ABIERTO
     return G.euclidiano(compases, pulsos=_pasos_activos(intensidad, 3, 9),
-                        pasos=16, nota=nota, velocity=72, semilla=semilla)
+                        pasos=_semis(bpb), nota=nota, velocity=72,
+                        semilla=semilla, beats_per_bar=bpb)
 
 
-def bajo(compases, intensidad, semilla, G):
+def bajo(compases, intensidad, semilla, G, bpb=4):
     """Fundamental sobre una reja euclidiana.
 
     Una sola altura: el TYPE `Bass` la rearmoniza contra la pista de acordes, asi
@@ -104,15 +127,16 @@ def bajo(compases, intensidad, semilla, G):
     con el aparato por quien decide la armonia.
     """
     return G.euclidiano(compases, pulsos=_pasos_activos(intensidad, 2, 6),
-                        pasos=8, nota=40,
-                        velocity=100, semilla=semilla)
+                        pasos=_corcheas(bpb), nota=40,
+                        velocity=100, semilla=semilla, beats_per_bar=bpb)
 
 
-def acordes(compases, intensidad, semilla, G):
+def acordes(compases, intensidad, semilla, G, bpb=4):
     """Golpes de acorde. Solo notas de la triada: regla 2 de Yamaha."""
     rejilla, total = G.euclidiano(compases,
                                   pulsos=_pasos_activos(intensidad, 2, 5),
-                                  pasos=8, nota=60, velocity=88, semilla=semilla)
+                                  pasos=_corcheas(bpb), nota=60, velocity=88,
+                                  semilla=semilla, beats_per_bar=bpb)
     negra = F.CLOCKS_PER_QUARTER
     grados = SEPTIMA if intensidad > 0.7 else TRIADA
     notas = [F.Note(60 + g, n.velocity, negra, n.time)
@@ -120,7 +144,7 @@ def acordes(compases, intensidad, semilla, G):
     return sorted(notas, key=lambda n: n.time), total
 
 
-def arpegio(compases, intensidad, semilla, G):
+def arpegio(compases, intensidad, semilla, G, bpb=4):
     """Semicorcheas tejiendo la triada en dos octavas.
 
     El vaiven —dos pasos adelante, uno atras— en vez de la subida recta: un
@@ -129,16 +153,16 @@ def arpegio(compases, intensidad, semilla, G):
     patron = [0, 2, 1, 3, 2, 4, 3, 5]
     voces = [60 + g for g in TRIADA] + [72 + g for g in TRIADA]
     semi = F.CLOCKS_PER_QUARTER // 4
-    por_compas = 16 if intensidad > 0.6 else 8
-    salto = 16 // por_compas
+    por_compas = _semis(bpb) if intensidad > 0.6 else _corcheas(bpb)
+    salto = _semis(bpb) // por_compas
     notas = []
     for c in range(compases):
         for i in range(por_compas):
             notas.append(F.Note(voces[patron[i % len(patron)]],
                                 86 if i % 4 == 0 else 74,
                                 semi - 20,
-                                c * F.CLOCKS_PER_QUARTER * 4 + i * salto * semi))
-    return notas, F.section_clocks(compases)
+                                c * F.CLOCKS_PER_QUARTER * bpb + i * salto * semi))
+    return notas, F.section_clocks(compases, beats_per_bar=bpb)
 
 
 MOTORES = {"bombo": bombo, "caja": caja, "percusion": percusion,
@@ -177,7 +201,7 @@ AFRO_SHAKE = [(0, 5, 16), (2, 7, 16), (0, 9, 16), (4, 9, 16), (2, 11, 16), (4, 1
 CONGA_ALTA, CONGA_BAJA, SHEKERE, CAMPANA = 62, 63, 70, 56
 
 
-def afro_bateria(compases, intensidad, semilla, G):
+def afro_bateria(compases, intensidad, semilla, G, bpb=4):
     """Bombo, caja al borde y campana. La campana es el ancla del conjunto."""
     idx = min(int(intensidad * 6), 5)
     rot, pulsos, pasos = AFRO_BOMBO[idx]
@@ -186,7 +210,7 @@ def afro_bateria(compases, intensidad, semilla, G):
     negra = F.CLOCKS_PER_QUARTER
     semi = negra // 4
     for c in range(compases):
-        base = c * negra * 4
+        base = c * negra * bpb
         # La campana marca el ciclo y no se genera: es la referencia contra la
         # que se oyen las demas. Si tambien fuera euclidiana no habria contra que
         # medir el desplazamiento de nadie.
@@ -197,7 +221,7 @@ def afro_bateria(compases, intensidad, semilla, G):
     return sorted(notas, key=lambda n: n.time), total
 
 
-def afro_congas(compases, intensidad, semilla, G):
+def afro_congas(compases, intensidad, semilla, G, bpb=4):
     """Dos congas cruzadas: la figura es la que aparece entre las dos."""
     idx = min(int(intensidad * 6), 5)
     rot, pulsos, pasos = AFRO_CONGA[idx]
@@ -210,14 +234,14 @@ def afro_congas(compases, intensidad, semilla, G):
     return sorted(alta + baja, key=lambda n: n.time), total
 
 
-def afro_shekere(compases, intensidad, semilla, G):
+def afro_shekere(compases, intensidad, semilla, G, bpb=4):
     idx = min(int(intensidad * 6), 5)
     rot, pulsos, pasos = AFRO_SHAKE[idx]
     return G.euclidiano(compases, pulsos=pulsos, pasos=pasos, nota=SHEKERE,
                         rotacion=rot, velocity=70, semilla=semilla)
 
 
-def afro_bajo(compases, intensidad, semilla, G):
+def afro_bajo(compases, intensidad, semilla, G, bpb=4):
     """Riff corto que se repite sin variar. El bajo de Fela es un ostinato.
 
     Una sola altura, como en la receta base: el TYPE `Bass` lo rearmoniza, asi
@@ -230,17 +254,17 @@ def afro_bajo(compases, intensidad, semilla, G):
     FIGURA = [0, 3, 6, 10, 12, 16, 19, 22, 26, 30]
     notas = []
     for c in range(0, compases, 2):
-        base = c * negra * 4
+        base = c * negra * bpb
         for i in FIGURA:
             if intensidad < 0.5 and i % 3 == 1:
                 continue
             notas.append(F.Note(40, 104 if i % 8 == 0 else 88, semi * 2 - 20,
                                 base + i * semi))
-    total = F.section_clocks(compases)
+    total = F.section_clocks(compases, beats_per_bar=bpb)
     return sorted(_dentro(notas, total), key=lambda n: n.time), total
 
 
-def afro_guitarra(compases, intensidad, semilla, G):
+def afro_guitarra(compases, intensidad, semilla, G, bpb=4):
     """Guitarra tenor: una figura corta de dos compases que se repite.
 
     **Reescrita al medir el coste.** La primera version ponia el acorde entero en
@@ -271,23 +295,23 @@ def afro_guitarra(compases, intensidad, semilla, G):
     voces = [0, 7] if intensidad < 0.7 else [0, 7, 10]
     notas = []
     for c in range(0, compases, 2):
-        base = c * negra * 4
+        base = c * negra * bpb
         for i in FIGURA:
             for g in voces:
                 notas.append(F.Note(60 + g, 82 if i % 8 == 3 else 68,
                                     semi - 30, base + i * semi))
-    total = F.section_clocks(compases)
+    total = F.section_clocks(compases, beats_per_bar=bpb)
     return sorted(_dentro(notas, total), key=lambda n: n.time), total
 
 
-def afro_vientos(compases, intensidad, semilla, G):
+def afro_vientos(compases, intensidad, semilla, G, bpb=4):
     """Vientos al unisono: frases largas, silencio la mitad del tiempo.
 
     En los tramos flojos callan del todo. El arreglo de vientos entra y sale;
     tocar siempre es lo contrario de como funciona esta musica.
     """
     if intensidad < 0.5:
-        return [], F.section_clocks(compases)
+        return [], F.section_clocks(compases, beats_per_bar=bpb)
     negra = F.CLOCKS_PER_QUARTER
     grados = [0, 3, 7, 10, 7, 3]
     notas = []
@@ -298,10 +322,10 @@ def afro_vientos(compases, intensidad, semilla, G):
         # mas corta que la regla.**
         if c < compases / 2.0:
             continue
-        base = c * negra * 4
+        base = c * negra * bpb
         for k, g in enumerate(grados):
             notas.append(F.Note(67 + g, 100, negra - 40, base + k * (negra // 2)))
-    total = F.section_clocks(compases)
+    total = F.section_clocks(compases, beats_per_bar=bpb)
     return _dentro(notas, total), total
 
 
@@ -352,7 +376,7 @@ ENKA_GRADOS = [0, 3, 7, 12, 7, 3]
 ENKA_PASO = 5
 
 
-def enka_melodia(compases, intensidad, semilla, G):
+def enka_melodia(compases, intensidad, semilla, G, bpb=4):
     """Frases largas con silencio entre ellas, no una linea continua.
 
     Lo que hace que suene a canto y no a secuencia es **el hueco**: dos compases
@@ -366,7 +390,7 @@ def enka_melodia(compases, intensidad, semilla, G):
     for c in range(compases):
         if c % 3 == 2 and intensidad < 0.8:      # el compas de aire
             continue
-        base = c * negra * 4
+        base = c * negra * bpb
         # Figura de cuatro notas por compas, con la ultima sostenida: el gesto
         # de caida al final de frase que caracteriza al genero.
         pasos = [0, 1, 2, 3] if intensidad > 0.6 else [0, 2]
@@ -377,7 +401,7 @@ def enka_melodia(compases, intensidad, semilla, G):
             largo = negra * 2 - 40 if k == len(pasos) - 1 else negra - 40
             notas.append(F.Note(60 + g, 92 if k == 0 else 78, largo,
                                 base + i * negra))
-    total = F.section_clocks(compases)
+    total = F.section_clocks(compases, beats_per_bar=bpb)
     return _dentro(notas, total), total
 
 
@@ -390,14 +414,29 @@ RECETAS = {"base": PISTAS, "afrobeat": PISTAS_AFRO, "enka": PISTAS_ENKA}
 
 
 def construir(compases_por_seccion, semilla=0, pistas=None, secciones=None,
-              receta="base"):
+              receta="base", beats_per_bar=4):
     """Devuelve {(seccion, pista): (notas, total_clocks)} para todo el estilo.
 
     `compases_por_seccion` es la lista de 6 longitudes que trae la cabecera del
     patron: cada seccion tiene la suya y hay que respetarla, o el aparato y los
     datos discrepan.
+
+    `beats_per_bar` sale del **byte 14 de la cabecera**, no de un valor por
+    defecto. Esto no estaba y era un fallo silencioso: sobre un patron en 3/4
+    —los que deja `andina`— los motores colocaban las notas a 1920 relojes por
+    compas contra una seccion de 1440, y las pistas salian un tercio mas largas.
+    No fallaba nada porque las notas y su duracion declarada eran coherentes
+    *entre si*; solo discrepaban de la cabecera, que es justo lo que ninguna
+    comprobacion miraba.
     """
     from . import generar as G
+
+    admitidos = COMPASES_SOPORTADOS.get(receta, (4,))
+    if beats_per_bar not in admitidos:
+        raise ValueError(
+            "la receta %r solo existe en %s por compas, y el patron esta en %d. "
+            "Para 3/4 usa `andina`, que es nativo."
+            % (receta, "/".join(str(x) for x in admitidos), beats_per_bar))
 
     quiere_p = set(pistas) if pistas else None
     quiere_s = set(secciones) if secciones else None
@@ -412,5 +451,6 @@ def construir(compases_por_seccion, semilla=0, pistas=None, secciones=None,
             # La semilla mezcla seccion y pista: dos pistas del mismo estilo no
             # deben salir identicas, y el estilo entero debe ser reproducible.
             salida[(s, idx)] = MOTORES[papel](
-                compases, intensidad, semilla * 1000 + s * 10 + idx, G)
+                compases, intensidad, semilla * 1000 + s * 10 + idx, G,
+                beats_per_bar)
     return salida

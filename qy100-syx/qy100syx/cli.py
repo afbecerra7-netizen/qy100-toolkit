@@ -611,8 +611,13 @@ def cmd_estilo(args):
         for k, m in enumerate(por_addr[cab_addr]):
             m.data = list(cab_bytes[k])
     nombre, compases = F.decode_header(cab_bytes[0])
-    log("Patron %d (%r), compases por seccion: %s"
-        % (args.patron, nombre, " ".join(str(x) for x in compases)))
+    # El compas sale del byte 14, no de un valor por defecto: sobre un patron en
+    # 3/4 los motores colocarian las notas a 1920 relojes por compas contra una
+    # seccion de 1440 y las pistas saldrian un tercio mas largas, sin error.
+    num, den = F.decode_time_signature(cab_bytes[0])
+    bpb = num if den == 4 else num // 2
+    log("Patron %d (%r), %d/%d, compases por seccion: %s"
+        % (args.patron, nombre, num, den, " ".join(str(x) for x in compases)))
 
     # Prefijos: se prefiere una pista REAL del mismo indice —asi los bytes que
     # todavia no sabemos leer vienen del equipo y de una pista del mismo papel—,
@@ -627,8 +632,12 @@ def cmd_estilo(args):
         return F.PREFIJO_BASE, "plantilla"
 
     pedidas = ([int(x) for x in args.pistas.split(",")] if args.pistas else None)
-    piezas = E.construir(compases, semilla=args.semilla, pistas=pedidas,
-                         receta=args.receta)
+    try:
+        piezas = E.construir(compases, semilla=args.semilla, pistas=pedidas,
+                             receta=args.receta, beats_per_bar=bpb)
+    except ValueError as e:
+        log("No se genera nada: %s" % e)
+        return 1
 
     pistas_receta = {p[0]: p for p in E.RECETAS[args.receta]}
     nuevos, total_notas, total_bloques = {}, 0, 0
