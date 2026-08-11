@@ -1,16 +1,16 @@
-# Manuales, conversiones y procedimientos
+# Manuals, conversions and procedures
 
-Dónde está cada documento y cómo leerlo sin abrir el PDF.
+Where each document is and how to read it without opening the PDF.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `QY100S.pdf` | Owner's manual, **Spanish** (*Manual del Usuario*). Operating instructions for the end user. |
-| `Que_te_pasa_vo_cartilla_Pacifico_Sur.pdf` | **La cartilla del Pacífico Sur** — marimba, cununos, guasá y bombos (Duque, Sánchez y Tascón, Plan Nacional de Música). Da la taxonomía de los dos sistemas (bunde en 2/4, currulao en 6/8), la onomatopeya «Déle duro» del bombo golpeador y el ciclo de tres bases más variación. Notación en imágenes: renderizar con `pdftoppm`. |
-| `Valencia_Pitos_y_Tambores_cartilla.pdf` | **La fuente más útil que ha entrado al proyecto para lo rítmico.** Cartilla de iniciación musical del Plan Nacional de Música para la Convivencia (Ministerio de Cultura), por Victoriano Valencia. 55 páginas con la clave de notación de tambora, llamador y alegre, la **matriz métrica**, y las bases de cumbia, bullerengue, porro, puya, gaita y fandango **notadas**. La notación va en imágenes: hay que renderizar con `pdftoppm`, no basta `pdftotext`. |
-| `Produccion_musical_contemporanea_Paz_2005.pdf` | **Tesis sobre las células rítmicas del Pacífico colombiano** (San Buenaventura, 2005), asesorada por Javier Martínez Maya. 105 páginas. No trae notación: es análisis en prosa más organología. Lo aprovechable es qué instrumentos forman el conjunto de marimba y qué hace cada uno. Convertida en `manuales-md/Paz2005_Celulas_Ritmicas_Pacifico.md` |
-| `QY100_Folleto_2000.pdf` | **Folleto comercial**, inglés (dic. 2000). Dos páginas, pero trae **los 128 estilos de fábrica con su nombre completo** — el aparato solo muestra abreviaturas de cinco caracteres. Extraídos a [`docs/estilos-de-fabrica.md`](estilos-de-fabrica.md). También el panel trasero y las especificaciones. |
+| `Que_te_pasa_vo_cartilla_Pacifico_Sur.pdf` | **The South Pacific primer** — marimba, cununos, guasá and bombos (Duque, Sánchez and Tascón, Plan Nacional de Música, Colombian Ministry of Culture). Gives the taxonomy of the two systems (*bunde* in 2/4, *currulao* in 6/8), the *«Déle duro»* mnemonic for the lead bombo, and the cycle of three bases plus a variation. Notation is images: render with `pdftoppm`. |
+| `Valencia_Pitos_y_Tambores_cartilla.pdf` | **The most useful rhythmic source the project has taken in.** A musical primer from the Plan Nacional de Música para la Convivencia (Ministry of Culture), by Victoriano Valencia. 55 pages carrying the notation key for tambora, llamador and alegre, the **metric matrix**, and **notated** bases for cumbia, bullerengue, porro, puya, gaita and fandango. The notation is images: render with `pdftoppm`, `pdftotext` is not enough. |
+| `Produccion_musical_contemporanea_Paz_2005.pdf` | **A thesis on the rhythmic cells of the Colombian Pacific** (Universidad de San Buenaventura, 2005), advised by Javier Martínez Maya. 105 pages. **No notation**: prose analysis plus organology. What's usable is which instruments make up the marimba ensemble and what each one does. Converted at `manuales-md/Paz2005_Celulas_Ritmicas_Pacifico.md` |
+| `QY100_Folleto_2000.pdf` | **Sales brochure**, English (Dec 2000). Two pages, but it carries **the 128 factory styles with their full names** — the device only shows five-character abbreviations. Extracted to [`docs/estilos-de-fabrica.md`](estilos-de-fabrica.md). Also the rear panel and the specifications. |
 | `QY100E2.pdf` | **Data List**, English (2000) — the separate booklet the owner's manual keeps referring to as *"el manual adjunto de listas"*. XG normal and drum voice lists with program numbers, effect types and parameters, preset style and phrase lists, chord type list, drum table, amp simulator list, and its own MIDI data format section. Converted at `manuales-md/QY100_Data_List.md`. |
 | `219610235-YAMAHA-QY100-Service-Manual.pdf` | Official Yamaha service manual, English (SY 011558, printed 2000.12). Hardware-level reference. |
 | `QY100_1.37/_QY100_v137.mid` | Firmware v1.37 image, delivered as a Standard MIDI File (format 0, 1 track, 96 PPQN, ~1.8 MB). Not a musical performance — the ROM payload is encoded as MIDI data and streamed to the device. |

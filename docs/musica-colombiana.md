@@ -1,466 +1,445 @@
-# Música colombiana, medida
+# Colombian music, measured
 
-Las células rítmicas de los géneros que usa el proyecto, sacadas de partituras
-y de transcripciones, no de teoría. El código está en
-[`qy100-syx/qy100syx/andina.py`](../qy100-syx/qy100syx/andina.py) y las
-mediciones se rehacen con
+The rhythmic cells of the genres this project uses, taken from scores and
+transcriptions rather than from theory. The code is in
+[`qy100-syx/qy100syx/andina.py`](../qy100-syx/qy100syx/andina.py) and the
+measurements are reproducible with
 [`analizar_loop.py`](../qy100-syx/analizar_loop.py).
 
-> **Cómo leer las marcas.** Todo lo que hay aquí está en uno de tres estados, y
-> distinguirlos es lo que evita repetir errores: casi todos los que ha cometido
-> este proyecto viven en la frontera entre el segundo y el primero.
+> **How to read the marks.** Everything here is in one of three states, and
+> keeping them apart is what stops the same mistakes repeating: nearly all of
+> this project's have lived on the border between the second and the first.
 >
-> - `[M]` **medido** contra el aparato o contra una fuente primaria. Se puede usar.
-> - `[D]` **deducido** de otra cosa que sí está medida. Coherente, sin comprobar.
-> - `[V]` **sin verificar**, o comprobado por una vía que no lo demuestra.
+> - `[M]` **measured** against the device or a primary source. Usable.
+> - `[D]` **deduced** from something that is measured. Coherent, unchecked.
+> - `[V]` **unverified**, or checked by a route that doesn't prove it.
 >
-> Una deducción coherente suena exactamente igual que un hecho. El bambuco salió
-> mal tres veces seguidas por eso, y el parámetro de disparo de la DrumBrute se
-> atribuyó al byte equivocado por ser el primero de la lista.
+> A coherent inference sounds exactly like a fact. The bambuco came out wrong
+> three times running for that reason, and the DrumBrute's trigger parameter was
+> attributed to the wrong byte because it happened to be first in the list.
 
-### El bambuco, medido sobre partituras — y tres versiones equivocadas antes
+### The bambuco, measured off scores — and three wrong versions first
 
-**"Papa con yuca"** es la onomatopeya del patron base de la tambora andina y es
-la identidad ritmica del genero: sin el, lo demas puede estar bien y no sonar a
-bambuco. Felipe lo detecto de oido en la primera version generada.
+**"Papa con yuca"** is the mnemonic for the Andean tambora's base pattern and it
+is the genre's rhythmic identity: without it everything else can be right and it
+still won't sound like a bambuco. Felipe caught that by ear on the first
+generated version.
 
-La celda sale de `te-ofrezco-mi-corazon-bambuco.mid` (coro, guitarra y tambora,
-6/8), doblando los ataques por compas:
-
-```
-corchea      1      2       3      4       5      6
-silaba       PA     PA      CON    YU      CA      ·
-tambora     alto   alto    bajo   alto    bajo     ·
-guitarra      ·   ACORDE   BAJO  ACORDE   BAJO     ·
-```
-
-En 31 compases la guitarra da **31 ataques de acorde en la 2 y 31 en la 4**, y
-**31 graves sueltos en la 3 y 31 en la 5**. Uno por compas, sin excepcion. Y el
-bajo hace **quinta en la 3, fundamental en la 5** — en ese orden, siempre. Poner
-la fundamental primero, que es lo natural, invierte el gesto: la llegada a la
-fundamental en la 5 es lo que cierra el compas.
-
-**La corchea 6 esta vacia en todo el acompanamiento.**
-
-**Tres versiones equivocadas antes de esta, cada una por una fuente distinta:**
-
-1. **Bombo en 1 y 4**, deducido de la sesquialtera sobre el papel: los dos grupos
-   de `3+3` empiezan ahi. Coherente y falso.
-2. **Bombo en 1, 3, 5**, sacado de los grooves de Tribe. Pero aquello es un
-   bambuco tocado con **tambores caribeños** —una adaptacion—, no el andino.
-   **Una transcripcion real de otro conjunto no es una transcripcion del genero.**
-3. **Acordes en 1, 3, 5 y bajo en 4 y 6**, de una descripcion en prosa encontrada
-   por internet con precision de corchea. Era de otro patron. Lo que la hizo
-   convincente fue justo lo que la hacia peligrosa: venia con detalle suficiente
-   para parecer medida.
-
-Para el ritmo de un genero, **una partitura del genero** gana a la teoria
-metrica, a la prosa y a una transcripcion de instrumentos que no son los suyos.
-
-**Y las partituras no coinciden entre si, lo cual es el dato.** Cuatro bambucos:
+The cell comes from `te-ofrezco-mi-corazon-bambuco.mid` (choir, guitar and
+tambora, 6/8), by folding the attacks per bar:
 
 ```
-te-ofrezco     6/8   acordes 2,4       bajos 3,5
-y-un-cafe      6/8   acordes 1,2,4,6   bajos 3,5
-brisas         3/4   acordes 1,3,5
+eighth       1      2       3      4       5      6
+syllable     PA     PA      CON    YU      CA      ·
+tambora     high   high    low    high    low      ·
+guitar        ·   CHORD    BASS   CHORD   BASS     ·
 ```
 
-`te-ofrezco` pone los acordes en la contra y `brisas` en los tres negros. **No es
-que uno este mal: uno toca el lado de 6/8 de la sesquialtera y el otro el de
-3/4.** Por eso los transcriptores eligieron compases distintos para la misma
-musica. El invariante entre los dos de 6/8 es **el bajo en 3 y 5**.
+Across 31 bars the guitar plays **31 chord attacks on 2 and 31 on 4**, and **31
+bare low notes on 3 and 31 on 5**. One per bar, without exception. And the bass
+plays **fifth on 3, root on 5** — in that order, always. Putting the root first,
+which is the natural instinct, inverts the gesture: arriving at the root on 5 is
+what closes the bar.
 
-**La melodia no se pega a la celda.** La flauta de `y-un-cafe` reparte 367 notas
-casi por igual entre las seis corcheas (64/54/54/76/64/55), con una leve
-inclinacion por la 4. Flota por encima del acompanamiento. Es lo contrario de lo
-que hace un motor generativo, que alinea todo con la rejilla — y explica por que
-una melodia generada suena a maquina aunque las notas sean correctas. Alturas:
-la coleccion de La menor natural, con `E` y `A` como las mas frecuentes, ambito
-de dos octavas.
+**The sixth eighth is empty across the whole accompaniment.**
 
-**Las diferencias entre partituras son VARIANTES REGIONALES, no criterio del
-transcriptor.** El bambuco tiene variantes documentadas —de salon, fiestero,
-sureño, sanjuanero, caucano, patiano, del litoral— y el caracter sigue a la
-geografia: lento y melancolico en el Cauca, **fiestero en el Tolima y los
-Santanderes**, campesino en el altiplano. `brisas-del-pamplonita` es
-santandereano (el Pamplonita es un rio de Norte de Santander) y su patron es
-otro:
+**Three wrong versions before this one, each from a different kind of source:**
 
-```
-corchea      1      2      3      4      5      6
-fiestero    BAJO  ACORDE  BAJO  ACORDE  BAJO  ACORDE    santandereano
-de salon      ·   ACORDE  BAJO  ACORDE  BAJO    ·       te-ofrezco
-```
+1. **Bass drum on 1 and 4**, deduced from the sesquialtera on paper: the two
+   groups of `3+3` start there. Coherent and false.
+2. **Bass drum on 1, 3, 5**, taken from Tribe's grooves. But that is a bambuco
+   played with **Caribbean drums** — an adaptation — not the Andean one. **A real
+   transcription of a different ensemble is not a transcription of the genre.**
+3. **Chords on 1, 3, 5 and bass on 4 and 6**, from a prose description found
+   online with eighth-note precision. It described another pattern. What made it
+   convincing was exactly what made it dangerous: it carried enough detail to
+   look measured.
 
-**El fiestero no deja huecos y empuja; el de salon deja vacias la 1 y la 6 y
-respira.** La celda de tambora se comparte: es el mismo genero.
+For a genre's rhythm, **a score of that genre** beats metric theory, beats prose,
+and beats a transcription for instruments that aren't its own.
 
-Y con eso **la notacion deja de ser arbitraria**: en el fiestero el bajo cae en
-las tres negras, asi que el 3/4 es lo natural; en el de salon el peso esta en las
-contras del 6/8. La eleccion de compas es **consecuencia del patron**, no del
-gusto de quien transcribe. Hipotesis con dos partituras; confirmarla necesita
-mas de cada variante.
-
-`qy100syx/andina.py`. `[V]` **El pasillo del mismo modulo sigue construido por el
-metodo 3 y esta sin verificar contra ninguna partitura**: tratarlo como hipotesis
-hasta comprobarlo.
-
-### Medir cuan invariante es un genero
-
-De sacar celdas de cuatro partituras salio un metodo que sirve para cualquiera:
-**contar que porcentaje de compases repiten exactamente el mismo patron de
-ataques.** Separa la celda del genero de las decisiones del arreglista.
+**And the scores disagree with each other, which is the finding.** Four bambucos:
 
 ```
-guabina      97%   (35 de 36 compases, en las tres capas a la vez)
-torbellino   97%   (bombo en 1 y 5, 96 de 99 compases)
+te-ofrezco     6/8   chords 2,4       bass 3,5
+y-un-cafe      6/8   chords 1,2,4,6   bass 3,5
+brisas         3/4   chords 1,3,5
+```
+
+`te-ofrezco` puts the chords on the offbeats and `brisas` on the three quarters.
+**It isn't that one is wrong: one plays the 6/8 side of the sesquialtera and the
+other the 3/4 side.** That is why transcribers chose different time signatures
+for the same music. The invariant between the two 6/8 scores is **the bass on 3
+and 5**.
+
+**The melody does not stick to the cell.** The flute in `y-un-cafe` spreads 367
+notes almost evenly across the six eighths (64/54/54/76/64/55), with a slight
+lean toward the 4th. It floats above the accompaniment. That is the opposite of
+what a generative engine does, which aligns everything to the grid — and it
+explains why a generated melody sounds like a machine even when the notes are
+right. Pitches: the natural A-minor collection, with `E` and `A` most frequent,
+spanning two octaves.
+
+**The differences between scores are REGIONAL VARIANTS, not transcriber
+preference.** The bambuco has documented variants — *de salón*, *fiestero*,
+*sureño*, *sanjuanero*, *caucano*, *patiano*, *del litoral* — and character
+follows geography: slow and melancholy in Cauca, **festive in Tolima and the
+Santanderes**, rural on the highland plateau. `brisas-del-pamplonita` is
+Santanderean (the Pamplonita is a river in Norte de Santander) and its pattern is
+a different one:
+
+```
+eighth       1      2      3      4      5      6
+fiestero    BASS  CHORD  BASS   CHORD  BASS   CHORD    Santanderean
+de salón      ·   CHORD  BASS   CHORD  BASS     ·      te-ofrezco
+```
+
+**The fiestero leaves no gaps and pushes; the salón version leaves 1 and 6 empty
+and breathes.** The tambora cell is shared: it is the same genre.
+
+And with that **the notation stops being arbitrary**: in the fiestero the bass
+falls on the three quarters, so 3/4 is the natural reading; in the salón version
+the weight is on the 6/8 offbeats. The choice of time signature is **a
+consequence of the pattern**, not of the transcriber's taste. A hypothesis from
+two scores; confirming it needs more of each variant.
+
+`qy100syx/andina.py`. `[V]` **The pasillo in that same module is still built by
+method 3 above and has not been checked against any score**: treat it as a
+hypothesis until it is.
+
+### Measuring how invariant a genre is
+
+Extracting cells from four scores produced a method that works for any of them:
+**count what percentage of bars repeat exactly the same attack pattern.** It
+separates the genre's cell from the arranger's decisions.
+
+```
+guabina      97%   (35 of 36 bars, across all three layers at once)
+torbellino   97%   (bass drum on 1 and 5, 96 of 99 bars)
 bambuco      83%
 pasillo      60%
-vino tinto   58%   (otra celda del mismo genero)
+vino tinto   58%   (a different cell of the same genre)
 ```
 
-Por debajo de la mitad no hay celda que extraer, solo un arreglo. Y el numero
-dice algo musical, no tecnico: **cuanto margen tiene el interprete**. En el
-torbellino, ninguno; en el pasillo, cuatro de cada diez compases son del
-arreglista. Explica por que el pasillo costo tres intentos y el torbellino salio
-a la primera.
+Below half there is no cell to extract, only an arrangement. And the number says
+something musical, not technical: **how much room the performer has**. In the
+torbellino, none; in the pasillo, four bars in ten belong to the arranger. It
+explains why the pasillo took three attempts and the torbellino came out first
+try.
 
-Celdas medidas, todas en 3/4 sobre seis corcheas:
+Measured cells, all in 3/4 over six eighths:
 
 ```
                 1      2      3      4       5       6
-torbellino    BOMBO    ·      ·    caja   BOMBO    caja
-guabina       BAJO     ·   ACORDE    ·    BAJO   ACORDE
-bambuco salon   ·   ACORDE  BAJO  ACORDE   BAJO      ·
-bambuco fiest BAJO  ACORDE  BAJO  ACORDE   BAJO   ACORDE
-pasillo       BAJO     ·      ·   ACORDE  ACORDE     ·
-pasillo denso  linea continua en corcheas, velocity plana
+torbellino    DRUM     ·      ·    snare   DRUM    snare
+guabina       BASS     ·   CHORD     ·     BASS    CHORD
+bambuco salón   ·   CHORD   BASS   CHORD   BASS      ·
+bambuco fiest BASS  CHORD   BASS   CHORD   BASS    CHORD
+pasillo       BASS     ·      ·    CHORD   CHORD     ·
+pasillo denso  a continuous eighth-note line, flat velocity
 ```
 
-**Guabina y torbellino comparten el bajo en 1 y 5**; lo que los separa es donde
-responde la armonia — el torbellino en los tres negros, la guabina en las contras
-detras de cada bajo. Mismo esqueleto, distinto eco. Y **el bambuco fiestero es el
-unico que ocupa las seis corcheas**: por eso empuja.
+**Guabina and torbellino share the bass on 1 and 5**; what separates them is
+where the harmony answers — the torbellino on the three quarters, the guabina on
+the offbeats behind each bass note. Same skeleton, different echo. And **the
+festive bambuco is the only one that occupies all six eighths**: that's why it
+pushes.
 
-## El currulao — la célula más limpia medida hasta ahora
+## The currulao — the cleanest cell measured so far
 
-`[M]` De `bombo-golpeador-o-macho-currulao.mid`: **64 notas en 16 compases, y los
-dieciséis idénticos golpe por golpe. 100 % de repetición.** El torbellino daba
-97 y el bambuco de salón 83.
-
-```
-corchea     1      2      3      4      5      6
-sílaba     Con           laor   ques          ta      (y luego de-le-du-ro)
-mano       IZQ           IZQ    IZQ           DER
-golpe     madera        madera madera        cuero
-altura     C#2           C#2    C#2           C2
-```
-
-`[M]` **Las dos alturas no son parche agudo y grave: son dos superficies.** La
-partitura (*Bombo «gopeador» o Macho-Currulao*, Javier Martínez / Wilmer Vente)
-lo dice expreso — «la mano izquierda toca en la madera la X y la derecha el
-cuero del bombo». Las cabezas en X son madera.
-
-Y el transcriptor lo escribió con semántica GM, así que el MIDI ya lo traía:
-`C#2 = 37` es el **side stick**, el golpe seco en el aro, y `C2 = 36` es el
-**bombo**. El primer mapeo lo mandó a dos toms y borró justo lo que distingue el
-golpe. **El dato estaba en el archivo y se perdió al interpretarlo**, no al
-medirlo.
-
-`[D]` Su onomatopeya es **«Con la orquesta dele duro»**, como el *papa con yuca*
-del bambuco: ocho sílabas sobre dos compases de cuatro golpes. El reparto por
-corchea es deducido del texto bajo el pentagrama.
-
-Tres golpes altos y **el grave en la sexta corchea**, que es exactamente donde el
-bambuco de salón calla. Los dos géneros reparten las mismas seis corcheas y se
-separan en esa nota: uno respira ahí y el otro apoya. Eso no es una observación
-de oído — sale de comparar dos tablas de ataques medidas por separado.
-
-`[M]` **Es 6/8, y esta vez la notación coincide con la célula**: las cinco
-partituras de currulao vienen en 6/8. Se escribe así en el aparato, que lo
-admite — el byte 14 codifica el denominador con `2` para `/8`. Antes `cmd_andina`
-lo tenía fijo en `/4` y habría escrito 3/4 sobre una célula de seis corcheas:
-suena igual, pero la máquina cuenta los compases de otra forma en modo canción.
-
-**Lo melódico no se genera.** La marimba da 13 % de repetición y la guitarra 4 %:
-son arreglos, no células, igual que el porro y el chandé. El motor pone la
-percusión y la armonía; la marimba entra por el EP–40 desde la partitura o
-tocada en vivo.
-
-Pesa **5,2 KB**, el más barato de los ocho géneros andinos.
-
-## El mapalé — un ostinato que oscila de octava
-
-`[M]` De `mapale-ashcolom.mid`, transcripción para piano a dos manos. La celda
-del acompañamiento, en semicorcheas de medio compás:
+`[M]` From `bombo-golpeador-o-macho-currulao.mid`: **64 notes across 16 bars, and
+all sixteen identical stroke for stroke. 100 % repetition.** The torbellino gave
+97 and the salón bambuco 83.
 
 ```
-semicorchea    1    2    3    4    5    6    7    8
-ataques      142    0    0  120   10  120    0    0
+eighth      1      2      3      4      5      6
+syllable   Dé          le    du          ro
+hand       LEFT       LEFT  LEFT       RIGHT
+stroke     wood       wood  wood       head
+pitch      C#2        C#2   C#2        C2
+pulse      ●                 ●
 ```
 
-Ataques en la **1, la 4 y la 6** — intervalos de **3+2+3**. Y las alturas dicen
-algo que el recuento por sí solo no ve:
+`[M]` **The two pitches are not high and low heads: they are two surfaces.** The
+score (*Bombo «gopeador» o Macho-Currulao*, Javier Martínez / Wilmer Vente) says
+so outright — "the left hand plays the wood, notated as X, and the right hand the
+drumhead". X noteheads are wood.
+
+And the transcriber wrote it with GM semantics, so the MIDI already carried it:
+`C#2 = 37` is the **side stick**, the dry rim stroke, and `C2 = 36` is the **bass
+drum**. The first mapping sent them to two toms and erased exactly what
+distinguishes the stroke. **The datum was in the file and was lost in
+interpretation, not in measurement.**
+
+`[M]` **It really is 6/8**, and here the notation agrees with the cell: all five
+currulao scores come in 6/8. It is written that way on the device, which accepts
+it — byte 14 encodes the denominator with `2` for `/8`. `cmd_andina` used to have
+it hard-wired to `/4`, which would have written 3/4 over a six-eighth cell: it
+sounds the same, but the machine counts bars differently in song mode.
+
+Three strokes on wood and **the low one on the sixth eighth**, which is exactly
+where the salón bambuco falls silent. The two genres divide the same six eighths
+and part company on that one note: one breathes there, the other lands. That is
+not an impression — it comes from comparing two attack tables measured
+separately.
+
+**And the two sources do not contradict each other, though it looks like it.**
+Martínez and Vente's score reads "Con la orquesta dele duro" — eight syllables,
+two bars — and the primer reads "Déle duro" — four, one. The second is the tail
+of the first: the same cell named at two scales. Taking the primer as correct and
+discarding the score would have been a method error; **a new source does not
+invalidate an earlier one by being more official, it just says something else.**
+
+`[V]` **The cycle is four bars, not one**: "three plain bases plus a variation".
+The source measured here carries sixteen identical bars because it is the base in
+isolation; in practice **every fourth bar carries a variation**.
+
+**The melodic material is not generated.** The marimba gives 13 % repetition and
+the guitar 4 %: those are arrangements, not cells, like the porro and the chandé.
+The engine supplies percussion and harmony; the marimba comes in through the
+EP–40, from the score or played live.
+
+It weighs **5.2 KB**, the cheapest of the Andean-family engines.
+
+## The mapalé — an ostinato that swings by the octave
+
+`[M]` From `mapale-ashcolom.mid`, a two-hand piano transcription. The
+accompaniment's cell, in sixteenths of a half bar:
 
 ```
-compás 71   sc1 D3   sc4 D4   sc6 D3
-compás 72   sc1 D4   sc4 D3   sc6 D4
+sixteenth      1    2    3    4    5    6    7    8
+attacks      142    0    0  120   10  120    0    0
 ```
 
-**La octava alterna en cada golpe.** Como son tres por compás, el ciclo se
-invierte al siguiente y vuelve al tercero. No es un pedal quieto: es una
-oscilación de octava sobre una rejilla fija, y ese desfase de dos compases es lo
-que lo hace respirar.
+Attacks on **1, 4 and 6** — intervals of **3+2+3**. And the pitches say something
+the count alone cannot see:
 
-`[M]` La armonía casi no se mueve: **126 compases sobre Re, 14 sobre Fa y uno
-sobre La**, con 29 cambios en 141 compases. Es un género de ostinato.
+```
+bar 71   s1 D3   s4 D4   s6 D3
+bar 72   s1 D4   s4 D3   s6 D4
+```
 
-`[V]` **El compás y el tempo no cuadran entre fuentes.** La transcripción de
-piano va a 100 en 4/4; el catálogo de Tribe da 180 en 2/2; el plan del directo
-dice 202,7. La partitura de clarinete de *La Mecedora* (José Camilo Gómez) está
-en **compasillo partido**, lo que apoya el 2/2. Lo más probable es que la
-transcripción de piano esté escrita a mitad de tiempo — 100 × 2 = 200, cerca de
-202,7 — pero no está comprobado.
+**The octave alternates on every stroke.** With three strokes per bar the cycle
+inverts on the next one and returns on the third. It is not a static pedal: it is
+an octave oscillation over a fixed grid, and that two-bar phase is what keeps it
+from tiring.
 
-`[V]` **La percusión no está en ninguna de las dos fuentes.** Lo medido es la
-célula del acompañamiento y la armonía, no los tambores, que en este género son
-la mitad del asunto.
+`[M]` The harmony barely moves: **126 bars on D, 14 on F and one on A**, with 29
+changes across 141 bars. It is an ostinato genre.
 
-> **Cuidado con las partituras de clarinete.** *La Mecedora* está escrita para
-> **clarinete en si bemol**, que es transpositor: lo escrito suena **una segunda
-> mayor más grave**. Tomar sus alturas tal cual pondría la pieza un tono arriba,
-> y sonaría perfectamente bien en el tono equivocado — el error no se oye si no
-> hay nada con qué comparar.
+`[V]` **Metre and tempo disagree across sources.** The piano transcription is
+4/4 at 100; Tribe's catalogue gives 180 in 2/2; the live-set plan says 202.7. The
+clarinet score of *La Mecedora* (José Camilo Gómez) is in cut time, which
+supports the 2/2. Most likely the piano transcription is written in half time —
+100 × 2 = 200, close to 202.7 — but that is unconfirmed.
 
-## El conjunto de marimba, según la fuente académica
+`[V]` **The percussion is in neither source.** What is measured is the
+accompaniment cell and the harmony, not the drums, which in this genre are half
+of it.
 
-De la tesis de **Paz Hernández (2005)**, *Producción musical contemporánea
-utilizando las células rítmicas del Pacífico colombiano* (San Buenaventura,
-Bogotá) — asesorada por **Javier Martínez Maya**, el mismo que firma la
-partitura del bombo golpeador. Está en
+> **Careful with clarinet scores.** *La Mecedora* is written for **B♭ clarinet**,
+> a transposing instrument: what is written sounds **a major second lower**.
+> Taking its pitches at face value puts the piece a tone high, and it would sound
+> perfectly fine in the wrong key — the error is inaudible with nothing to
+> compare against.
+
+## The marimba ensemble, per the academic source
+
+From **Paz Hernández (2005)**, *Producción musical contemporánea utilizando las
+células rítmicas del Pacífico colombiano* (San Buenaventura, Bogotá) — advised by
+**Javier Martínez Maya**, the same person who signs the bombo golpeador score.
+Converted at
 `manuales-md/Paz2005_Celulas_Ritmicas_Pacifico.md`.
 
-`[M]` **La marimba de chonta son 24 tablillas y dos instrumentos en uno:**
+`[M]` **The marimba de chonta is 24 bars and two instruments in one:**
 
 ```
-16 tablillas cortas   el TIPLERO      la melodía
- 8 tablillas largas   el BORDONERO    el acompañamiento
+16 short bars    the TIPLERO      the melody
+ 8 long bars     the BORDONERO    the accompaniment
 ```
 
-Cuatro bolillos en manos de **dos tocadores**. Eso corrige un intercambio
-anterior en el proyecto: al medir 4 voces solapadas en la transcripción de Tribe
-se objetó que con dos golpeadores no era posible, y sobre *esa* transcripción era
-cierto —solo trae la parte del tiplero, y su máximo de ataques simultáneos es 2—
-pero **en el instrumento real cuatro golpes a la vez sí son posibles**. La
-objeción era correcta sobre la fuente y equivocada sobre el instrumento.
+Four mallets in the hands of **two players**. That corrects an earlier exchange
+in this project: on measuring 4 overlapping voices in Tribe's transcription it
+was objected that two players cannot do that, and about *that* transcription it
+was true — it carries only the tiplero's part, and its maximum simultaneous
+attacks is 2 — but **on the real instrument four simultaneous strokes are
+possible**. The objection was right about the source and wrong about the
+instrument.
 
-Consecuencia para el muestreo al EP–40: las 34 tablillas que se muestrearon de
-Tribe cubren el ámbito entero, pero **el instrumento tiene dos registros con
-funciones distintas**. Al escribirle material conviene tratarlos como dos voces
-—melodía arriba, acompañamiento abajo— y no como un teclado uniforme.
+Consequence for sampling to the EP–40: the 34 bars sampled from Tribe cover the
+full range, but **the instrument has two registers with different functions**.
+Writing for it as if it were a uniform keyboard wastes that.
 
-`[M]` **El conjunto completo**: marimba de chontas, dos cununos (macho y
-hembra), dos bombos (**golpeador** y **arrullador**), redoblante y guasás. La
-propia tesis, al producir en estudio, **graba congas emulando los cununos**
-—porque el cununo es difícil de conseguir y de microfonear— y usa arrullador y
-tambora reales. Es la misma decisión que tenemos delante con el EP–40: qué se
-muestrea de verdad y qué se sustituye.
+`[M]` **The full ensemble**: marimba de chontas, two cununos (macho and hembra),
+two bombos (**golpeador** and **arrullador**), redoblante and guasás. The thesis
+itself, producing in a studio, **records congas standing in for the cununos** —
+because a cununo is hard to source and to mic — and uses a real arrullador and
+tambora. That is the same decision this project faces with the EP–40: what gets
+sampled for real and what gets substituted.
 
-## La matriz métrica — lo que hacíamos tenía nombre
+## The metric matrix — what we were doing already had a name
 
-De **`Pitos y tambores`, cartilla de iniciación musical de Victoriano Valencia**
-(Plan Nacional de Música para la Convivencia, Ministerio de Cultura).
+From **`Pitos y tambores`, Victoriano Valencia's musical primer** (Plan Nacional
+de Música para la Convivencia, Ministry of Culture).
 
-> *Dos matrices métricas reúnen los diferentes ritmos del eje de pitos y
-> tambores. Una, **binaria, de ocho eventos** definidos por acento, pulso,
-> primera división y segunda división. La otra, **ternaria, de seis eventos**.*
+> *Two metric matrices gather the rhythms of the pitos-and-tambores axis. One,
+> **binary, of eight events** defined by accent, pulse, first division and second
+> division. The other, **ternary, of six events**.*
 
-**Las tablas de ataques que este proyecto lleva midiendo son exactamente eso.**
-La ternaria de seis para el bambuco, el currulao y el torbellino; la binaria de
-ocho para el mapalé, el chandé y la cumbia. Se llegó al mismo aparato analítico
-por medición, sin saber que la pedagogía colombiana ya lo tenía formalizado y le
-había puesto nombre.
+**The attack tables this project has been measuring are exactly that.** The
+ternary six for bambuco, currulao and torbellino; the binary eight for mapalé,
+chandé and cumbia. The same analytical device was reached by measurement,
+without knowing that Colombian pedagogy had already formalised it and named it.
 
-`[M]` **Y la convención de la X está documentada.** La cartilla da la clave de
-notación de la tambora:
-
-```
-♩    abierto o cuero — golpe con baqueta en parche
-♩̣    tapado — se percute presionando con la punta de la baqueta
-✗    MADERA — percusión en el vaso de la tambora
-⊗    aro
-```
-
-> *«Ejemplo de escritura a dos planos. **Arriba madera y abajo cuero**.»*
-
-Así que la lectura de la partitura del bombo golpeador —cabezas en X para la
-madera— **no era una nota al pie de aquel documento sino el estándar**. Eso
-respalda el mapeo del currulao con una fuente pedagógica, no con una inferencia.
-
-## La cumbia, de la cartilla del Ministerio
-
-`[M]` Las alineaciones sobre la matriz binaria, tal como las da la cartilla:
+`[M]` **And the X convention is documented.** The primer gives the tambora's
+notation key:
 
 ```
-matriz binaria    1   2   3   4   5   6   7   8
-palmas (pulso)    X               X
-llamador                  X               X        contratiempo
+♩    open, or head — stick stroke on the drumhead
+♩̣    muted — struck while pressing with the stick tip
+✗    WOOD — struck on the shell of the tambora
+⊗    rim
+```
+
+> *"Example of two-plane writing. **Wood above and head below**."*
+
+So reading the bombo golpeador score's X noteheads as wood **was not a footnote
+of that one document but the standard**. That backs the currulao mapping with a
+pedagogical source rather than an inference.
+
+## The cumbia, from the Ministry's primer
+
+`[M]` The alignments over the binary matrix, as the primer gives them:
+
+```
+binary matrix     1   2   3   4   5   6   7   8
+claps (pulse)     X               X
+llamador                  X               X        offbeat
 guacho            X       X       X       X
-alegre            X   X   X   X   X   X   X   X    «reproduce la matriz»
+alegre            X   X   X   X   X   X   X   X    "reproduces the matrix"
 ```
 
-El alegre tocando los ocho eventos es el patrón básico de **cumbia tipo
-soledeña**. El llamador a contratiempo es lo que hace que una cumbia sea una
-cumbia.
+The alegre playing all eight events is the basic **soledeña-type** cumbia
+pattern. The llamador on the offbeat is what makes a cumbia a cumbia.
 
-`[V]` **La tambora necesita «matriz doble»** —dieciséis eventos— y no está
-implementada: sus variaciones ocupan una página entera de la cartilla y merecen
-medirse aparte.
+`[V]` **The tambora needs a "double matrix"** — sixteen events — and is not
+implemented: its variations take a full page of the primer and deserve measuring
+separately.
 
-`[D]` **El bajo no viene en la cartilla**, que es material de percusión. El del
-motor es una línea sencilla en el pulso, deducida.
+`[D]` **The bass is not in the primer**, which is percussion material. The
+engine's is a simple line on the pulse, deduced.
 
-## El Pacífico Sur son DOS sistemas, y el currulao es uno
+## The South Pacific is TWO systems, and currulao is one of them
 
-De **`¡Qué te pasa vo! Canto de piel, semilla y chonta`**, cartilla de Músicas
-del Pacífico Sur (Duque, Sánchez y Tascón — Plan Nacional de Música para la
-Convivencia). La hermana de *Pitos y tambores*, para marimba, cununos, guasá y
-bombos.
+From **`¡Qué te pasa vo! Canto de piel, semilla y chonta`**, the South Pacific
+primer (Duque, Sánchez and Tascón — Plan Nacional de Música para la Convivencia).
+The sibling of *Pitos y tambores*, for marimba, cununos, guasá and bombos.
 
-`[M]` **La taxonomía**, que cambia cómo hay que pensar el repertorio:
+`[M]` **The taxonomy**, which changes how to think about the repertoire:
 
 ```
-sistema bunde       aires en 2/4
-sistema currulao    aires en 6/8    currulao, berejú, patacoré, pango, juga
+bunde system       airs in 2/4
+currulao system    airs in 6/8    currulao, berejú, patacoré, pango, juga
 ```
 
-No son géneros sueltos que casualmente comparten célula: **son aires de un mismo
-sistema**, y por eso la comparten. Confirma el 6/8 del currulao con fuente
-pedagógica, no solo con la partitura.
+These are not separate genres that happen to share a cell: **they are airs of one
+system**, which is why they share it. It confirms the currulao's 6/8 with a
+pedagogical source, not just with the score.
 
-`[M]` **La onomatopeya es «Déle duro», y corrige lo anotado antes.** Cuatro
-sílabas, un compás, un golpe cada una:
+`[M]` **The mnemonic is "Déle duro"** — four syllables, one bar, one stroke each.
+And it agrees with what was measured by another route: *"each simple base has two
+pulses… the pulses coincide with the strokes on the wood"*. In 6/8 the pulses are
+eighths 1 and 4, and both are wood in the measured cell. The primer adds that one
+claps or stamps **on the syllable "ro"**, which is the head stroke on the sixth.
 
-```
-corchea    1     2     3     4     5     6
-sílaba    Dé          le    du          ro
-golpe   madera     madera madera     cuero
-pulso     ●                 ●
-```
+## Where each track comes from
 
-Se había deducido «Con la orquesta dele duro» del texto bajo el pentagrama de la
-partitura del bombo, repartido en ocho sílabas sobre dos compases. La cartilla
-dice que **la base simple es un compás**; la frase larga es otra cosa.
-
-Y encaja con lo medido por otra vía: *«cada base simple cuenta con dos pulsos…
-los pulsos coinciden con los golpes en la madera»*. En 6/8 los pulsos son las
-corcheas 1 y 4, y las dos son madera en la célula medida. La cartilla añade que
-se aplaude o zapatea **sobre la sílaba «ro»**, que es el golpe de cuero de la
-sexta.
-
-**Y las dos fuentes no se contradicen, aunque lo parezca.** La partitura de
-Martínez y Vente dice «Con la orquesta dele duro» —ocho sílabas, dos compases— y
-la cartilla «Déle duro» —cuatro, uno—. La segunda es la cola de la primera: la
-misma célula nombrada a dos escalas. Dar por buena la cartilla y descartar la
-partitura habría sido un error de método; **una fuente nueva no invalida la
-anterior por ser más oficial, solo dice otra cosa**.
-
-`[V]` **El ciclo son cuatro compases, no uno**: *«base simple del bombo ×3 +
-variación»*. La fuente que medimos traía dieciséis compases idénticos porque es
-la base aislada; en la práctica **cada cuarto compás lleva variación**. La
-variación está notada en la cartilla pero no se ha transcrito — el motor
-`Currulao` toca la base sola, que es correcto pero incompleto.
-
-## De dónde sale cada pista
-
-Cada motor declara la procedencia de sus pistas, consultable sin hardware:
+Every engine declares the provenance of its tracks, readable without hardware:
 
 ```bash
 cd qy100-syx && .venv/bin/python syx.py andina currulao --fuentes
 ```
 
 ```
-pista      fuente                                 qué aporta
-D1   [M]  bombo-golpeador…mid (Martínez/Vente)   la célula, 100 % en 16 compases
-PC   [D]  -                                      guasá continua, deducida
-BA   [D]  -                                      bajo en 1 y 4, de los dos pulsos
-C1   [D]  -                                      acordes en 2 y 5
+track      source                                 what it contributes
+D1   [M]  bombo-golpeador…mid (Martínez/Vente)   the cell, 100 % over 16 bars
+PC   [D]  -                                      continuous guasá, deduced
+BA   [D]  -                                      bass on 1 and 4, from the two pulses
+C1   [D]  -                                      chords on 2 and 5
 ```
 
-Existe porque **mezclar fuentes en silencio es el error caro de este dominio**.
-El bambuco tiene tres motores justamente porque `te-ofrezco-mi-corazon` y
-`brisas-del-pamplonita` traen patrones distintos: fundirlos habría producido un
-bambuco que no existe en ninguna parte. Con la procedencia escrita, cuando
-aparece una fuente nueva se ve de un vistazo qué confirma y qué contradice.
+It exists because **blending sources silently is the expensive error in this
+domain**. The bambuco has three engines precisely because
+`te-ofrezco-mi-corazon` and `brisas-del-pamplonita` carry different patterns:
+merging them would have produced a bambuco that exists nowhere. With provenance
+written down, a new source can be checked against the old at a glance.
 
-Y deja visible lo incómodo: en el currulao **tres de las cuatro pistas son
-deducidas**, y solo el bombo está medido. Eso no se veía leyendo el código.
+And it makes the uncomfortable part visible: in the currulao **three of the four
+tracks are deduced**, and only the bombo is measured. That was invisible while
+reading the code.
 
-## El bombo golpeador tiene cuatro bases, no una
+## The lead bombo has four bases, not one
 
-De la cartilla del Pacífico Sur, §5.2.1.1. Cada una con su onomatopeya:
+From the South Pacific primer, §5.2.1.1 (physical page 36). Each with its
+mnemonic:
 
-| | base | golpes |
+| | base | strokes |
 | --- | --- | --- |
-| 1 | **«Déle duro»** | ABIERTO + MADERA |
-| 2 | **«Con la horqueta»** | ABIERTO + MADERA |
-| 3 | **«Papa con yuca»** | ABIERTO + MADERA |
-| 4 | **«Cogé tu batea»** | ABIERTO, MADERA y CERRADO |
+| 1 | **«Déle duro»** | OPEN + WOOD |
+| 2 | **«Con la horqueta»** | OPEN + WOOD |
+| 3 | **«Papa con yuca»** | OPEN + WOOD |
+| 4 | **«Cogé tu batea»** | OPEN, WOOD and MUTED |
 
-**«Papa con yuca» también es una base del currulao.** La conocíamos como la
-onomatopeya del bambuco, medida sobre `te-ofrezco-mi-corazon`. Y el **bombo
-arrullador** —el segundo tambor— toca una base que la cartilla llama
-literalmente **«Bambuco»** (o «Totuma, totuma»), alternando CERRADO, MADERA y
-ABIERTO.
+**«Papa con yuca» is also a currulao base.** It was known here as the bambuco's
+mnemonic, measured on `te-ofrezco-mi-corazon`. And the **arrullador** — the
+second drum — plays a base the primer literally calls **«Bambuco»** (or «Totuma,
+totuma»), alternating MUTED, WOOD and OPEN.
 
-Eso no es una casualidad de nombres: es la conexión que el documento
-*«similitudes entre bambuco y música del Pacífico»* señala, y que ya habíamos
-rozado al ver que las dos familias reparten las mismas seis corcheas.
+That is not a coincidence of names: it is the link that the paper *«similitudes
+entre bambuco y música del Pacífico»* points at, and which had already been
+brushed against here on noticing that the two families divide the same six
+eighths.
 
-`[M]` **La variación que faltaba son los apoyos**, y son tres: *«Con la horqueta
-×3 + cierre»*, con cierres llamados **cierro**, **acompaño** y **marcando**. Eso
-completa el ciclo de cuatro compases.
+`[M]` **The missing variation is the *apoyos*, and there are three**: "Con la
+horqueta ×3 + a close", with closes called **cierro**, **acompaño** and
+**marcando**. That completes the four-bar cycle.
 
-`[M]` **El último golpe es MADERA y CUERO a la vez** — *«la última sílaba
-coincide con el golpe simultáneo ABIERTO-MADERA»*, y el pictograma lo dibuja con
-un icono distinto de los otros tres. El motor escribía solo el cuero, que es la
-mitad del golpe. Corregido.
+`[M]` **The last stroke is WOOD and HEAD at once** — *"the last syllable
+coincides with the simultaneous OPEN-WOOD stroke"*, and the pictogram draws it
+with a different icon from the other three. The engine was writing only the head,
+which is half the stroke. Fixed.
 
-`[V]` **Y hay una discrepancia sin resolver sobre el acento.** La cartilla dice
-que todas las formas de ejecución coinciden en *«un fuerte golpe ABIERTO (5ª
-corchea)»*; nuestra medición sobre el MIDI de Martínez y Vente lo pone en la
-**6ª**. Un desfase de una corchea, que movería la célula entera respecto al bajo
-y los acordes.
+`[V]` **And there is an unresolved disagreement about the accent.** The primer
+says every form of execution converges on *"a strong OPEN stroke (5th eighth)"*;
+the measurement on Martínez and Vente's MIDI puts it on the **6th**. A
+one-eighth offset, which would move the whole cell relative to bass and chords.
 
-No se puede zanjar desde la cartilla: su notación es **pictográfica** —iconos de
-bombo con baqueta— y el espaciado entre iconos es visual, no proporcional.
-Deducir posiciones de ahí sería exactamente el error que este proyecto ya ha
-cometido. Se resuelve de oído contra el corte 40 del disco de la cartilla, o
-tocando las dos versiones y comparando.
+It cannot be settled from the primer: its notation is **pictographic** — drum
+icons with a stick — and the spacing between icons is visual, not proportional.
+Deducing positions from that would be exactly the error this project has already
+made. It is settled by ear against track 40 of the primer's CD, or by playing
+both versions and comparing.
 
-## El conjunto de currulao, instrumento por instrumento
+## The currulao ensemble, instrument by instrument
 
-Del índice del disco de la cartilla (cortes 40–45), que es texto y por tanto
-verificable sin leer pictogramas:
+From the CD index of the primer (tracks 40–45, physical page 49), which is text
+and therefore verifiable without reading pictograms:
 
-| corte | instrumento | bases |
+| track | instrument | bases |
 | --- | --- | --- |
 | 40 | **bombo golpeador** | Déle duro · Con la horqueta · Papa con yuca · Cogé tu batea |
 | 41 | *apoyos* | Cierro · Acompaño · Marcando |
-| 42 | **bombo arrullador** | base «Bambuco» + variación «Empujá pa que suene el bambuco» |
+| 42 | **bombo arrullador** | base «Bambuco» + variation «Empujá pa que suene el bambuco» |
 | 43 | **cununo apagador** | «Qué por qué» |
-| 44 | **cununo repicador** | «Tráigalo pa'cá», con golpe de dedos y golpe lateral |
-| 45 | *variaciones del repicador* | Tráigalo tra · Tráigalo ya · Tráigamelo ya · Traitraitrai |
+| 44 | **cununo repicador** | «Tráigalo pa'cá», with finger stroke and side stroke |
+| 45 | *repicador variations* | Tráigalo tra · Tráigalo ya · Tráigamelo ya · Traitraitrai |
 
-**Las onomatopeyas son el ritmo**, no un apoyo mnemotécnico añadido. «Qué por
-qué» son tres sílabas, «Déle duro» cuatro, «Tráigalo pa'cá» cinco: el número de
-sílabas y dónde cae el acento **son** la célula. Por eso se enseña así, y por eso
-sirven para verificar de oído sin saber leer música.
+**The mnemonics are the rhythm**, not a memory aid bolted on afterwards. "Qué
+por qué" is three syllables, "Déle duro" four, "Tráigalo pa'cá" five: the
+syllable count and where the stress falls **are** the cell. That is why it is
+taught this way, and why it lets someone verify by ear without reading music.
 
-Eso da además una vía para transcribir sin depender del pictograma: **contar
-sílabas acota el número de golpes**, y el acento prosódico dice cuál es el
-fuerte. No sustituye a medir, pero descarta lecturas imposibles.
-
-`[V]` **El corte 40 dura un minuto** y trae las cuatro bases seguidas. Ahí se
-resuelve de oído la discrepancia del acento —5ª o 6ª corchea— que la notación
-pictográfica no permite zanjar.
+It also opens a route to transcription that does not depend on the pictogram:
+**counting syllables bounds the number of strokes**, and the prosodic stress says
+which one is strong. It doesn't replace measuring, but it rules out impossible
+readings.

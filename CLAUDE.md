@@ -16,104 +16,110 @@
 > and MIDI-export tools, and this document, which is the record of what is known
 > about the format and how each piece of it was established.
 
-Guía para Claude Code (claude.ai/code) al trabajar en este repositorio.
+Guidance for Claude Code (claude.ai/code) when working in this repository.
 
-Material de referencia y herramientas para el **Yamaha QY100** (secuenciador
-hardware, 2000) y el resto de un montaje **sin ordenador en la cadena**. Dos
-subproyectos con código, cada uno con su `.venv` e independientes entre sí.
+Reference material and tools for the **Yamaha QY100** (hardware sequencer, 2000)
+and for the rest of a rig that keeps **no computer in the chain**. Two code
+subprojects, each with its own `.venv`, independent of one another.
 
-| Dónde | Qué es |
+| Where | What it is |
 | --- | --- |
-| [`qy100-arp/`](qy100-arp/) | Arpegiador y secuenciador generativo externo, por MIDI. [README](qy100-arp/README.md) |
-| [`qy100-syx/`](qy100-syx/) | Volcado, decodificación y escritura por SysEx. [README](qy100-syx/README.md) |
-| `Manuales/` · `manuales-md/` | Documentación. Sin build, sin tests — no inventar comandos |
+| [`qy100-arp/`](qy100-arp/) | External arpeggiator and generative sequencer, over MIDI. [README](qy100-arp/README.md) |
+| [`qy100-syx/`](qy100-syx/) | Dumping, decoding and writing over SysEx. [README](qy100-syx/README.md) |
+| `Manuales/` · `manuales-md/` | Documentation. No build, no tests — don't invent commands for them |
 
 ```bash
-cd qy100-arp && .venv/bin/python test_engine.py     # tests, sin hardware
-cd qy100-syx && .venv/bin/python test_protocol.py   # 117 comprobaciones, sin hardware
+cd qy100-arp && .venv/bin/python test_engine.py     # tests, no hardware
+cd qy100-syx && .venv/bin/python test_protocol.py   # 117 checks, no hardware
 ```
 
-## Los documentos
+## The documents
 
-Este archivo era de 1.146 líneas y mezclaba tres materias distintas. Ahora es el
-índice; el detalle está separado por tema:
+This file used to be 1,146 lines mixing three unrelated subjects. It is now the
+index; the detail lives one topic per file:
 
-| Documento | Qué contiene |
+| Document | What's in it |
 | --- | --- |
-| [`docs/qy100-protocolo.md`](docs/qy100-protocolo.md) | SysEx, formato de patrón y canción, frases de fábrica, firmware |
-| *(no publicado)* | El inventario del estudio: qué aparatos hay y en qué canal. Es informacion personal y no aporta a un colaborador |
-| [`docs/estilos-de-fabrica.md`](docs/estilos-de-fabrica.md) | Los 128 estilos de fábrica con su nombre completo |
-| [`docs/musica-colombiana.md`](docs/musica-colombiana.md) | Las células rítmicas medidas de cada género |
-| [`docs/manuales.md`](docs/manuales.md) | Dónde está cada manual y cómo leerlo |
-| *(no publicado)* | El plan de un directo concreto. Las mediciones de memoria que salieron de él sí están, en el documento de protocolo |
-| *(no publicado)* | Inventario de plugins de un estudio concreto |
+| [`docs/qy100-protocolo.md`](docs/qy100-protocolo.md) | SysEx, pattern and song format, factory phrases, firmware |
+| `docs/equipo.md` | The devices, their note maps, the channel assignment |
+| [`docs/estilos-de-fabrica.md`](docs/estilos-de-fabrica.md) | The 128 factory styles with their full names |
+| [`docs/musica-colombiana.md`](docs/musica-colombiana.md) | The measured rhythmic cells of each genre |
+| [`docs/manuales.md`](docs/manuales.md) | Where each manual is and how to read it |
+| `qy100-syx/PLAN-LIVESET.md` | The 40-minute set: repertoire, memory, mechanics |
+| `instrumentos-software.md` | Plugin inventory, read off the disk |
 
-## Cómo se marca lo que se sabe
+## How certainty is marked
 
-**Casi todos los errores de este proyecto han vivido en la frontera entre lo
-medido y lo deducido**, y la causa siempre es la misma: una deducción coherente
-suena exactamente igual que un hecho. Por eso se marca:
+**Nearly every mistake this project has made has lived on the border between
+what was measured and what was inferred**, and always for the same reason: a
+coherent inference sounds exactly like a fact. Hence the marks:
 
 ```
-[M]  medido contra el aparato o contra una fuente primaria
-[D]  deducido de algo que sí está medido — coherente, sin comprobar
-[V]  sin verificar, o comprobado por una vía que no lo demuestra
+[M]  measured against the device or against a primary source
+[D]  deduced from something that is measured — coherent, unverified
+[V]  unverified, or checked by a route that doesn't prove it
 ```
 
-Los tres casos que mejor lo ilustran, todos reales:
+The three cases that illustrate it best, all real:
 
-- **El denominador del compás** se dio por ausente tras barrer cuatro valores de
-  un campo de tres bits. Los válidos eran tres y solo uno cayó en el barrido.
-  **Un barrido parcial no prueba una ausencia.**
-- **El disparo de la DrumBrute** se atribuyó al parámetro 102 por ser el primero
-  de la lista y valer 0. Es el 105. Una hipótesis de un solo dato.
-- **La ida y vuelta de un archivo** se tomó como prueba de que el programa lo
-  entendía. Un programa que no lo entiende y se limita a copiarlo da idéntico
-  resultado. **Un round-trip solo demuestra comprensión si la salida se genera.**
+- **The time-signature denominator** was declared absent after sweeping four
+  values of a three-bit field. Three values are valid and only one of them fell
+  inside the sweep. **A partial sweep does not prove an absence.**
+- **The DrumBrute's trigger parameter** was attributed to 102 because it was
+  first in the list and read 0. It's 105. A one-datum hypothesis.
+- **A file round-trip** was taken as proof that a program understood the format.
+  A program that doesn't understand it and merely copies it produces the same
+  result. **A round-trip only demonstrates comprehension if the output is
+  generated.**
 
-Y el método que sí funciona cuando hace falta el oído de otra persona: **pedir
-una comparación, no un juicio absoluto.** «¿Es el mismo sonido?» lo contesta
-cualquiera; «¿esto es un Fa o un Fa sostenido?» no lo contesta casi nadie. El
-mapa de pads del EP–40 se resolvió así después de siete pruebas mal diseñadas.
+And the method that does work when a measurement depends on someone else's ear:
+**ask for a comparison, not an absolute judgement.** Anyone can answer "is this
+the same sound?"; almost nobody can answer "is that an F or an F sharp?". The
+EP–40's pad map was solved that way after seven badly designed tests.
 
-## Reglas que evitan romper cosas
+## Rules that keep things from breaking
 
-Todas aprendidas por las malas y detalladas en los documentos.
+All learned the hard way and detailed in the documents.
 
-**Al escribir en el QY100** ([protocolo](docs/qy100-protocolo.md)):
+**When writing to the QY100** ([protocol](docs/qy100-protocolo.md)):
 
-- El patrón va **entero y en el orden en que el aparato lo volcó** — pistas
-  primero, las 5 cabeceras al final. Reordenarlo lo borra.
-- Enmarcar toda escritura como `bulk mode ON → bloques → bulk mode OFF`. Un
-  bloque suelto cuelga el aparato.
-- Toda pista empieza con `F0 00`. Sin eso **suena bien y cuelga el editor**.
-- `MIDI CONTROL = Off` para transferir, `In/Out` para tocar. Incompatibles.
-- **Nunca mandar MIDI mientras alguien usa el panel.** Cuelga el aparato.
-- **Verificar releyendo y decodificando eventos**, nunca comparando bytes: el
-  aparato reserializa y devuelve 95 de 147 bytes distintos con los mismos datos.
-- No mandar `CLEAR` sin que lo pidan.
+- The pattern goes **whole, and in the order the device dumped it** — tracks
+  first, the 5 header blocks last. Reordering it wipes the pattern.
+- Frame every write as `bulk mode ON → blocks → bulk mode OFF`. A loose block
+  hangs the device.
+- Every track starts with `F0 00`. Without it **the pattern sounds fine and
+  hangs the editor**.
+- `MIDI CONTROL = Off` to transfer, `In/Out` to play. Mutually exclusive.
+- **Never send MIDI while someone is using the front panel.** It hangs.
+- **Verify by re-reading and decoding events**, never by comparing bytes: the
+  device re-serialises and returns 95 of 147 bytes different for the same data.
+- Don't send `CLEAR` unless asked.
 
-**En general, y esto se repite en todo el montaje**: una escritura reportada
-como exitosa no prueba nada. La MOTU se traga escrituras en silencio, el QY100
-las ignora si está reproduciendo, y el editor del Minitaur muestra una lista que
-puede no ser la del aparato. **Lo único que prueba el estado es releerlo.**
+**In general, and this repeats across the whole rig**: a write reported as
+successful proves nothing. The MOTU swallows writes silently, the QY100 ignores
+them while playing, and the Minitaur's editor shows a list that may not be the
+device's. **The only thing that proves state is reading it back.**
 
-**Y antes de culpar a un aparato, apaga y enciende la interfaz.** Es la
-comprobación más barata y ha resuelto varios diagnósticos falsos. La siguiente
-más barata es pedir `dump setup`: si contesta, el equipo y el cable están bien.
+**And before blaming a device, power-cycle the interface.** It's the cheapest
+check and it has resolved several false diagnoses. The next cheapest is asking
+for `dump setup`: if it answers, the device and the cable are fine.
 
-## Idioma
+## Language
 
-El manual de usuario está en español y el de servicio en inglés, así que la
-terminología aparece en los dos. Al citar el de usuario, conservar el término
-español y glosarlo — **los botones físicos están rotulados en inglés**.
+The owner's manual is in Spanish and the service manual in English, so
+terminology appears in both. When quoting the owner's manual, keep the Spanish
+term and gloss it — **the physical buttons are labelled in English**.
 
-## Recurso externo
+Documents that are published are written in English at the source, so that no
+translation layer has to be maintained. `docs/equipo.md` and `PLAN-LIVESET.md`
+stay in Spanish because they are never published.
 
-[QY100 Explorer](https://qy100.doffu.net/) — comunidad activa de QY100/QY70.
-Confirma que la vía productiva es **el dato, no el firmware**: consiguen BPM
-fuera de rango y patrones por encima del tope escribiendo archivos de estilo.
+## External resource
 
-El repositorio público del proyecto vive en
-[`qy100-toolkit`](https://github.com/afbecerra7-netizen/qy100-toolkit) y se
-sincroniza con `sincronizar-publico.py`.
+[QY100 Explorer](https://qy100.doffu.net/) — an active QY100/QY70 community. It
+confirms that the productive route is **the data, not the firmware**: they get
+out-of-range BPM and patterns above the cap by writing style files.
+
+The project's public repository lives at
+[`qy100-toolkit`](https://github.com/afbecerra7-netizen/qy100-toolkit) and is
+synced with `sincronizar-publico.py`.

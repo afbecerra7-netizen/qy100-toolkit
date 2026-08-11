@@ -1,24 +1,24 @@
-# QY100 — los 128 estilos de fábrica, con su nombre completo
+# QY100 — the 128 factory styles, with their full names
 
-Del **folleto comercial** de Yamaha (`Manuales/QY100_Folleto_2000.pdf`, Adobe
-PageMaker, diciembre de 2000). El aparato solo muestra abreviaturas de cinco
-caracteres, así que sin esto `AfrJz` o `DncSw` no se pueden buscar por lo que son.
+From Yamaha's **sales brochure** (`Manuales/QY100_Folleto_2000.pdf`, Adobe
+PageMaker, December 2000). The device only shows five-character abbreviations,
+so without this there is no way to look up `AfrJz` or `DncSw` by what they are.
 
-`[M]` **La numeración es la del aparato**, no una lista comercial reordenada.
-Comprobado contra las cuatro abreviaturas que ya teníamos anotadas del panel:
-`80MRk`→002, `DncSw`→040, `AfrJz`→090, `Bossa`→110. Cuatro de cuatro.
+`[M]` **The numbering is the device's**, not a reordered marketing list.
+Checked against the four abbreviations already recorded off the panel:
+`80MRk`→002, `DncSw`→040, `AfrJz`→090, `Bossa`→110. Four out of four.
 
-`[V]` El **062** aparece impreso como `80's / Technical Fusion`, con la barra
-dentro del nombre. Puede ser un nombre así o dos entradas a las que se les cayó
-un número en la maquetación. Sin comprobar en el aparato.
+`[V]` Number **062** is printed as `80's / Technical Fusion`, slash included. It
+may be a name with a slash in it, or two entries that lost a number in layout.
+Not checked on the device.
 
-Extraído recortando por columna: el `-layout` de `pdftotext` entrelaza las
-columnas del folleto y sin recortar se cuela texto ajeno — el estilo 067 salía
-como `6/8 R&B / MUSIC SEQUENCER`.
+Extracted by slicing on column: `pdftotext -layout` interleaves the brochure's
+columns, and without the slice foreign text leaks in — style 067 came out as
+`6/8 R&B / MUSIC SEQUENCER`.
 
-Los datos están en [`qy100-syx/estilos.json`](../qy100-syx/estilos.json).
+The data lives in [`qy100-syx/estilos.json`](../qy100-syx/estilos.json).
 
-| nº | estilo | nº | estilo | nº | estilo | nº | estilo |
+| nº | style | nº | style | nº | style | nº | style |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 001 | Hardcore Mixture | 033 | Metal Boogie | 065 | Acoustic Pop | 097 | 6/8 Hard Rock Ballad |
 | 002 | 80's Mixture Rock | 034 | Hip Hop1 | 066 | R&B | 098 | Country Rock |
