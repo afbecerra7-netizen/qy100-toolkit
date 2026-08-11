@@ -35,9 +35,10 @@ en el dispositivo y el decodificador del Data Filer oficial de Yamaha.
 | [`exportar_midi.py`](exportar_midi.py) | Escribe un `.mid` estándar. Para mover notas a un DAW **le gana a la transferencia**: exacto, instantáneo, y no pierde bloques en silencio. |
 | [`extraer_rom.py`](extraer_rom.py) | Decodifica la ROM del firmware; de aquí salió `voces.json`. |
 | [`extraer_frases.py`](extraer_frases.py) | Extrae las 4.285 frases preset del Data List. Se valida solo. |
-| [`test_protocol.py`](test_protocol.py) | 162 comprobaciones, sin hardware. Unas cuantas leen `dumps/`, asi que el total baja si el conjunto de volcados es parcial. |
+| [`test_protocol.py`](test_protocol.py) | 175 comprobaciones, sin hardware. Unas cuantas leen `dumps/`, asi que el total baja si el conjunto de volcados es parcial. |
 | [`test_regresiones.py`](test_regresiones.py) | Reintroduce cada defecto conocido y exige que la suite lo cace. |
 | [`medir_volcados.py`](medir_volcados.py) | Recuenta sobre los volcados las cifras que citan los documentos. |
+| [`pesar_estilos.py`](pesar_estilos.py) | Pesa cada estilo en bloques y en KB de memoria del aparato. |
 | [`pantalla.py`](pantalla.py) | Escribe texto y mapas de bits de 16x16 en la pantalla, por XG Display Data. |
 | [`barrer_categorias.py`](barrer_categorias.py) | Barre valores de una referencia a frase preset **escribiendo y oyendo**, sin volcar. Guarda el método aunque su lectura acabara siendo el panel. |
 | `probe.py` | Sondas sueltas de ingeniería inversa. |
@@ -264,7 +265,7 @@ el comportamiento vigente mandan `qy100syx/patternfmt.py`,
 .venv/bin/python test_protocol.py
 ```
 
-Son **162 comprobaciones offline**, sin hardware — menos si `dumps/` va incompleto, porque las ultimas decodifican volcados reales. Cubren direcciones y plantillas
+Son **175 comprobaciones offline**, sin hardware — menos si `dumps/` va incompleto, porque las ultimas decodifican volcados reales. Cubren direcciones y plantillas
 del Data Filer, construcción y parseo de mensajes, checksum, detección de
 corrupción, empaquetado 7↔8, pistas reales, codificación ida y vuelta, secciones,
 cabeceras y archivos de 32 compases.

@@ -39,11 +39,23 @@ from qy100syx import patternfmt as F                                 # noqa: E40
 from qy100syx import protocol as P, transfer                         # noqa: E402
 
 
+#: Canal de percusion en General MIDI. Es el 10 contando desde 1, o sea el 9
+#: contando desde 0, que es como lo entrega `mido`. **Este es el unico dato del
+#: fichero que dice de verdad "esto es percusion"**; las alturas no lo dicen,
+#: porque una marimba y un kit de bateria ocupan el mismo rango.
+CANAL_PERCUSION = 9
+
+
 def leer(ruta):
-    """{nombre de pista: [(tick, altura, velocity, duracion)]} y la metrica."""
+    """{nombre de pista: ([(tick, altura, velocity, duracion)], canales)}.
+
+    Devuelve tambien el conjunto de canales MIDI por los que llego cada pista,
+    porque es lo que distingue percusion de material melodico.
+    """
     m = mido.MidiFile(ruta)
     sig, bpm = (4, 4), 120.0
     pistas = collections.defaultdict(list)
+    canales = collections.defaultdict(set)
     for tr in m.tracks:
         t = 0
         nom = ""
@@ -59,6 +71,7 @@ def leer(ruta):
                 bpm = 60e6 / msg.tempo
             elif msg.type == "note_on" and msg.velocity:
                 abiertas[msg.note].append((t, msg.velocity))
+                canales[nom].add(msg.channel)
             elif msg.type == "note_off" or (msg.type == "note_on" and not msg.velocity):
                 if abiertas.get(msg.note):
                     ini, vel = abiertas[msg.note].pop(0)
@@ -68,7 +81,34 @@ def leer(ruta):
         for alt, pend in abiertas.items():
             for ini, vel in pend:
                 pistas[nom].append((ini, alt, vel, m.ticks_per_beat))
-    return m.ticks_per_beat, sig, bpm, {k: sorted(v) for k, v in pistas.items() if v}
+    return (m.ticks_per_beat, sig, bpm,
+            {k: sorted(v) for k, v in pistas.items() if v},
+            {k: canales[k] for k in pistas if pistas[k]})
+
+
+def decidir_voz(canales, forzar_kit=False):
+    """(es_bateria, por_que) de una pista, a partir de sus canales MIDI.
+
+    Vive fuera del `__main__` **para poder probarla**. La decision que hacia esto
+    se ha equivocado dos veces —primero por la ranura de destino, luego por el
+    rango de alturas— y las dos veces se descubrio tocando, no leyendo, porque
+    estaba enterrada en medio del bucle de importacion y no habia manera de
+    interrogarla. Ahora `test_protocol.py` le pasa su propio caso motivador.
+    """
+    canales = set(canales)
+    if forzar_kit:
+        return True, "--voz kit"
+    if canales == {CANAL_PERCUSION}:
+        return True, "canal 10"
+    if CANAL_PERCUSION in canales:
+        # Mezcla: la pista trae percusion y notas por otros canales. No hay
+        # respuesta buena, asi que se dice en voz alta y se cae del lado seguro.
+        return False, ("MEZCLA de canales %s — se trata como melodica; usa "
+                       "--voz kit si no es eso"
+                       % sorted(c + 1 for c in canales))
+    if not canales:
+        return False, "sin canal, por defecto melodica"
+    return False, "canal %s" % sorted(c + 1 for c in canales)
 
 
 def a_qy100(notas, tpb, desde_tick):
@@ -92,8 +132,9 @@ if __name__ == "__main__":
                     help='"Nombre en la partitura=D1" — repetible. '
                          "Destinos: D1 D2 PC BA C1 C2 C3 C4")
     ap.add_argument("--bpm", type=float, help="por defecto, el de la partitura")
-    ap.add_argument("--voz", help="voz del QY100 para las pistas melodicas, o "
-                                  "'kit' para forzar bateria")
+    ap.add_argument("--voz", help="voz del QY100 para las pistas melodicas. "
+                                  "'kit' fuerza bateria en TODAS las pistas; "
+                                  "por defecto manda el canal MIDI del fichero")
     ap.add_argument("--nombre", help="nombre del patron, hasta 8 caracteres")
     ap.add_argument("--escribir", action="store_true")
     ap.add_argument("--out", required=True, help="puerto MIDI de salida")
@@ -103,7 +144,10 @@ if __name__ == "__main__":
     ap.add_argument("--listar", action="store_true", help="solo listar las pistas")
     args = ap.parse_args()
 
-    tpb, sig, bpm_orig, pistas = leer(args.archivo)
+    tpb, sig, bpm_orig, pistas, canales = leer(args.archivo)
+    # `--voz kit` estuvo anunciado en la ayuda y sin implementar: llegaba a
+    # `voz_por_nombre('kit')`, que no encuentra ninguna voz con ese nombre.
+    forzar_kit = (args.voz or "").strip().lower() == "kit"
     try:
         beats = F.negras_por_compas(*sig)
     except ValueError as e:
@@ -150,34 +194,51 @@ if __name__ == "__main__":
         ev = [e for k in coincide for e in pistas[k] if desde <= e[0] < hasta]
         notas = [n for n in a_qy100(ev, tpb, desde) if n.time < total]
         idx = IDX[destino]
-        # **La voz se decide por el contenido, no por la ranura.** Antes se
-        # asumia que D1, D2 y PC son percusion siempre, y meter la marimba en
-        # `PC` la puso a sonar por un kit de bateria: las alturas 55-74 caen en
-        # platos y campanas, y una de ellas sostenida daba un pitido constante.
+        # **Percusion o no se decide por el canal MIDI, que es un dato, no por
+        # las alturas, que es una adivinanza.**
         #
-        # Costo un rato porque el sintoma imitaba dos fallos ya documentados:
-        # sonaba solo con el QY100 desmuteado y **sobrevivia al ciclo de
-        # corriente** —el banco vive en el mezclador del patron, que se guarda—,
-        # que es exactamente el cuadro del choque de dos kits de bateria.
+        # Primero se decidia por la ranura: D1, D2 y PC eran percusion siempre.
+        # Meter la marimba en `PC` la puso a sonar por un kit de bateria —las
+        # alturas 55-74 caen en platos y campanas, y una sostenida daba un
+        # pitido constante—. Costo encontrarlo porque el sintoma imitaba dos
+        # fallos ya documentados: sonaba solo con el QY100 desmuteado y
+        # **sobrevivia al ciclo de corriente**, porque el banco vive en el
+        # mezclador del patron, que se guarda.
         #
-        # El criterio: si las alturas se salen del rango de un kit de bateria
-        # (35-81 en GM) o si la pista abarca mas de dos octavas, es material
-        # melodico. `--voz` manda sobre todo esto.
-        alturas = [n.pitch for n in notas] or [60]
-        rango = max(alturas) - min(alturas)
-        es_bat = idx in (0, 1, 2) and rango <= 24 and min(alturas) >= 35
-        # `--voz` nombra la voz de las pistas MELODICAS y no decide si algo es
-        # bateria: aplicarlo a todas le habria puesto marimba a un bombo.
+        # El primer arreglo cambio la ranura por el rango de alturas: bateria si
+        # abarca dos octavas o menos y no baja de 35. **Y no arreglaba su propio
+        # caso**: la marimba mide 74-55 = 19 y arranca en 55, asi que seguia
+        # entrando por bateria. No podia funcionar — un kit de GM ocupa 35-81 y
+        # una marimba cabe entera ahi dentro. Ningun umbral de alturas separa
+        # dos cosas que ocupan el mismo rango.
+        #
+        # El canal 10 de GM si lo dice, y viene en el fichero. Cuando el fichero
+        # no lo respeta, se pide a mano en vez de suponer, y **la duda cae del
+        # lado melodico**: una voz melodica tocando un patron de bateria suena
+        # raro y ya; un kit tocando una marimba dejo un pitido que sobrevivio a
+        # apagar el aparato.
+        canales_pista = set()
+        for k in coincide:
+            canales_pista |= canales.get(k, set())
+        es_bat, por_que = decidir_voz(canales_pista, forzar_kit)
+        # `--voz` nombra la voz de las pistas MELODICAS; `--voz kit` es el unico
+        # valor que decide que algo es bateria. Aplicar la voz a todas le habria
+        # puesto marimba a un bombo.
         prog = (G.kit_por_nombre("Rock Kit")[1] if es_bat
-                else G.voz_por_nombre(args.voz or "NylonGtr"))
+                else G.voz_por_nombre("NylonGtr" if forzar_kit
+                                      else (args.voz or "NylonGtr")))
         pre = F.build_prefix(base=F.PREFIJO_BASE, compases=n_comp,
                              nombre=destino, tipo="Bypass", pista=idx, voz=prog,
                              banco=F.BANK_DRUMS if es_bat else F.BANK_NORMAL)
         bl = G.a_bloques(notas, total, pre)
         bloques[idx] = (bl, prog, es_bat)
         esperadas[idx] = len(notas)
-        print("  %-26s -> %-3s %4d notas  %2d bloques"
-              % (coincide[0][:26], destino, len(notas), len(bl)))
+        # Se dice SIEMPRE por que se eligio kit o voz melodica. La version
+        # anterior lo decidia en silencio, y el fallo de la marimba se paso
+        # meses sin que nada en la salida diera una pista.
+        print("  %-26s -> %-3s %4d notas  %2d bloques  %-9s %s"
+              % (coincide[0][:26], destino, len(notas), len(bl),
+                 "KIT" if es_bat else "melodica", por_que))
 
     tot = sum(len(b) for b, _p, _x in bloques.values()) + 5
     print("\n%d bloques = %.1f KB" % (tot, tot * 128 / 1024.0))

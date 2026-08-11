@@ -31,7 +31,7 @@ independent Python subprojects, each with its own `.venv`.
 
 ```bash
 cd qy100-arp && .venv/bin/python test_engine.py      # tests, no hardware
-cd qy100-syx && .venv/bin/python test_protocol.py    # 162 checks — the last few
+cd qy100-syx && .venv/bin/python test_protocol.py    # 175 checks — the last few
                                                      # read dumps/, so the total
                                                      # drops if those are absent
 cd qy100-syx && .venv/bin/python test_regresiones.py # checks the checks bite

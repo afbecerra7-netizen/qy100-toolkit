@@ -378,6 +378,49 @@ for num, den in ((4, 4), (3, 4), (6, 8), (12, 8), (8, 16), (16, 16)):
           F.negras_por_compas(num, den))
 
 
+# --- Percusion o no, al importar una partitura --------------------------
+#
+# Esta decision se ha equivocado dos veces, y las dos se descubrio tocando:
+#
+#   1. Por la ranura de destino: D1, D2 y PC eran percusion siempre. Meter la
+#      marimba en `PC` la puso a sonar por un kit de bateria, con una nota
+#      sostenida que daba un pitido y sobrevivia al ciclo de corriente.
+#   2. Por el rango de alturas: bateria si abarca dos octavas o menos y no baja
+#      de 35. **No arreglaba su propio caso** — la marimba mide 55-74, o sea 19
+#      de rango arrancando en 55, y seguia entrando por bateria. No podia
+#      funcionar: un kit de GM ocupa 35-81 y una marimba cabe entera ahi dentro.
+#
+# El caso motivador va aqui dentro, literal, para que el tercer intento no pueda
+# repetir el segundo.
+
+print("\nvoz al importar: percusion o melodia")
+import importar as I
+
+MARIMBA = [55, 62, 67, 74, 60, 55]     # las alturas reales del caso
+check("la marimba cabe entera en el rango de un kit de GM",
+      (min(MARIMBA) >= 35, max(MARIMBA) <= 81), (True, True))
+check("y por eso ningun umbral de alturas la separa",
+      max(MARIMBA) - min(MARIMBA) <= 24, True)
+
+check("marimba por el canal 1 -> melodica", I.decidir_voz({0})[0], False)
+check("bombo por el canal 10 -> kit", I.decidir_voz({I.CANAL_PERCUSION})[0], True)
+check("varios canales melodicos -> melodica", I.decidir_voz({0, 2, 5})[0], False)
+check("sin canal -> melodica, que es el lado seguro",
+      I.decidir_voz(set())[0], False)
+check("--voz kit manda sobre el canal",
+      I.decidir_voz({0}, forzar_kit=True)[0], True)
+
+# La mezcla no tiene respuesta buena, asi que se cae del lado seguro y se avisa.
+es_bat, por_que = I.decidir_voz({0, I.CANAL_PERCUSION})
+check("canal 10 mezclado con otros -> melodica", es_bat, False)
+check("   y lo dice en voz alta", "MEZCLA" in por_que, True)
+
+# Y que la razon nunca vaya vacia: el fallo de la marimba se paso meses sin que
+# la salida diera una pista de por que se habia elegido kit.
+for canales in (set(), {0}, {I.CANAL_PERCUSION}, {0, I.CANAL_PERCUSION}):
+    check("siempre dice por que (canales %s)" % sorted(canales),
+          bool(I.decidir_voz(canales)[1]), True)
+
 print("\ndecodificacion de pistas reales")
 CASOS = [
     ("dumps/30-una-nota.syx",        (0x12,0x00,0x00), [(60,112,108,0)],            3840),

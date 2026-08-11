@@ -19,7 +19,7 @@ factory phrases, and the firmware image. The tool that implements all of this is
 ## qy100-syx
 
 ```bash
-cd qy100-syx && .venv/bin/python test_protocol.py       # 162 checks, no hardware
+cd qy100-syx && .venv/bin/python test_protocol.py       # 175 checks, no hardware
                                                         # (some read dumps/; the
                                                         #  total drops without them)
 ```
