@@ -104,7 +104,10 @@ if __name__ == "__main__":
     args = ap.parse_args()
 
     tpb, sig, bpm_orig, pistas = leer(args.archivo)
-    beats = sig[0] if sig[1] == 4 else sig[0] // 2
+    try:
+        beats = F.negras_por_compas(*sig)
+    except ValueError as e:
+        raise SystemExit("la partitura esta en %d/%d: %s" % (sig[0], sig[1], e))
     compas_ticks = tpb * beats
     bpm = args.bpm or bpm_orig
 
@@ -131,8 +134,8 @@ if __name__ == "__main__":
     from qy100syx import generar as G
     IDX = {n: i for i, n in enumerate(F.TRACK_NAMES)}
 
-    bloques = {}
-    print("\ncompases %d-%d (%d), %d/%d a %.0f bpm\n" % (a, b, n_comp, beats, 4, bpm))
+    bloques, esperadas = {}, {}
+    print("\ncompases %d-%d (%d), %d/%d a %.0f bpm\n" % (a, b, n_comp, sig[0], sig[1], bpm))
     for spec in args.pista:
         try:
             origen, destino = spec.rsplit("=", 1)
@@ -172,6 +175,7 @@ if __name__ == "__main__":
                              banco=F.BANK_DRUMS if es_bat else F.BANK_NORMAL)
         bl = G.a_bloques(notas, total, pre)
         bloques[idx] = (bl, prog, es_bat)
+        esperadas[idx] = len(notas)
         print("  %-26s -> %-3s %4d notas  %2d bloques"
               % (coincide[0][:26], destino, len(notas), len(bl)))
 
@@ -211,15 +215,35 @@ if __name__ == "__main__":
             time.sleep(0.2)
         except Exception:
             pass
-        inp.close()
+        # `inp` NO se cierra aqui: hace falta para releer despues de escribir.
 
     msgs, _ = P.parse_all(blob)
     dumps = [m for m in msgs if m.sub == P.SUB_DUMP]
     cab_msgs = [m for m in dumps if m.addr[2] == F.HEADER_TR]
+    if not cab_msgs and dumps:
+        # **Llegaron pistas pero no la cabecera: eso NO es un patron vacio.**
+        #
+        # Un patron vacio no devuelve absolutamente nada, ni un bloque. Si hay
+        # bloques de pista y falta la cabecera, la captura perdio datos — y es
+        # el modo de fallo mejor documentado del proyecto, porque el equipo
+        # vuelca **las pistas primero y las 5 cabeceras al final**, que es justo
+        # lo que se pierde si `collect` corta por silencio o si `MIDI CONTROL`
+        # esta inundando la entrada de reloj.
+        #
+        # Aqui se preguntaba `if not cab_msgs` a secas. Con eso el patron se
+        # daba por vacio, se arrancaba de la plantilla y `send_pattern` limpiaba
+        # el destino: **se perdian el mezclador, los acordes por seccion, las
+        # longitudes de las otras cinco secciones y todas las pistas previas**,
+        # anunciandolo como "el patron esta vacio". Probado con un volcado de 4
+        # bloques sin cabecera: conservaba 0 de 4 pistas.
+        raise SystemExit(
+            "Llegaron %d bloques de pista pero NO la cabecera del patron %d.\n"
+            "La captura perdio datos; no se escribe nada porque escribir ahora "
+            "borraria las pistas que si estan.\n"
+            "Comprueba que MIDI CONTROL este en Off y vuelve a intentarlo."
+            % (len(dumps), args.patron))
     if not cab_msgs:
-        # Un patron vacio no devuelve NADA, ni la cabecera, asi que "no
-        # contesto" no distingue entre vacio y fallo de linea. Se arranca de la
-        # plantilla; si de verdad hubiera fallo, la relectura posterior lo dice.
+        # Ningun bloque en absoluto: eso si es un patron vacio.
         print("El patron %d esta vacio: se crea desde la plantilla." % args.patron)
         cab_bytes, previas = list(F.CABECERA_BASE), []
     else:
@@ -235,7 +259,8 @@ if __name__ == "__main__":
     d = F.encode_header(cab_bytes[0], name=(args.nombre or "IMPORT")[:8],
                         measures=comp_actuales)
     d = F.set_tempo(d, bpm)
-    cab_bytes[0] = F.set_time_signature(d, beats, 4)
+    # El denominador es el de la partitura, no `/4` clavado.
+    cab_bytes[0] = F.set_time_signature(d, sig[0], sig[1])
 
     # Pistas primero, sustituyendo en su sitio; lo que no regeneramos se
     # reenvia intacto.
@@ -269,9 +294,53 @@ if __name__ == "__main__":
         cab_f = F.set_mixer_voice(cab_f, idx, prog, bateria=es_bat)
     salida += [P.build_dump(cab_addr, b) for b in cab_f]
 
-    try:
-        n = transfer.send_pattern(outp, salida, log=print)
-    finally:
-        outp.close()
+    n = transfer.send_pattern(outp, salida, log=print)
     print("\nEscritos %d bloques en el patron %d, %s"
           % (n, args.patron, F.SECTIONS[args.seccion]))
+
+    # **Releer, porque una escritura reportada como exitosa no prueba nada.**
+    # El comentario del guardia prometia esta relectura y no existia: el puerto
+    # de entrada se cerraba antes de escribir. La MOTU se traga escrituras con
+    # el puerto a medias y el QY100 las ignora si esta reproduciendo; en los dos
+    # casos `send_pattern` informa de exito.
+    #
+    # Se compara el NUMERO DE NOTAS decodificadas, no los bytes: el aparato
+    # reserializa y devuelve 95 de 147 bytes distintos para los mismos datos.
+    try:
+        outp.send(mido.Message("sysex", data=P.bulk_mode(True)[1:-1]))
+        time.sleep(0.3)
+        blob2, _ = transfer.request(outp, inp, cab_addr, log=lambda *a: None)
+    finally:
+        try:
+            outp.send(mido.Message("sysex", data=P.bulk_mode(False)[1:-1]))
+            time.sleep(0.2)
+        except Exception:
+            pass
+        inp.close()
+        outp.close()
+
+    m2, _ = P.parse_all(blob2)
+    leidos = {}
+    for m in (x for x in m2 if x.sub == P.SUB_DUMP and x.addr[2] != F.HEADER_TR):
+        leidos.setdefault(m.addr[2], []).append(bytes(m.data))
+    print("\nverificacion:")
+    mal = 0
+    for idx, (_bl, _prog, _eb) in sorted(bloques.items()):
+        tr = F.track_byte(args.seccion, idx)
+        if tr not in leidos:
+            print("   %-3s NO ESTA en el aparato" % F.TRACK_NAMES[idx]); mal += 1
+            continue
+        try:
+            notas, _ = F.decode_blocks(leidos[tr])
+        except ValueError as e:
+            print("   %-3s no decodifica: %s" % (F.TRACK_NAMES[idx], str(e)[:50]))
+            mal += 1
+            continue
+        print("   %-3s %d notas" % (F.TRACK_NAMES[idx], len(notas)))
+        if len(notas) != esperadas.get(idx):
+            print("        ESPERABA %d — la escritura no llego entera"
+                  % esperadas.get(idx))
+            mal += 1
+    if mal:
+        raise SystemExit("\n%d pista(s) no llegaron. NO te fies de la escritura." % mal)
+    print("   todas las pistas estan en el aparato")

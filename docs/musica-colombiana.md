@@ -153,11 +153,11 @@ all sixteen identical stroke for stroke. 100 % repetition.** The torbellino gave
 
 ```
 eighth      1      2      3      4      5      6
-syllable   Dé          le    du          ro
-hand       LEFT       LEFT  LEFT       RIGHT
-stroke     wood       wood  wood       head
-pitch      C#2        C#2   C#2        C2
-pulse      ●                 ●
+syllable    Dé            le     du            ro
+hand       LEFT          LEFT   LEFT         RIGHT
+stroke     wood          wood   wood          head
+pitch      C#2           C#2    C#2            C2
+pulse       ●                    ●
 ```
 
 `[M]` **The two pitches are not high and low heads: they are two surfaces.** The
@@ -192,7 +192,9 @@ invalidate an earlier one by being more official, it just says something else.**
 
 `[V]` **The cycle is four bars, not one**: "three plain bases plus a variation".
 The source measured here carries sixteen identical bars because it is the base in
-isolation; in practice **every fourth bar carries a variation**.
+isolation; in practice **every fourth bar carries a variation**. **The variation
+is notated in the primer but has not been transcribed — the `Currulao` engine
+plays the base alone, which is correct but incomplete.**
 
 **The melodic material is not generated.** The marimba gives 13 % repetition and
 the guitar 4 %: those are arrangements, not cells, like the porro and the chandé.

@@ -1128,6 +1128,31 @@ def build_prefix(base=None, nombre=None, compases=None, voz=None,
     return bytes(d)
 
 
+def negras_por_compas(numerador, denominador):
+    """Negras que dura un compas. `6/8` son 3, `8/16` son 2, `4/4` son 4.
+
+    **La formula es `num * 4 / den`, no `num` o `num // 2`.** Se venia usando
+    `num if den == 4 else num // 2`, que acierta en /4 y en los /8 de numerador
+    par —o sea en 6/8 y 12/8, que es todo lo que producen los motores hoy— y
+    falla en las otras doce signaturas que el aparato admite. Un `8/16` salia
+    con 4 negras en vez de 2: **la pista se escribia el doble de larga que su
+    seccion**, y `16/16`, que es 4/4 exacto, se rechazaba.
+
+    Se niega cuando no da un numero entero de negras, porque `section_clocks`
+    trabaja en negras enteras: un `7/8` son 3,5 y no se puede representar. Antes
+    se redondeaba en silencio a 3.
+    """
+    if denominador not in (4, 8, 16):
+        raise ValueError("denominador %r fuera de /4, /8 y /16" % denominador)
+    negras4 = numerador * 4
+    if negras4 % denominador:
+        raise ValueError(
+            "%d/%d son %.2f negras por compas y no un numero entero; el patron "
+            "se mide en negras enteras" % (numerador, denominador,
+                                           negras4 / float(denominador)))
+    return negras4 // denominador
+
+
 def section_clocks(measures, beats_per_bar=4):
     """Relojes que dura una seccion de `measures` compases."""
     return measures * beats_per_bar * CLOCKS_PER_QUARTER

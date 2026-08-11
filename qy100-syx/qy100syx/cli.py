@@ -618,7 +618,11 @@ def cmd_estilo(args):
     # 3/4 los motores colocarian las notas a 1920 relojes por compas contra una
     # seccion de 1440 y las pistas saldrian un tercio mas largas, sin error.
     num, den = F.decode_time_signature(cab_bytes[0])
-    bpb = num if den == 4 else num // 2
+    try:
+        bpb = F.negras_por_compas(num, den)
+    except ValueError as e:
+        log("No se genera nada: %s" % e)
+        return 1
     log("Patron %d (%r), %d/%d, compases por seccion: %s"
         % (args.patron, nombre, num, den, " ".join(str(x) for x in compases)))
 
