@@ -184,6 +184,200 @@ check("pack rellena a 147 bytes", len(F.pack(bytes(10))), 147)
 check("todo lo empaquetado cabe en 7 bits",
       all(b < 0x80 for b in F.pack(bytes(range(128)))), True)
 
+# --- El decodificador, evento a evento -----------------------------------
+#
+# Existe porque la suite pasaba de 117 comprobaciones **con el decodificador de
+# antes y con el de despues**, palabra por palabra igual. Tres cambios seguidos
+# —fallar en voz alta, consumir `FB` entero, exigir el marcador— y ninguno tenia
+# una sola prueba que los distinguiera. Cada bloque de aqui esta escrito para
+# fallar con la version anterior al cambio que comprueba; los que no pueden
+# fallar asi lo dicen.
+#
+# Los flujos se arman a mano en vez de sacarlos de un volcado: un volcado prueba
+# que hoy funciona con los datos que hay, y una regresion en `FB` no aparece
+# hasta que alguien vuelve a grabar con pedal.
+
+print("\ngramatica de eventos, flujos armados a mano")
+
+# Los bytes se escriben con la aritmetica a la vista en vez de llamar al
+# codificador: si los generase `encode_track`, esto comprobaria que el
+# codificador y el decodificador se entienden entre si, que es cierto aunque
+# los dos estuvieran equivocados. Aqui el numero de la izquierda es el dato y el
+# de la derecha su reparto en bits, y se puede comprobar a mano.
+# Van literales, sin nombrar las constantes del modulo, para que estas pruebas
+# se puedan correr contra una version que no las tenga —que es justo contra la
+# que hay que correrlas para saber si prueban algo—. Lo que si se comprueba es
+# que las constantes del modulo valgan lo que dicen los literales.
+GATE, ALTURA, VEL = 432, 60, 112
+MARCADOR = b"\xf0\x00"
+RELLENO, POR_BLOQUE = 0x40, 128
+DELTA4 = bytes([0x80 | 4])                                    # +4 relojes
+NOTA   = bytes([0xD0 | (GATE >> 7), GATE & 0x7F, ALTURA, VEL])
+PEDAL  = bytes([0xFB, 64, 127])                   # pedal de sostenido pisado
+FIN    = bytes([0xF2])
+check("la nota de mano lleva el gate que dice", (GATE >> 7, GATE & 0x7F), (3, 48))
+check("y el modulo llama a esos bytes por su nombre",
+      (F.TRACK_MARKER, F.CONTROL_CHANGE, F.END_OF_TRACK, F.PAD_BYTE,
+       F.UNPACKED_BYTES),
+      (MARCADOR, 0xFB, 0xF2, RELLENO, POR_BLOQUE))
+
+def leer(flujo, **kw):
+    return F.decode_events(MARCADOR + flujo, start=0, **kw)
+
+# `FB cc vv` son tres bytes. Con `i += 1` el `64` cae como estado y revienta.
+notas, dur = leer(PEDAL + DELTA4 + NOTA + FIN)
+check("FB no se come la nota que le sigue",
+      [(n.pitch, n.velocity, n.gate, n.time) for n in notas],
+      [(ALTURA, VEL, GATE, 4)])
+
+# Y el invariante que importa: meter un control change no cambia la musica.
+sin_pedal, d1 = leer(DELTA4 + NOTA + FIN)
+con_pedal, d2 = leer(PEDAL + DELTA4 + NOTA + PEDAL + FIN)
+check("un control change no altera las notas", con_pedal, sin_pedal)
+check("   ni la duracion", d2, d1)
+
+# Un FB partido por el final del buffer no puede reventar. Esto NO falla con la
+# version vieja —la tabla de anchos mentia pero el salto se pasaba de largo y el
+# bucle salia igual—; esta para que siga sin reventar si alguien la toca.
+notas, _ = leer(DELTA4 + NOTA + b"\xfb\x40",
+                estricto=False)
+check("FB truncado al final no revienta", len(notas), 1)
+
+# Un evento desconocido para, y dice donde. Antes avanzaba uno y seguia.
+try:
+    leer(DELTA4 + NOTA + bytes([0x7A]) + NOTA + FIN)
+    check("evento desconocido para", "no fallo", "ValueError")
+except ValueError as e:
+    check("evento desconocido para", "ValueError", "ValueError")
+    check("   y dice en que byte", "byte 7" in str(e), True)
+
+# Con estricto=False devuelve lo de antes del byte raro, no lo de despues.
+notas, _ = leer(DELTA4 + NOTA + bytes([0x7A]) + NOTA + FIN, estricto=False)
+check("estricto=False corta donde empieza la duda", len(notas), 1)
+
+# --- El marcador de inicio de pista ---
+#
+# `decode_blocks` no tenia ni una prueba, y es la unica funcion que puede
+# comprobar el marcador, porque es la unica que recibe la pista entera.
+
+print("\nla pista entera: marcador y final")
+
+def bloques(flujo, relleno=True):
+    """Empaqueta un flujo en bloques de 147 bytes, como los manda el equipo."""
+    b = bytearray(flujo)
+    if relleno:
+        b += bytes([RELLENO]) * ((-len(b)) % POR_BLOQUE)
+    return [F.pack(bytes(b[i:i + POR_BLOQUE]))
+            for i in range(0, len(b), POR_BLOQUE)]
+
+buena = bloques(MARCADOR + DELTA4 + NOTA + FIN)
+check("una pista bien formada se lee", len(F.decode_blocks(buena, start=0)[0]), 1)
+
+# Sin marcador: falta el primer bloque. Antes se leia desalineada y callada.
+sin_marca = bloques(DELTA4 + NOTA + FIN)
+try:
+    F.decode_blocks(sin_marca, start=0)
+    check("sin F0 00 se rechaza", "no fallo", "ValueError")
+except ValueError as e:
+    check("sin F0 00 se rechaza", "ValueError", "ValueError")
+    check("   y dice por donde empieza", "84" in str(e), True)
+
+check("   con estricto=False se lee igual, avisando el que llama",
+      len(F.decode_blocks(sin_marca, start=0, estricto=False)[0]), 1)
+
+# El caso peligroso, entero: un flujo desalineado que NO revienta y saca notas
+# en tiempos falsos. Es lo que hacian 10 pistas de los volcados.
+#
+# **Un desplazamiento de un byte cualquiera no vale para demostrarlo**, y ese
+# fue el primer intento: como los bytes de dato son todos menores que 0x80, caer
+# sobre uno da "evento desconocido" y para. Solo se cuela cuando el corte cae
+# justo sobre un byte de estado — que es lo que pasa cuando falta un bloque
+# entero. Se simula cortando por el inicio de la primera nota: lo que queda es
+# gramatica valida y **las dos notas salen 4 relojes antes de donde estan**.
+verdadero = MARCADOR + DELTA4 + NOTA + DELTA4 + NOTA + FIN
+reales, _ = F.decode_events(verdadero, start=0)
+desplazado = verdadero[3:]                    # se pierden `F0 00` y el delta
+enganosas, _ = F.decode_events(desplazado, start=0, estricto=False)
+check("desalineado saca las mismas notas...", len(enganosas), len(reales))
+check("   ...en tiempos que no son los suyos, y sin una queja",
+      ([n.time for n in enganosas], [n.time for n in reales]), ([0, 4], [4, 8]))
+
+# Encadenado de bloques: solo el primero lleva prefijo, el resto es continuacion
+# pura. Si alguien le quita el prefijo a todos, las notas del segundo se pierden.
+# 30 notas y no 20: con 20 el flujo son 122 bytes y cabe entero en un bloque,
+# asi que la prueba de encadenado no encadenaba nada y la de "falta el ultimo
+# bloque" se quedaba sin bloques que quitar.
+NOTAS = 30
+notas_muchas = [F.Note(60 + (i % 12), 100, 108, i * 120) for i in range(NOTAS)]
+bl = F.encode_blocks(notas_muchas, 120 * NOTAS, None, start=0)
+check("%d notas necesitan mas de un bloque" % NOTAS, len(bl) > 1, True)
+vuelta, _ = F.decode_blocks(bl, start=0)
+check("ida y vuelta por varios bloques", vuelta, notas_muchas)
+
+# Sin F2: falta el ultimo bloque. Nadie lo comprobaba.
+#
+# **Hay que quitarle el ultimo bloque a una pista de verdad, no fabricar un
+# bloque corto.** Un bloque corto se rellena de ceros al empaquetar, el
+# decodificador se topa con el relleno y falla por "evento desconocido": la
+# prueba pasaba, pero por un motivo que no era el suyo. De ahi la comprobacion
+# del texto del error.
+try:
+    F.decode_blocks(bl[:-1], start=0)
+    check("sin F2 se rechaza", "no fallo", "ValueError")
+except ValueError as e:
+    check("sin F2 se rechaza", "ValueError", "ValueError")
+    check("   por el final que falta, no por otra cosa", "F2" in str(e), True)
+check("   y con estricto=False devuelve lo leido",
+      len(F.decode_blocks(bl[:-1], start=0, estricto=False)[0]) > 0, True)
+
+# `decode_track` NO puede exigir el F2: un bloque suelto de una pista larga
+# acaba a media pista y eso es normal. Que siga sin exigirlo.
+check("un bloque suelto sin F2 se lee sin queja",
+      len(F.decode_track(bl[0], start=0)[0]) > 0, True)
+
+# --- Negras por compas ---
+#
+# La formula era `num` para /4 y `num // 2` para lo demas: acierta en /4 y en
+# los /8 de numerador par, o sea en todo lo que generan los motores hoy, y falla
+# en las otras doce signaturas que el aparato admite.
+
+print("\nnegras por compas")
+for num, den, esperado in ((4, 4, 4), (3, 4, 3), (6, 8, 3), (12, 8, 6),
+                           (8, 16, 2), (16, 16, 4), (2, 4, 2), (9, 8, 4.5)):
+    if esperado != int(esperado):
+        try:
+            F.negras_por_compas(num, den)
+            check("rechaza %d/%d" % (num, den), "no fallo", "ValueError")
+        except ValueError:
+            check("rechaza %d/%d, que son %.1f negras" % (num, den, esperado),
+                  "ValueError", "ValueError")
+    else:
+        check("%d/%d son %d negras" % (num, den, esperado),
+              F.negras_por_compas(num, den), esperado)
+
+# El caso que el codigo viejo se tragaba redondeando: 8/16 son 2 negras y
+# `num // 2` daba 4, o sea el doble de la seccion.
+check("8/16 no son 4 negras (era el fallo)", F.negras_por_compas(8, 16) != 8 // 2, True)
+
+for den in (2, 3, 32):
+    try:
+        F.negras_por_compas(4, den)
+        check("rechaza denominador %d" % den, "no fallo", "ValueError")
+    except ValueError:
+        check("rechaza denominador %d" % den, "ValueError", "ValueError")
+
+# Y que la signatura escrita en el byte 14 se relea igual y case con las
+# negras. Es el circuito completo: lo que se escribe, lo que se lee y lo que se
+# usa para medir la pista.
+for num, den in ((4, 4), (3, 4), (6, 8), (12, 8), (8, 16), (16, 16)):
+    pl = F.set_time_signature(bytes(147), num, den)
+    check("%2d/%-2d ida y vuelta por el byte 14" % (num, den),
+          F.decode_time_signature(pl), (num, den))
+    check("   y son %d negras" % F.negras_por_compas(num, den),
+          F.negras_por_compas(*F.decode_time_signature(pl)),
+          F.negras_por_compas(num, den))
+
+
 print("\ndecodificacion de pistas reales")
 CASOS = [
     ("dumps/30-una-nota.syx",        (0x12,0x00,0x00), [(60,112,108,0)],            3840),

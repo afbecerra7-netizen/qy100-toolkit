@@ -102,11 +102,19 @@ def pack(data, size=BLOCK_BYTES) -> bytes:
 
 END_OF_TRACK = 0xF2
 TRACK_MARKER = b"\xf0\x00"   # toda pista arranca asi; sin esto el editor cuelga
-CONTROL_CHANGE = 0xFB         # `FB cc vv` — 3 bytes. **Medido**: 451 apariciones
-                              # en los volcados, 438 con cc=64 (pedal de
-                              # sostenido) y 13 con cc=71, y los valores solo 0 y
-                              # 127 — 224 sueltas contra 227 pisadas, emparejadas.
-                              # Alguien grabo tocando con pedal.
+CONTROL_CHANGE = 0xFB         # `FB cc vv` — 3 bytes.
+#
+# **Medido** con `medir_volcados.py`, que es de donde tiene que salir cualquier
+# cifra de estas: **10 eventos**, todos con `cc = 64` (pedal de sostenido),
+# repartidos en 8 pistas, con valores 0 (seis veces) y 127 (cuatro). Alguien
+# grabo tocando con pedal, pero es UNA grabacion, no una costumbre.
+#
+# La cifra que estuvo publicada aqui —451 apariciones, 438 con cc=64 y 13 con
+# cc=71— **contaba el byte `0xFB` en cualquier posicion del flujo**: relleno
+# posterior al `F2`, prefijo de 26 bytes y pistas desalineadas incluidas. Hoy ese
+# recuento crudo da 362. Es otra magnitud, no una version imprecisa de esta: un
+# byte suelto que vale 0xFB no es un evento, y `cc = 71` no aparece ni una vez
+# cuando el flujo se recorre alineado.
 
 
 class Note:
@@ -154,20 +162,42 @@ def decode_blocks(payloads, start=EVENT_STREAM_START, max_events=4096, estricto=
     flujo = trozos[0][start:] + b"".join(trozos[1:])
     # **Toda pista empieza por `F0 00`.** Si no, este no es el primer bloque:
     # falta el que lleva el prefijo, y quitar 26 bytes cae a mitad de un evento.
-    # Es mejor comprobacion que esperar a un byte invalido — de las 42 pistas sin
-    # marcador en nuestros volcados, 27 acababan fallando y **15 se decodificaban
-    # sin quejarse, desalineadas**. Esas 15 son el caso peligroso.
+    # Es mejor comprobacion que esperar a un byte invalido — de las 28 pistas sin
+    # marcador en nuestros volcados, 18 acababan fallando y **10 se decodificaban
+    # sin quejarse**, sacando 154 notas inventadas. Esas 10 son el caso
+    # peligroso. Cifras de `medir_volcados.py`.
     if estricto and flujo[:2] != TRACK_MARKER:
         raise ValueError(
             "la pista no empieza por F0 00 (empieza por %s). Falta su primer "
             "bloque: el volcado perdio datos, o estos bloques son continuacion "
             "de otra cosa. Con estricto=False se lee igualmente, pero el "
             "resultado no es fiable." % flujo[:2].hex(" "))
-    return decode_events(flujo, 0, max_events, estricto)
+    notas, t, fin = decode_events(flujo, 0, max_events, estricto, con_fin=True)
+    # **Aqui llega la pista ENTERA, asi que tiene que acabar en `F2`.** Si el
+    # flujo se agota antes, faltan bloques del final igual que antes faltaban los
+    # del principio, y el resultado es una pista cortada que no se distingue de
+    # una corta. `decode_track` no puede comprobarlo —un bloque suelto de una
+    # pista larga acaba a media pista y eso es normal—, pero aqui si.
+    #
+    # Caza 7 pistas de los volcados que se aceptaban calladas. Las otras 10 que
+    # tampoco llegan a `F2` ya fallaban por evento desconocido.
+    if estricto and not fin:
+        raise ValueError(
+            "la pista no acaba en F2: el flujo se agoto tras %d evento(s) de "
+            "nota y %d relojes. Faltan bloques del final, o los que hay no "
+            "vienen en el orden en que los mando el equipo. Con estricto=False "
+            "se devuelve lo leido hasta aqui." % (len(notas), t))
+    return notas, t
 
 
-def decode_events(d, start=EVENT_STREAM_START, max_events=512, estricto=True):
+def decode_events(d, start=EVENT_STREAM_START, max_events=512, estricto=True,
+                  con_fin=False):
     """Recorre un flujo YA desempaquetado. Devuelve (notas, relojes_totales).
+
+    Con `con_fin=True` devuelve `(notas, relojes, llego_al_final)`, donde el
+    tercero dice si se encontro el `F2` o si el flujo simplemente se acabo. Los
+    dos casos son indistinguibles en el resultado y no lo son en significado:
+    quien tenga la pista entera —`decode_blocks`— debe exigir el `F2`.
 
     Comprueba que cada evento quepa entero antes de leerlo: un evento partido
     por el final del buffer solia reventar con IndexError.
@@ -185,14 +215,19 @@ def decode_events(d, start=EVENT_STREAM_START, max_events=512, estricto=True):
     alguien haya tocado con rueda de modulacion o pedal.
     """
     i, t = start, 0
-    notas, desconocidos = [], []
+    notas, desconocidos, fin = [], [], False
     for _ in range(max_events):
         if i >= len(d):
             break
         s = d[i]
-        # un evento truncado al final del buffer no es un evento
+        # Un evento truncado al final del buffer no es un evento. **Los anchos
+        # de aqui tienen que ser los mismos que consume el cuerpo del bucle**:
+        # esta tabla decia 1 para todo lo que pasara de 0xF0, cuando `F0`
+        # consume 2 y `FB` consume 3, y asi la guardia no protegia justamente los
+        # dos eventos que no son notas.
         ancho = (1 if s < 0xA0 else 2 if s < 0xC0 else
-                 3 if s < 0xD0 else 4 if s < 0xE0 else 5 if s < 0xF0 else 1)
+                 3 if s < 0xD0 else 4 if s < 0xE0 else 5 if s < 0xF0 else
+                 2 if s == 0xF0 else 3 if s == CONTROL_CHANGE else 1)
         if i + ancho > len(d):
             break
         if 0x80 <= s <= 0x9F:                       # tiempo corto, 1 byte
@@ -212,6 +247,7 @@ def decode_events(d, start=EVENT_STREAM_START, max_events=512, estricto=True):
                               ((s & 0x0F) << 14) | (d[i + 1] << 7) | d[i + 2], t))
             i += 5
         elif s == END_OF_TRACK:
+            fin = True
             break
         elif s == 0xF0:                             # marcador, no avanza el tiempo
             i += 2
@@ -233,7 +269,7 @@ def decode_events(d, start=EVENT_STREAM_START, max_events=512, estricto=True):
                     "que venga despues. Usa estricto=False para leer solo hasta "
                     "aqui." % (s, i))
             break
-    return notas, t
+    return (notas, t, fin) if con_fin else (notas, t)
 
 
 def encode_track(notas, total_clocks, start=EVENT_STREAM_START, prefix=None):
@@ -285,7 +321,11 @@ def _delta_bytes(delta: int) -> bytes:
 PAD_BYTE = 0x40         # con lo que el QY100 rellena la cola del ultimo bloque
 
 
-MARCADOR_INICIO = bytes([0xF0, 0x00])
+# Mismo valor que `TRACK_MARKER`, que es el que se comprueba al leer.
+# Estuvieron declarados por separado a 200 lineas de distancia, uno para
+# escribir y otro para leer: dos definiciones de la misma cosa que podian
+# separarse sin que nada fallara.
+MARCADOR_INICIO = TRACK_MARKER
 """Evento con el que arranca el flujo de TODA pista grabada en el equipo.
 
 Verificado en las tres pistas que grabo el propio QY100: la de Intro vacia
@@ -347,12 +387,11 @@ def encode_blocks(notas, total_clocks, prefix, start=EVENT_STREAM_START):
       - el desempaquetado 7->8 es POR BLOQUE (se descartan 5 bits en cada uno),
         no continuo a lo largo de la pista
 
-    **Limitacion: solo se reproducen notas y tiempos.** El flujo real del equipo
-    trae ademas un marcador `F0 xx` por pista que aqui no se genera, asi que
-    re-codificar una pista existente lo pierde. Para generar desde cero da igual
-    —el arpegio escrito el 2026-07-29 sonaba sin ningun `F0`—, pero para un
-    ida y vuelta fiel todavia no sirve. Por eso los bytes salen distintos a los
-    del equipo aunque las notas se relean identicas.
+    **Limitacion: solo se reproducen notas y tiempos.** El marcador `F0 00` si
+    se genera —lo pone `_event_stream`—, pero el flujo real del equipo trae
+    ademas control change y otros eventos que aqui no se reconstruyen, asi que
+    re-codificar una pista existente los pierde. Por eso los bytes salen
+    distintos a los del equipo aunque las notas se relean identicas.
     """
     flujo = bytearray(_event_stream(notas, total_clocks, prefix, start))
     flujo += bytes([PAD_BYTE]) * ((-len(flujo)) % UNPACKED_BYTES)

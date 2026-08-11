@@ -19,7 +19,9 @@ factory phrases, and the firmware image. The tool that implements all of this is
 ## qy100-syx
 
 ```bash
-cd qy100-syx && .venv/bin/python test_protocol.py       # 117 checks, no hardware
+cd qy100-syx && .venv/bin/python test_protocol.py       # 162 checks, no hardware
+                                                        # (some read dumps/; the
+                                                        #  total drops without them)
 ```
 
 ```bash
@@ -98,7 +100,7 @@ A methodological correction worth keeping: byte 16 was first attributed to chord
 
 Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-corrected in the Markdown. Addresses use `P=1` for QY100 (`0x12 nn tr` = user pattern), `P=0` for QY70; that single nibble is the whole difference between the two machines' style files.
 
-### Verified against the hardware (2026-07-28, MOTU M4 interface)
+### Verified against the hardware (2026-07-28)
 
 - **Checksum is `bytecount+addr+data`** — two's complement, 7-bit. Confirmed on 60+ real messages, zero failures. No longer a guess.
 - **`bulk mode ON` is mandatory** before any dump request — **and before CLEAR commands too**. Without it the QY100 silently ignores them. A bare `CLEAR ALL` left every pattern intact; the same message wrapped as `bulk ON → CLEAR ALL → bulk OFF` wiped the device. The manual lists the flag but never says it is a precondition.
@@ -110,7 +112,7 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **`bulk mode` locks the front panel.** Leave it on and the device appears dead to its own buttons — `dump` now always sends OFF in a `finally`, including on failure.
 - **A panel-initiated dump is self-framing**: `bulk mode ON → CLEAR ALL → data blocks → bulk mode OFF`. The CLEAR ALL is part of the payload so a restore wipes before writing. That framing also makes it possible to split a capture containing several dumps.
 - **`MIDI CONTROL` must be `Off` while dumping** (2026-07-29). With it on, the QY100 emits ~49 clock messages per second continuously and bulk captures lose whole blocks: the same pattern returned 8 blocks, then 3, then 2, then a different subset each attempt — the 5-block pattern header came back as 2. Everything that arrives is well-formed with a valid checksum, so it looks like the data changed rather than like loss. Filtering the clock in the driver (`rtmidi.ignore_types(timing=True)`, now applied automatically in `transfer.silenciar_reloj`) is **not sufficient** — it must be turned off at the device. Practical workflow: `In/Out` to sync a recording, `Off` to dump.
-- **Before blaming the QY100, power-cycle the interface.** After a long transfer the MOTU M4 leaves its port half-open, and from software that looks exactly like a device that isn't answering: the verification dump gets no reply and tracks don't leave MIDI OUT even though they sound. Cycling it fixes it.
+- **Before blaming the QY100, power-cycle the interface.** After a long transfer a USB-MIDI interface can leave its port half-open, and from software that looks exactly like a device that isn't answering: the verification dump gets no reply and tracks don't leave MIDI OUT even though they sound. Cycling it fixes it.
 
   **And it swallows WRITES just as silently** (2026-08-08, the second time the
   same day). Two styles were written with the interface already half-open: the
@@ -688,24 +690,49 @@ hypothesis about the container, and it was false.
   deltas, and on an unknown byte it **advanced one and carried on**, so
   everything after that came out with the wrong pitch and time and no error.
 
-  Making it stop and feeding it our own dumps produced 34 bad tracks out of 806.
-  Looking closely they were **two different problems**:
+  Making it stop and feeding it our own dumps split the failures into **two
+  different problems**. All the figures below are recounted by
+  [`medir_volcados.py`](../qy100-syx/medir_volcados.py) over **415 distinct
+  tracks**, which appear 955 times across 122 files — the dumps repeat between
+  files, and counting appearances instead of tracks inflates everything by more
+  than two.
 
-  **`FB cc vv` is a three-byte control change.** `[M]` — 451 occurrences across
-  the dumps, 438 with `cc = 64` (sustain pedal) and 13 with `cc = 71`, and the
-  values **only 0 and 127**, 224 releases against 227 presses. Almost paired:
-  it is someone who recorded playing with a pedal. Consuming it whole instead of
-  skipping one byte recovers 7 tracks.
+  **`FB cc vv` is a three-byte control change.** `[M]` — **10 events**, all with
+  `cc = 64` (sustain pedal), spread over 8 tracks, values 0 six times and 127
+  four. Someone recorded playing with a pedal: one session, not a habit.
 
-  **And 42 tracks do not start with `F0 00`.** Their first block is missing —
+  An earlier version of this paragraph claimed 451 occurrences, 438 with
+  `cc = 64` and 13 with `cc = 71`, and 224 releases against 227 presses, "almost
+  paired". **That count was of the byte `0xFB` anywhere in the stream** —
+  padding past the `F2`, the 26-byte prefix and misaligned tracks included. It
+  is a different quantity, not an imprecise version of this one: a byte that
+  happens to be `0xFB` is not an event, `cc = 71` never occurs once the stream
+  is walked in step, and 6 against 4 is not paired. The raw count today is 362.
+
+  Consuming `FB` whole instead of skipping one byte recovers **1 track** — and
+  only because the decoder now stops at what it doesn't understand. While it
+  merely skipped unknown bytes, consuming `FB` byte by byte landed on exactly
+  the same place: `cc` and `vv` are 7-bit MIDI data, so three skips of one add
+  up to the three bytes the event occupies. **The second fix was worth nothing
+  without the first**, which is not visible from either commit alone.
+
+  **And 28 tracks do not start with `F0 00`.** Their first block is missing —
   dumps from the era when polled capture lost blocks, though it also shows up in
-  a later one. The serious part is that **only 27 of those 42 were failing**: the
-  other 15 decoded without complaint, misaligned. Checking the marker is a better
-  test than waiting for an invalid byte, because **the dangerous case is not the
-  one that fails but the one that doesn't**.
+  a later one. The serious part is that **only 18 of those 28 were failing**: the
+  other 10 decoded without complaint, misaligned, yielding 154 notes that are not
+  the track's. Checking the marker is a better test than waiting for an invalid
+  byte, because **the dangerous case is not the one that fails but the one that
+  doesn't**. All 28 are pattern tracks; of the 88 song tracks, none lacks it.
 
-  State after both corrections: **760 decode, 42 without a marker, and 4 with an
-  event still unidentified.**
+  **A third problem the first two hid: 17 tracks never reach `F2`.** Ten of them
+  already failed on an unknown event, but **7 were accepted in silence** — the
+  last block never arrived, and a truncated track is indistinguishable from a
+  short one. Only `decode_blocks` can catch this, because it is the only function
+  that receives the whole track; a lone block of a long track legitimately ends
+  mid-stream.
+
+  State after the three corrections: **370 tracks decode whole, 28 are rejected
+  for the missing marker, and 17 for the missing end.**
 
 - **A song and pattern directory** in the `15 xx xx` address family, which we
   have never used: it asks the device for a listing without dumping the content.

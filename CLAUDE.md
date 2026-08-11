@@ -6,8 +6,10 @@
 >
 > - **The manuals, the firmware image and Yamaha's Data Filer.** You'll already
 >   have those; the page citations throughout still point at them and resolve.
-> - **The reference dumps** (`dumps/`) and the generated MIDI (`midi/`). Not
->   needed to use the tools, and some contain unreleased music.
+> - **Most of the reference dumps** and all the generated MIDI (`midi/`). Not
+>   needed to use the tools, and some contain unreleased music. The eight dumps
+>   the test suite decodes **are** included, so the tests run; the suite reports
+>   a lower total here than in the working repo for exactly that reason.
 > - **An EP** that was produced with these tools. It belongs to someone else, so
 >   only the technical measurements taken from it survive here — the memory
 >   arithmetic, the note counts, the per-minute cost. Those are cited as "the EP".
@@ -18,19 +20,22 @@
 
 Guidance for Claude Code (claude.ai/code) when working in this repository.
 
-Reference material and tools for the **Yamaha QY100** (hardware sequencer, 2000)
-and for the rest of a rig that keeps **no computer in the chain**. Two code
-subprojects, each with its own `.venv`, independent of one another.
+Tools and findings for the **Yamaha QY100** (hardware sequencer, 2000), in two
+independent Python subprojects, each with its own `.venv`.
 
 | Where | What it is |
 | --- | --- |
 | [`qy100-arp/`](qy100-arp/) | External arpeggiator and generative sequencer, over MIDI. [README](qy100-arp/README.md) |
 | [`qy100-syx/`](qy100-syx/) | Dumping, decoding and writing over SysEx. [README](qy100-syx/README.md) |
-| `Manuales/` · `manuales-md/` | Documentation. No build, no tests — don't invent commands for them |
+| `Manuales/` · `manuales-md/` | Referenced throughout but **not included** — see the note at the top. Citations are by page number and still resolve against the real manuals |
 
 ```bash
-cd qy100-arp && .venv/bin/python test_engine.py     # tests, no hardware
-cd qy100-syx && .venv/bin/python test_protocol.py   # 117 checks, no hardware
+cd qy100-arp && .venv/bin/python test_engine.py      # tests, no hardware
+cd qy100-syx && .venv/bin/python test_protocol.py    # 162 checks — the last few
+                                                     # read dumps/, so the total
+                                                     # drops if those are absent
+cd qy100-syx && .venv/bin/python test_regresiones.py # checks the checks bite
+cd qy100-syx && .venv/bin/python medir_volcados.py   # recounts the cited figures
 ```
 
 ## The documents
@@ -41,12 +46,12 @@ index; the detail lives one topic per file:
 | Document | What's in it |
 | --- | --- |
 | [`docs/qy100-protocolo.md`](docs/qy100-protocolo.md) | SysEx, pattern and song format, factory phrases, firmware |
-| `docs/equipo.md` | The devices, their note maps, the channel assignment |
+| *(not published)* | The studio inventory: what gear there is and on which channel. Personal information, of no use to a collaborator |
 | [`docs/estilos-de-fabrica.md`](docs/estilos-de-fabrica.md) | The 128 factory styles with their full names |
 | [`docs/musica-colombiana.md`](docs/musica-colombiana.md) | The measured rhythmic cells of each genre |
 | [`docs/manuales.md`](docs/manuales.md) | Where each manual is and how to read it |
-| `qy100-syx/PLAN-LIVESET.md` | The 40-minute set: repertoire, memory, mechanics |
-| `instrumentos-software.md` | Plugin inventory, read off the disk |
+| *(not published)* | The plan for one particular live set. The memory measurements that came out of it are here, in the protocol document |
+| *(not published)* | Plugin inventory of one particular studio |
 
 ## How certainty is marked
 
@@ -71,6 +76,18 @@ The three cases that illustrate it best, all real:
   A program that doesn't understand it and merely copies it produces the same
   result. **A round-trip only demonstrates comprehension if the output is
   generated.**
+- **`451` control-change events turned out to be 10.** The count was of the byte
+  `0xFB` anywhere in the stream — padding, prefix and misaligned tracks
+  included — not of events reached by walking it. It carried a `[M]`, and it
+  was measured; it just measured a different quantity than the sentence around
+  it claimed. **A number is only as good as the question it answers**, so any
+  figure a document cites now has to come out of
+  [`medir_volcados.py`](qy100-syx/medir_volcados.py), which can be re-run.
+
+And a corollary about tests, learned when three decoder fixes turned out to
+share one suite that passed identically before and after all three: **a test
+that cannot fail is a comment.** [`test_regresiones.py`](qy100-syx/test_regresiones.py)
+puts each known defect back and requires that something goes red.
 
 And the method that does work when a measurement depends on someone else's ear:
 **ask for a comparison, not an absolute judgement.** Anyone can answer "is this
