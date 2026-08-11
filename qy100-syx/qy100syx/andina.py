@@ -103,7 +103,22 @@ class Genero:
         return F.section_clocks(compases, beats_per_bar=self.beats)
 
     def procedencia(self):
-        """Filas (pista, marca, fuente, aporte) para las pistas documentadas."""
+        """Filas (pista, marca, fuente, aporte) para las pistas documentadas.
+
+        **Se niega a heredar el dict.** `BambucoFiestero` y `BambucoMelancolico`
+        no declaraban el suyo, asi que salian por consola anunciando `[M]` sobre
+        `te-ofrezco-mi-corazon-bambuco.mid` para pistas que no tocan lo que esa
+        partitura dice: el fiestero pone el bajo en 1/3/5 y el melancolico en
+        2/5, y la fila heredada describia 3 y 5. Una subclase que cambia lo que
+        toca y no cambia su procedencia **miente con la voz del que la hereda**,
+        que es justo lo que este dict existe para impedir.
+        """
+        propio = type(self).__dict__.get("fuentes")
+        if propio is None and self.fuentes:
+            heredado = ("[V]", "HEREDADO de %s — sin verificar para este genero"
+                        % type(self).__mro__[1].__name__, "")
+            return [(nom,) + heredado
+                    for idx, nom, _p, _v, _b, _m in self.pistas]
         return [(nom, ) + self.fuentes.get(idx, ("[V]", "sin documentar", ""))
                 for idx, nom, _p, _v, _b, _m in self.pistas]
 
@@ -115,14 +130,24 @@ class Genero:
 # un solo compas leido de dos maneras, que funciona porque 6/8 y 3/4 duran igual.
 #
 #     corchea    1   2   3   4   5   6
-#     6/8        X           X          percusion
-#     3/4        X       X       X      tiple y bajo
+#     6/8        X           X          agrupacion 3+3
+#     3/4        X       X       X      agrupacion 2+2+2
+#
+# **Las dos filas son agrupaciones metricas, no instrumentos**, y estuvieron
+# rotuladas "percusion" y "tiple y bajo". Ninguno de los dos rotulos era cierto:
+# la tambora ataca en 1, 2, 3, 4 y 5 —no en 1 y 4— y el tiple toca solo en 2 y 4,
+# sin pisar una sola negra (`ACORDE_EN = (1, 3)`, "nunca en el tiempo fuerte").
+# "Percusion en 1 y 4" es literalmente **la version equivocada nº 1** que este
+# mismo fichero declara "coherente y falso" treinta lineas mas abajo, y estaba
+# escrita arriba como si fuera el resumen bueno.
 #
 # El patron del tiple viene documentado con precision de corchea: chasquido,
-# rasgueo, bajo en la fundamental, rasgueo, bajo en la quinta, rasgueo. Los bajos
-# caen en las corcheas 3 y 5, que en 3/4 son los tiempos 2 y 3 — o sea que **el
-# tiple es la voz que cuenta en tres**, y es la que faltaba en las transcripciones
-# de Tribe, donde marimba y tamboras agrupaban las dos en 3+3.
+# rasgueo, bajo, rasgueo, bajo, rasgueo. Los bajos caen en las corcheas 3 y 5,
+# que en 3/4 son los tiempos 2 y 3 — o sea que **el tiple es la voz que cuenta en
+# tres**, y es la que faltaba en las transcripciones de Tribe, donde marimba y
+# tamboras agrupaban las dos en 3+3. **Quinta en la 3 y fundamental en la 5**, en
+# ese orden y no al reves; aqui decia "fundamental... quinta" y se contradecia
+# con la medicion de veinte lineas mas abajo.
 
 # --- El bambuco, medido sobre una partitura real -------------------------
 #
@@ -145,7 +170,7 @@ class Genero:
 # Y el bajo hace **quinta en la 3, fundamental en la 5** — en ese orden, en los
 # treinta y un compases. No es fundamental-quinta como pondria cualquiera.
 #
-# ## Dos versiones equivocadas antes de esta, y por que
+# ## Tres versiones equivocadas antes de esta, y por que
 #
 # 1. **Bombo en 1 y 4**, deducido de la sesquialtera sobre el papel: los dos
 #    grupos de `3+3` empiezan ahi. Coherente y falso.
@@ -153,6 +178,10 @@ class Genero:
 #    grooves de Tribe. El problema es que aquello es un bambuco tocado con
 #    **tambores caribeños** —una adaptacion— y no el andino. Una transcripcion
 #    real de otro conjunto no es una transcripcion del genero.
+# 3. **Acordes en 1, 3, 5 y bajo en 4 y 6**, de una descripcion en prosa
+#    encontrada en internet. Es la que se le aplico al pasillo, y la que la
+#    moraleja de abajo cuenta como tercera derrota — este encabezado decia
+#    "dos" y enumeraba dos, mientras el documento publicado decia tres.
 #
 # La leccion: para el ritmo de un genero, **una partitura del genero** gana a la
 # teoria metrica, a la prosa de internet y a una transcripcion de instrumentos
@@ -311,6 +340,23 @@ class BambucoFiestero(Bambuco):
         (3, "BA", "bajo en las tres negras", "Aco.Bass", False, _fiestero_bajo),
         (4, "C1", "acordes en las contras", "NylonGtr", False, _fiestero_tiple),
     )
+    #: **Propio, no heredado de `Bambuco`.** Estuvo heredado y por eso el
+    #: fiestero anunciaba `[M]` de `te-ofrezco` en las tres pistas, incluidas
+    #: dos que tocan otra cosa.
+    fuentes = {
+        0: ("[D]", "-", "la celda de tambora se traslada desde `te-ofrezco`; "
+                        "es el mismo genero, pero no esta medida sobre `brisas`"),
+        2: ("[D]", "-", "guache continuo, deducido"),
+        3: ("[M]", "brisas-del-pamplonita-bambuco.mid",
+                   "bajo en las corcheas 1, 3 y 5: 51, 51 y 65 ataques graves "
+                   "contra 14, 12 y 12 en las contras. `[D]` el reparto "
+                   "fundamental-quinta-fundamental: lo medido es el registro, "
+                   "no la altura"),
+        4: ("[M]", "brisas-del-pamplonita-bambuco.mid",
+                   "acordes en las corcheas 2, 4 y 6, en alternancia estricta "
+                   "con el bajo: sin huecos, que es lo que separa al fiestero "
+                   "del de salon"),
+    }
 
 
 # --- Pasillo -------------------------------------------------------------
@@ -404,6 +450,16 @@ class Pasillo(Genero):
         (4, "C1", "acordes en 4 y 5",         "NylonGtr", False, _pasillo_tiple),
         (5, "C2", "requinto, contracanto",    "SteelGtr", False, _pasillo_requinto),
     )
+    fuentes = {
+        3: ("[M]", "la-gata-goloza-fulgencio-garcia.mid",
+                   "bajo en la corchea 1: 183 graves contra 71 acordes ahi. El "
+                   "patron (1,4,5) se repite en 110 de 184 compases (60 %)"),
+        4: ("[M]", "la-gata-goloza-fulgencio-garcia.mid",
+                   "acordes en las corcheas 4 y 5: 104 y 110 ataques"),
+        5: ("[V]", "-", "el requinto toca en 2, 3 y 6 — **las tres corcheas que "
+                        "la celda medida deja vacias**. No sale de ninguna "
+                        "fuente: es contracanto inventado"),
+    }
 
 
 # --- Pasillo denso (fiestero, "Vino Tinto") ------------------------------
@@ -475,6 +531,17 @@ class PasilloDenso(Pasillo):
          _pasillo_acordes_escasos),
         (5, "C2", "requinto, contracanto",       "SteelGtr", False, _pasillo_requinto),
     )
+    fuentes = {
+        3: ("[M]", "vino-tinto-fulgencio-garcia.mid",
+                   "el reparto de registro por corchea y la ausencia de acordes "
+                   "—una nota a la vez, 1.0— en 126 compases. `[D]` los grados "
+                   "concretos de `PASILLO_LINEA`: la medicion es de ocupacion y "
+                   "registro, **no trae un solo intervalo**"),
+        4: ("[M]", "vino-tinto-fulgencio-garcia.mid",
+                   "acordes escasos; el 58 % de los compases ocupan las seis "
+                   "corcheas"),
+        5: ("[V]", "-", "requinto inventado, igual que en el pasillo de salon"),
+    }
 
 
 # --- Torbellino ----------------------------------------------------------
@@ -484,12 +551,14 @@ class PasilloDenso(Pasillo):
 # tiempo fuerte del siguiente. Una anacrusa de tres golpes que aterriza.
 #
 #     corchea      1      2    3     4     5     6
-#     bombo      TAAAAN   ·    ·     ·   tan     ·        96% de los compases
+#     bombo      TAAAAN   ·    ·     ·   tan     ·        97% de los compases
 #     caja       TAAN     ·    ·    tan  tan   tan        58%
 #                 ^ aterriza aqui   ^^^^^^^^^^^^^^ empuja hacia el siguiente
 #
 # Medido en `suite-colombiana-torbellino-micontrabajo.mid`: el bombo hace
-# `c0 durando 4 corcheas, c4 durando 2` en el 96% de sus 99 compases, y la caja
+# `c0 durando 4 corcheas, c4 durando 2` en el 97% de sus 99 compases (96 de
+# 99 — la cifra estuvo como '96 %', que es el recuento leido como porcentaje),
+# y la caja
 # `c0:2 c3:1 c4:1 c5:1` en el 58%.
 #
 # **La primera version tenia las posiciones bien y el gesto perdido**: cuatro
@@ -628,6 +697,18 @@ class Torbellino(Genero):
         (3, "BA", "bajo con la celda",   "Aco.Bass", False, _torbellino_bajo),
         (4, "C1", "acordes I I IV | V",  "NylonGtr", False, _torbellino_tiple),
     )
+    fuentes = {
+        0: ("[M]", "suite-colombiana-torbellino-micontrabajo.mid",
+                   "el bombo: `c0` durando 4 corcheas y `c4` durando 2, en 96 "
+                   "de 99 compases (97 %)"),
+        1: ("[D]", "-", "la caja `tan tan tan` en 4, 5 y 6, deducida"),
+        2: ("[D]", "-", "chucho continuo, deducido"),
+        3: ("[M]", "suite-colombiana-torbellino-micontrabajo.mid",
+                   "los melodicos atacan en las tres negras: `c0:2 c2:2 c4:2`. "
+                   "**El bajo NO cae en 1 y 5** — eso es el bombo"),
+        4: ("[M]", "suite-colombiana-torbellino-micontrabajo.mid",
+                   "acordes en las tres negras, misma celda que el bajo"),
+    }
 
 
 # --- Guabina -------------------------------------------------------------
@@ -640,10 +721,21 @@ class Torbellino(Genero):
 #     acorde       ·      ·   ACORDE    ·      ·   ACORDE
 #     tambora    grave    ·    agudo    ·    grave  agudo
 #
-# El bajo cae en 1 y 5 **igual que en el torbellino**; lo que separa los dos
-# generos es la respuesta armonica. El torbellino pone los acordes en los tres
-# negros y la guabina en las contras, justo detras de cada bajo. Mismo esqueleto,
-# distinto eco.
+# **La equivalencia con el torbellino era falsa, y era el unico aval que tenia
+# esta colocacion.** Decia "el bajo cae en 1 y 5 igual que en el torbellino", y
+# el bajo del torbellino cae en las tres negras —corcheas 1, 3 y 5—, no en 1 y
+# 5: sale de `TORB_CELDA`, la misma de la que salen sus acordes, y el propio
+# parrafo lo desmentia dos lineas mas abajo al decir que el torbellino pone los
+# acordes en los tres negros. Lo que el torbellino si tiene medido en 1 y 5 es
+# **el bombo**, no el bajo (`c0` durando 4 corcheas y `c4` durando 2, en el 97 %
+# de sus 99 compases). Confundir el bombo con el bajo y usar la confusion como
+# respaldo de otro genero es exactamente la mezcla silenciosa de fuentes que
+# `fuentes` existe para impedir.
+#
+# `[D]` Asi que el bajo de la guabina en 1 y 5 **no esta medido**: es criterio,
+# elegido para que el tiple conteste en las contras. Lo que separa los dos
+# generos —el torbellino contestando en los tres negros y la guabina en las
+# contras— sigue en pie; lo que se cae es el "mismo esqueleto".
 #
 # La tambora dobla las dos capas con timbres distintos —grave con el bajo, agudo
 # con el acorde—, que es lo que hace audible el reparto sin que haya dos
@@ -714,6 +806,18 @@ class Guabina(Genero):
         (3, "BA", "bajo en 1 y 5",         "Aco.Bass", False, _guabina_bajo),
         (4, "C1", "acordes en 3 y 6",      "NylonGtr", False, _guabina_tiple),
     )
+    #: Este genero es el que menos respaldo tiene, y estuvo saliendo entero como
+    #: `[V] sin documentar` por no declarar nada — que era honesto por omision,
+    #: no por diseno.
+    fuentes = {
+        0: ("[D]", "-", "tambora doblando las dos capas con timbres distintos"),
+        2: ("[D]", "-", "chucho continuo, deducido"),
+        3: ("[D]", "-", "bajo en las corcheas 1 y 5. **Criterio, no medicion**: "
+                        "el unico aval que tuvo fue una equivalencia falsa con "
+                        "el torbellino, cuyo bajo va en las tres negras"),
+        4: ("[D]", "-", "acordes en 3 y 6, elegidos para contestar detras de "
+                        "cada bajo sin pisarlo"),
+    }
 
 
 # --- Bambuco melancolico (caucano) ---------------------------------------
@@ -732,6 +836,12 @@ class Guabina(Genero):
 #     tempo            68 bpm      contra 152 (salon) y 168 (santandereano)
 #     bajo             evita el 1  19 ataques en la corchea 1 contra 113 en la 2
 #     acompanamiento   casi continuo, las seis corcheas en el 37% de los compases
+#
+# **Las tres salen del Mejia**, no de `y-un-cafe`, y no lo decia. Se comprobo
+# recontando los graves por corchea en las dos: el Mejia da el valle en la 1 y
+# el pico en la 2, y `y-un-cafe` tiene el pico justamente en la 1. Citar "las
+# dos partituras" y luego dar una cifra de una sola es como se pierde el rastro
+# de una medicion.
 #
 # **Un bajo que rehuye el tiempo fuerte es lo que produce la sensacion de
 # flotar**, y es la diferencia mas clara con las otras dos variantes, donde el
@@ -817,6 +927,24 @@ class BambucoMelancolico(Bambuco):
         (3, "BA", "bajo fuera del tiempo", "Aco.Bass", False, _melanc_bajo),
         (4, "C1", "colchon continuo",     "NylonGtr", False, _melanc_tiple),
     )
+    #: **Propio, no heredado.** Heredaba el de `Bambuco` y salia anunciando
+    #: `[M]` de `te-ofrezco` con el bajo "en la corchea 3 y la 5" — y este
+    #: motor lo pone en la 2 y la 5. Aqui la marca tiene que ser mas floja que
+    #: en las otras dos variantes, y el bloque de arriba ya lo decia con todas
+    #: las letras: **"No hay celda que extraer"** y "el reparto concreto de las
+    #: corcheas es criterio, no medicion". El dict decia lo contrario.
+    fuentes = {
+        0: ("[D]", "-", "tambora trasladada desde `te-ofrezco`, muy floja; no "
+                        "hay percusion medida en las fuentes caucanas"),
+        3: ("[M]", "bambuco-no-1-en-si-menor-adolfo-mejia-navarro.mid",
+                   "el bajo rehuye el tiempo fuerte: 19 ataques en la corchea 1 "
+                   "contra 113 en la 2. `[D]` que caiga en 2 y 5 en concreto — "
+                   "lo medido es que evita la 1, no donde se posa"),
+        4: ("[D]", "-", "colchon casi continuo: las seis corcheas en el 37 % de "
+                        "los compases del Mejia, pero con 30 % y 37 % de "
+                        "consistencia **no hay celda que extraer**; el reparto "
+                        "es criterio"),
+    }
 
 
 
@@ -929,9 +1057,21 @@ class Currulao(Genero):
     fuentes = {
         0: ("[M]", "bombo-golpeador-o-macho-currulao.mid (Javier Martinez / "
                    "Wilmer Vente)",
-                   "la celula: 64 notas en 16 compases, 100% identicas. Las "
-                   "cabezas en X son madera y la nota normal es cuero, segun la "
-                   "propia partitura y la clave de `Pitos y tambores`"),
+                   "la celula: 64 notas en 16 compases, 100% identicas. **Son "
+                   "CUATRO golpes** — madera en las corcheas 1, 3 y 4 y cuero "
+                   "en la 6; no hay madera en la 6. Las cabezas en X son madera "
+                   "y la nota normal es cuero, segun la propia partitura y la "
+                   "clave de `Pitos y tambores`"),
+        # El motor escribe CINCO: anade madera simultanea sobre el cuero de la
+        # corchea 6. Eso **no sale de la partitura** sino de la otra cartilla, y
+        # es una mezcla de fuentes en el punto exacto donde estan declaradas en
+        # desacuerdo (ver el `[V]` del acento, abajo). Sin esta entrada, el
+        # quinto golpe salia amparado por el `[M]` de arriba.
+        "0-simultaneo": (
+            "[D]", "¡Que te pasa vo! (Pacifico Sur), grafico 17",
+            "el ultimo golpe es ABIERTO-MADERA simultaneo. La cartilla lo situa "
+            "en la 5a corchea y aqui se escribe en la 6a, que es donde lo pone "
+            "la partitura: la discrepancia sigue abierta"),
         2: ("[D]", "-", "guasa continua, deducida. La cartilla del Pacifico Sur "
                         "la nombra pero no se ha transcrito su patron"),
         3: ("[D]", "-", "bajo en 1 y 4, deducido de los dos pulsos del 6/8"),
@@ -967,14 +1107,33 @@ class Currulao(Genero):
 
 # --- Mapale --------------------------------------------------------------
 #
-# De `mapale-ashcolom.mid` (piano a dos manos, 4/4 a 100). La celda del
-# acompanamiento, en semicorcheas de medio compas:
+# De `mapale-ashcolom.mid` (piano a dos manos, 4/4 a 100).
 #
-#     semicorchea    1    2    3    4    5    6    7    8
-#     ataques      142    0    0  120   10  120    0    0
+# `[M]` **La celda son tres golpes iguales por medio compas, no 3+2+3.** El
+# medio compas mide 960 relojes y los ataques caen en 0, 320 y 640: tercios
+# exactos, con desviacion cero en los 392 ataques. Es un tresillo de negra sobre
+# dos negras, o sea un 3 contra 2, que es lo que hace correr al genero.
 #
-# Ataques en la **1, la 4 y la 6**: intervalos de 3+2+3. Y las alturas dicen algo
-# que el recuento por si solo no ve:
+#     relojes desde el inicio del medio compas
+#       0    320    480    640
+#     142    120     10    120     <- ataques
+#
+# **Estuvo escrito como «3+2+3 en semicorcheas», y era el redondeo.** 320 y 640
+# no caen en la rejilla de semicorchea (120): al llevarlos a ella salen 360 y
+# 600, que es lo que tocaba este motor. El segundo golpe llegaba 40 relojes
+# tarde y el tercero 40 pronto — 50 ms a 100 bpm, con el tresillo aplanado
+# contra una rejilla binaria. La cifra de ataques (142/120/10/120) siempre fue
+# correcta; **la columna en la que se imprimio, no**. `CLOCKS_PER_QUARTER` son
+# 480, asi que 320 y 640 son exactos en el QY100 y no habia nada que redondear.
+#
+# `[M]` **Cada nota dura su tercio entero**: 319 relojes en 372 de los 392
+# ataques. No es un picado sobre una rejilla, es legato de tresillo.
+#
+# `[M]` **El apoyo se acentua poco**: velocity 85 de media en el golpe 1 (80-96)
+# y 80 exactos en los otros dos. El contraste 108/92 que se usaba aqui no sale
+# de la fuente.
+#
+# Y las alturas dicen algo que el recuento por si solo no ve:
 #
 #     compas 71   sc1 D3   sc4 D4   sc6 D3
 #     compas 72   sc1 D4   sc4 D3   sc6 D4
@@ -995,31 +1154,42 @@ class Currulao(Genero):
 # Lo medido es la celda y la armonia, no los tambores, que en este genero son la
 # mitad del asunto.
 
-MAPALE_CELDA = (0, 3, 5)      # semicorcheas 1, 4 y 6 de cada medio compas
+#: Desplazamientos en RELOJES desde el inicio del medio compas, no en indices
+#: de semicorchea. **Estuvo en semicorcheas y por eso el tresillo se aplano**:
+#: 320 y 640 no existen en esa rejilla.
+MAPALE_TERCIO = 2 * NEGRA // 3                 # 320 relojes
+MAPALE_CELDA = tuple(k * MAPALE_TERCIO for k in range(3))    # 0, 320, 640
+#: `[M]` velocity 85 de media en el apoyo y 80 exactos en los otros dos golpes.
+MAPALE_VEL = (85, 80, 80)
 
 
 def _mapale_ostinato(g, compases, intensidad):
-    """La oscilacion de octava sobre la celda de 3+2+3."""
+    """La oscilacion de octava sobre el tresillo."""
     notas, golpe = [], 0
     for c in range(compases):
         _n, raiz, _v = g.acorde_de(c)
         base = _bar(c, g.beats)
         for mitad in range(g.beats // 2):
-            for i in MAPALE_CELDA:
+            for k, off in enumerate(MAPALE_CELDA):
+                # La nota llena su tercio: 319 de 320 en la fuente.
                 notas.append(F.Note(raiz + (12 if golpe % 2 else 0),
-                                    108 if i == 0 else 92, SEMI * 2 - 10,
-                                    base + mitad * 2 * NEGRA + i * SEMI))
+                                    MAPALE_VEL[k], MAPALE_TERCIO - 1,
+                                    base + mitad * 2 * NEGRA + off))
                 golpe += 1
     return notas
 
 
 def _mapale_bombo(g, compases, intensidad):
-    """Bombo en la misma celda; en las secciones flojas solo en el apoyo."""
+    """Bombo en la misma celda; en las secciones flojas solo en el apoyo.
+
+    `[D]` La fuente es una transcripcion para piano y **no trae percusion**, asi
+    que poner el bombo sobre la misma celda es una deduccion, no una medicion.
+    """
     posiciones = MAPALE_CELDA if intensidad > 0.5 else (0,)
-    return [F.Note(CUERO, 112 if i == 0 else 96, SEMI,
-                   _bar(c, g.beats) + mitad * 2 * NEGRA + i * SEMI)
+    return [F.Note(CUERO, 112 if off == 0 else 96, SEMI,
+                   _bar(c, g.beats) + mitad * 2 * NEGRA + off)
             for c in range(compases) for mitad in range(g.beats // 2)
-            for i in posiciones]
+            for off in posiciones]
 
 
 def _mapale_guasa(g, compases, intensidad):
@@ -1036,8 +1206,11 @@ class Mapale(Genero):
         0: ("[D]", "-", "bombo sobre la misma celda del ostinato, deducido"),
         2: ("[D]", "-", "sonaja continua, deducida"),
         3: ("[M]", "mapale-ashcolom.mid",
-                   "la celda 3+2+3 y la alternancia de octava, medidas sobre la "
-                   "mano izquierda del piano"),
+                   "tres golpes iguales por medio compas (0, 320 y 640 relojes, "
+                   "desviacion cero en 392 ataques), cada nota llenando su "
+                   "tercio, y la alternancia de octava. **Estuvo escrito como "
+                   "«3+2+3 en semicorcheas», que era el redondeo de 320 y 640 a "
+                   "una rejilla que no los contiene**"),
     }
     bpm = 100.0
     beats = 4
@@ -1088,7 +1261,16 @@ CUM_PULSO = (0, 4)
 
 
 def _cumbia_llamador(g, compases, intensidad):
-    """El contratiempo. Es lo que hace que una cumbia sea una cumbia."""
+    """El contratiempo: eventos 3 y 7 de la matriz binaria.
+
+    `[M]` La cartilla situa ahi el llamador de la cumbia. `[V]` **Pero no es lo
+    que la distingue**: `Pitos y tambores` aplica el mismo contratiempo binario
+    al "llamador de cumbia, gaita, porro, chalupa, son corrido, puya sabanera"
+    —seis ritmos—, y da la clave de cumbia tambien al bullerengue, al porro
+    palitiao y a la gaita. Lo que la fuente sostiene es la posicion, no la
+    identidad. Aqui estuvo escrito "es lo que hace que una cumbia sea una
+    cumbia", que es mas de lo que dice la cartilla.
+    """
     return [F.Note(MADERA, 104, SEMI, _bar(c, g.beats) + i * SEMI)
             for c in range(compases) for i in CUM_LLAMADOR]
 

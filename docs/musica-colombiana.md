@@ -58,7 +58,10 @@ what closes the bar.
 For a genre's rhythm, **a score of that genre** beats metric theory, beats prose,
 and beats a transcription for instruments that aren't its own.
 
-**And the scores disagree with each other, which is the finding.** Four bambucos:
+**And the scores disagree with each other, which is the finding.** Four bambucos
+— the fourth is `bambuco-no-1-en-si-menor-adolfo-mejia-navarro.mid`, at 30 %
+consistency, which is why it does not carry a row of its own but does supply the
+melancholic variant's only measurement:
 
 ```
 te-ofrezco     6/8   chords 2,4       bass 3,5
@@ -103,9 +106,19 @@ the weight is on the 6/8 offbeats. The choice of time signature is **a
 consequence of the pattern**, not of the transcriber's taste. A hypothesis from
 two scores; confirming it needs more of each variant.
 
-`qy100syx/andina.py`. `[V]` **The pasillo in that same module is still built by
-method 3 above and has not been checked against any score**: treat it as a
-hypothesis until it is.
+`qy100syx/andina.py`. That sentence used to be followed by a `[V]` saying the
+pasillo was still built by method 3 and unchecked against any score. **It was
+false, and it stayed published for more than thirty commits after it went
+stale**: the engine has `PASILLO_BAJO_EN = 0` and `PASILLO_ACORDE_EN = (3, 4)`,
+which is the row this document's own table gives two sections below, measured on
+`la-gata-goloza` — bass on the 1st eighth (183 low notes against 71 chords) and
+chords on the 4th and 5th (104 and 110), the pattern repeating in 110 of 184
+bars. A `[V]` that has been resolved and not updated is worse than no mark: it
+tells the reader to distrust something that is measured.
+
+What is still unverified there is the **requinto**: it plays on eighths 2, 3 and
+6 — precisely the three the measured cell leaves empty. It comes from no source
+at all.
 
 ### Measuring how invariant a genre is
 
@@ -139,9 +152,16 @@ pasillo       BASS     ·      ·    CHORD   CHORD     ·
 pasillo denso  a continuous eighth-note line, flat velocity
 ```
 
-**Guabina and torbellino share the bass on 1 and 5**; what separates them is
-where the harmony answers — the torbellino on the three quarters, the guabina on
-the offbeats behind each bass note. Same skeleton, different echo. And **the
+`[D]` **The guabina's bass on 1 and 5 is a choice, not a measurement.** This
+paragraph used to claim it shared that placement with the torbellino, and that
+equivalence was its only backing — but the torbellino's bass falls on the three
+quarters, the same cell as its chords, as the very next clause admits. What the
+torbellino has measured on 1 and 5 is **the bass drum**, not the bass. Mistaking
+one for the other and then using the mistake to support a second genre is the
+silent mixing of sources this project keeps a provenance table to prevent.
+
+What survives is the difference: the torbellino answers on the three quarters,
+the guabina on the offbeats behind each bass note. And **the
 festive bambuco is the only one that occupies all six eighths**: that's why it
 pushes.
 
@@ -213,8 +233,18 @@ sixteenth      1    2    3    4    5    6    7    8
 attacks      142    0    0  120   10  120    0    0
 ```
 
-Attacks on **1, 4 and 6** — intervals of **3+2+3**. And the pitches say something
-the count alone cannot see:
+`[M]` **Three equal attacks per half-bar, not 3+2+3.** The half-bar is 960
+clocks and the attacks land on 0, 320 and 640 — exact thirds, zero deviation
+across all 392 attacks — with each note holding its full third (319 clocks in
+372 of them). It is a quarter-note triplet over two quarters: a 3-against-2, and
+that is what makes the genre run.
+
+The table above is printed on a sixteenth grid, and **that grid is what produced
+the "3+2+3"**: 320 and 640 do not fall on it, and rounding them gives 360 and
+600. The attack counts were always right; the column they were printed in was
+not. The engine played the rounded version until 2026-08-11.
+
+And the pitches say something the count alone cannot see:
 
 ```
 bar 71   s1 D3   s4 D4   s6 D3
@@ -322,7 +352,11 @@ alegre            X   X   X   X   X   X   X   X    "reproduces the matrix"
 ```
 
 The alegre playing all eight events is the basic **soledeña-type** cumbia
-pattern. The llamador on the offbeat is what makes a cumbia a cumbia.
+pattern. `[V]` **The offbeat llamador does not distinguish a cumbia.** The primer
+applies that same binary offbeat to the "llamador de cumbia, gaita, porro,
+chalupa, son corrido, puya sabanera" — six rhythms — and gives the cumbia clave
+to the bullerengue, the porro palitiao and the gaita as well. What the source
+supports is the position, not the identity.
 
 `[V]` **The tambora needs a "double matrix"** — sixteen events — and is not
 implemented: its variations take a full page of the primer and deserve measuring
@@ -356,7 +390,11 @@ claps or stamps **on the syllable "ro"**, which is the head stroke on the sixth.
 
 ## Where each track comes from
 
-Every engine declares the provenance of its tracks, readable without hardware:
+Every engine declares the provenance of its tracks, readable without hardware.
+**That sentence was false when it was written**: four of the ten declared
+nothing and two inherited another genre's table, so they announced `[M]` over a
+score they do not play. It is true as of 2026-08-11, and `test_generos.py` now
+fails if it stops being true.
 
 ```bash
 cd qy100-syx && .venv/bin/python syx.py andina currulao --fuentes
