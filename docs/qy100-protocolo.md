@@ -1,25 +1,25 @@
-# El QY100 por dentro — protocolo, formatos y firmware
+# Inside the QY100 — protocol, formats and firmware
 
-Lo que se sabe del aparato a nivel de bytes: SysEx, formato de patrón y de
-canción, las frases de fábrica, y la imagen de firmware. La herramienta que
-implementa todo esto es [`qy100-syx/`](../qy100-syx/).
+What is known about the device at byte level: SysEx, pattern and song format, the
+factory phrases, and the firmware image. The tool that implements all of this is
+[`qy100-syx/`](../qy100-syx/).
 
-> **Cómo leer las marcas.** Todo lo que hay aquí está en uno de tres estados, y
-> distinguirlos es lo que evita repetir errores: casi todos los que ha cometido
-> este proyecto viven en la frontera entre el segundo y el primero.
+> **How to read the marks.** Everything here is in one of three states, and
+> keeping them apart is what stops mistakes repeating: nearly all of this
+> project's have lived on the border between the second and the first.
 >
-> - `[M]` **medido** contra el aparato o contra una fuente primaria. Se puede usar.
-> - `[D]` **deducido** de otra cosa que sí está medida. Coherente, sin comprobar.
-> - `[V]` **sin verificar**, o comprobado por una vía que no lo demuestra.
+> - `[M]` **measured** against the device or a primary source. Usable.
+> - `[D]` **deduced** from something that is measured. Coherent, unchecked.
+> - `[V]` **unverified**, or checked by a route that doesn't prove it.
 >
-> Una deducción coherente suena exactamente igual que un hecho. El bambuco salió
-> mal tres veces seguidas por eso, y el parámetro de disparo de la DrumBrute se
-> atribuyó al byte equivocado por ser el primero de la lista.
+> A coherent inference sounds exactly like a fact. The bambuco came out wrong
+> three times running for that reason, and the DrumBrute's trigger parameter was
+> attributed to the wrong byte because it happened to be first in the list.
 
 ## qy100-syx
 
 ```bash
-cd qy100-syx && .venv/bin/python test_protocol.py       # 117 comprobaciones, sin hardware
+cd qy100-syx && .venv/bin/python test_protocol.py       # 117 checks, no hardware
 ```
 
 ```bash
@@ -69,11 +69,11 @@ A second round measured the sends, and **corrected a guess made from position al
 | 162 | drum flag | 1 on D1/D2/PC | measured |
 | 170 | volume | 100 | measured |
 | 178 | pan | 64 | measured |
-| 186 | dry level | 127 | `[D]` **inferido** del valor y del orden XG |
+| 186 | dry level | 127 | `[D]` **inferred** from the value and the XG ordering |
 | 194 | chorus send | 0 | measured |
 | 202 | reverb send | 40 | measured |
 | 210 | variation send | 0 | measured |
-| 218 | ? (note shift?) | 64 | `[V]` **sin identificar** |
+| 218 | ? (note shift?) | 64 | `[V]` **unidentified** |
 
 The order matches the XG multi-part spec exactly — volume, pan, dry level, chorus, reverb, variation — which is what makes 186 a confident inference rather than a shot in the dark. It is still not measured.
 
@@ -90,7 +90,7 @@ The two differ by 64. Reading `63` off the panel and writing 63 into the byte gi
 
 This closes the gap that looked worst all session — the assumption that the sounding voice lived outside the pattern and was unreachable by SysEx. It was forty bytes past where we had stopped reading.
 
-**`SOURCE CHORD` is per-track** `[M]` para leer, `[V]` para escribir — — prefix byte 21 (root, C=0) and byte 22 (type, same table as the current chord). Reading is verified; writing is not, because changing it from the panel also moves header block 3 byte 75, a byte that shifts with phrase type, chord root and chord quality alike — it packs several fields and is not isolated.
+**`SOURCE CHORD` is per-track** — `[M]` for reading, `[V]` for writing — prefix byte 21 (root, C=0) and byte 22 (type, same table as the current chord). Reading is verified; writing is not, because changing it from the panel also moves header block 3 byte 75, a byte that shifts with phrase type, chord root and chord quality alike — it packs several fields and is not isolated.
 
 A methodological correction worth keeping: byte 16 was first attributed to chord quality because it moved during the source-chord test. It is the phrase-voice program, and it moved because *opening the Phrase Table* made the device write the track's real voice into it. **In a diff, a byte that changes at the same time as your edit is not necessarily caused by your edit** — entering an editor is itself an action with side effects.
 
@@ -110,24 +110,24 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **`bulk mode` locks the front panel.** Leave it on and the device appears dead to its own buttons — `dump` now always sends OFF in a `finally`, including on failure.
 - **A panel-initiated dump is self-framing**: `bulk mode ON → CLEAR ALL → data blocks → bulk mode OFF`. The CLEAR ALL is part of the payload so a restore wipes before writing. That framing also makes it possible to split a capture containing several dumps.
 - **`MIDI CONTROL` must be `Off` while dumping** (2026-07-29). With it on, the QY100 emits ~49 clock messages per second continuously and bulk captures lose whole blocks: the same pattern returned 8 blocks, then 3, then 2, then a different subset each attempt — the 5-block pattern header came back as 2. Everything that arrives is well-formed with a valid checksum, so it looks like the data changed rather than like loss. Filtering the clock in the driver (`rtmidi.ignore_types(timing=True)`, now applied automatically in `transfer.silenciar_reloj`) is **not sufficient** — it must be turned off at the device. Practical workflow: `In/Out` to sync a recording, `Off` to dump.
-- **Antes de culpar al QY100, apaga y enciende la interfaz.** Tras una transferencia larga la interfaz USB-MIDI puede quedarse con el puerto a medias y desde el software se ve exactamente igual que un aparato que no contesta: el volcado de verificacion no recibe respuesta y las pistas no salen por MIDI OUT aunque suenen. Ciclarla lo arregla.
+- **Before blaming the QY100, power-cycle the interface.** After a long transfer the MOTU M4 leaves its port half-open, and from software that looks exactly like a device that isn't answering: the verification dump gets no reply and tracks don't leave MIDI OUT even though they sound. Cycling it fixes it.
 
-  **Y se traga las ESCRITURAS igual de silenciosamente** (2026-08-08, segunda
-  vez el mismo dia). Dos estilos se escribieron con la interfaz ya a medias: el
-  software mando los bloques, reporto "escritos 47 bloques", y el aparato no
-  recibio nada. El unico sintoma fue que el volcado posterior seguia mostrando
-  el contenido anterior. **Una escritura reportada como exitosa a traves de un
-  puerto medio abierto no prueba nada**; lo unico que lo prueba es releer.
+  **And it swallows WRITES just as silently** (2026-08-08, the second time the
+  same day). Two styles were written with the interface already half-open: the
+  software sent the blocks, reported "47 blocks written", and the device received
+  nothing. The only symptom was that the following dump still showed the previous
+  content. **A write reported as successful through a half-open port proves
+  nothing**; the only thing that proves it is reading back.
 
-  Costo dos diagnosticos falsos el 2026-08-08 —se reviso `MIDI CONTROL`, la pantalla del panel y el cableado— porque el sintoma es indistinguible de los fallos reales que si estan documentados aqui. **Es la comprobacion mas barata y va primero.**
+  It cost two false diagnoses on 2026-08-08 — `MIDI CONTROL`, the panel display and the cabling were all checked — because the symptom is indistinguishable from the real failures documented here. **It is the cheapest check and it goes first.**
 
-- **"No contesta" tiene al menos tres causas distintas, y `setup` las separa.**
-  Vistas las tres el mismo dia: interfaz a medias (las escrituras tambien se
-  pierden), **patron vacio** —que no devuelve nada y es indistinguible de un
-  fallo— y **aparato reproduciendo**, que ignora peticiones y escrituras en
-  silencio. Pedir `dump setup` es un solo bloque: **si contesta, el equipo y el
-  cable estan bien** y hay que buscar en el otro lado. Es la comprobacion mas
-  barata despues de ciclar la interfaz.
+- **"It isn't answering" has at least three distinct causes, and `setup` separates them.**
+  All three seen the same day: a half-open interface (writes are lost too), an
+  **empty pattern** — which returns nothing and is indistinguishable from a
+  failure — and a **device that is playing**, which ignores requests and writes
+  silently. Asking for `dump setup` is a single block: **if it answers, the
+  device and the cable are fine** and the problem is elsewhere. It is the
+  cheapest check after cycling the interface.
 
 - **The QY100 transmits MIDI Clock even while stopped.** So incoming clock is *not* evidence that the sequencer is running, and no tool should infer "playing" from it. A recording script that auto-started after seeing clock without a Start fired 32 notes at a device sitting in the utility menu and recorded nothing. Wait for an actual Start.
 - **Capture must be callback-driven, not polled.** The QY100 streams MIDI clock continuously (48 ticks/s) and that flood makes a polling loop drop whole SysEx messages. The symptom is deceptive: everything that arrives is well-formed with a valid checksum, only some blocks are missing. The tell was that single-block items (setup, guitar effect) came back identical every time while anything multi-block varied.
@@ -137,36 +137,36 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **An empty pattern or song returns nothing at all.** That makes a cleared device the ideal reverse-engineering baseline: there is no background to subtract, so anything that appears after recording is the recorded data.
 - **`CLEAR ALL` also resets the utility settings** — it silently reverted `MIDI CONTROL`, which stopped clock transmission. Re-check page 127/128 settings after any clear.
 
-### Los estilos de fabrica estan en OTRO CHIP, y por eso no cuestan memoria
+### The factory styles live on a DIFFERENT CHIP, which is why they cost no memory
 
-Del diagrama de bloques del service manual (p. 9), leyendo las capacidades en
-**megabits**, que es como se especifican los chips de memoria:
+From the service manual's block diagram (p. 9), reading the capacities in
+**megabits**, which is how memory chips are specified:
 
 ```
-IC6   SRAM 1M        =  128 KB    datos de usuario, con respaldo de pila
-IC4   Mask/FlashROM 8M  =   1 MB    los 128 estilos y las 4.285 frases
-IC3   FlashROM 16M   =    2 MB    programa principal (el firmware ocupa 1,38)
-IC27  Mask/FlashROM 64M =   8 MB    generador de tonos y muestras
+IC6   SRAM 1M          = 128 KB    user data, battery-backed
+IC4   Mask/FlashROM 8M  =   1 MB    the 128 styles and the 4,285 phrases
+IC3   FlashROM 16M      =   2 MB    main program (the firmware takes 1.38)
+IC27  Mask/FlashROM 64M =   8 MB    tone generator and samples
 ```
 
-**`SRAM 1M` son 128 KB, no 1 MB.** Los numeros de parte lo confirman:
-`uPD431000` y `M5M51008` son 128K x 8 bits. Eso **confirma por una via
-independiente** la cifra de 128 KB que se habia deducido contando bloques de 128
-bytes contra la barra de `USED MEMORY`, que no da numero. Dos caminos que no se
-hablan dando lo mismo.
+**`SRAM 1M` is 128 KB, not 1 MB.** The part numbers confirm it: `uPD431000` and
+`M5M51008` are 128K x 8 bits. That **confirms by an independent route** the
+128 KB figure that had been deduced by counting 128-byte blocks against the
+`USED MEMORY` bar, which gives no number. Two paths that don't talk to each
+other, agreeing.
 
-**El catalogo de fabrica tiene ocho veces mas memoria que el usuario**, y en un
-chip distinto. Por eso referenciar una frase preset no cuesta nada: no es un
-truco de ahorro, es **usar el megabyte de IC4 en vez de gastar los 128 KB de
-IC6**. Son memorias fisicamente separadas.
+**The factory catalogue has eight times more memory than the user does**, and on
+a different chip. That is why referencing a preset phrase costs nothing: it is
+not a saving trick, it is **using IC4's megabyte instead of spending IC6's
+128 KB**. They are physically separate memories.
 
-Consecuencia practica: **las frases preset no se pueden leer del firmware.**
-`_QY100_v137.mid` reescribe unicamente IC3; buscar los nombres de estilo
-(`80MRk`, `DncSw`, `AfrJz`, `Bossa`...) en la imagen extraida da **cero
-apariciones**. Para leer una frase de fabrica nota a nota hay que pasarla a
-memoria de usuario con el **Job 15 (*Copiar frase*)** y volcarla desde ahi. Es
-lento —una por una, desde el panel— pero es la unica ruta, y convierte el
-catalogo en material estudiable.
+Practical consequence: **preset phrases cannot be read out of the firmware.**
+`_QY100_v137.mid` rewrites IC3 only; searching the extracted image for the style
+names (`80MRk`, `DncSw`, `AfrJz`, `Bossa`…) gives **zero hits**. To read a
+factory phrase note by note it has to be copied into user memory with **Job 15
+(*Copy Phrase*)** and dumped from there. It is slow — one at a time, from the
+panel — but it is the only route, and it turns the catalogue into studiable
+material.
 
 ### The Data Filer is the ground truth
 
@@ -298,38 +298,38 @@ The panel's length counter renders the value with a **single digit**, so 16 disp
 
 ```
 offset 0     16 bytes   "YQ1PAT     V1.00"   magic + version, ASCII
-offset 114    2 bytes   `02 22` — CONSTANTE, no una longitud (ver abajo)
+offset 114    2 bytes   `02 22` — a CONSTANT, not a length (see below)
 offset 128    N bytes   the blocks, ALREADY UNPACKED to 8 bits
 ```
 
 The body is **byte-for-byte the same data our decoder produces after `unpack()`** — 640 bytes for a 5-block pattern header, differing only in the pattern name and in padding past the declared length. So `patternfmt` reads a `.q1p` directly with the 7→8 step skipped, and both files decode to 32 measures in all six sections, confirming bytes 15–20 by an independent route.
 
-**Los bytes 114–115 NO son una longitud. Refutado** (2026-08-10) por la hoja de
-datos de [qyTools](https://github.com/Max-Coppola/qyTools), un trabajo
-independiente sobre el mismo protocolo: son la **constante `0x02 0x22`** que
-cierra la tabla de recuentos por página del bloque de metadatos.
+**Bytes 114–115 are NOT a length. Refuted** (2026-08-10) by the datasheet of
+[qyTools](https://github.com/Max-Coppola/qyTools), independent work on the same
+protocol: they are the **constant `0x02 0x22`** that closes the per-page packet
+count table in the metadata block.
 
-Se dedujo de que 546 era justo donde dos archivos dejaban de coincidir, y 546 es
-`0x0222`. Coincidencia. **Los 41 `.q1p` que tenemos miden exactamente 768 bytes
-los 41**, así que con este material la hipótesis no era comprobable ni
-refutable — y aun así se escribió como si lo fuera. Se había marcado para
-re-comprobar contra otro archivo; lo que faltaba era un archivo *de otro
-tamaño*, no otro archivo.
+It had been deduced from 546 being exactly where two files stopped agreeing, and
+546 is `0x0222`. Coincidence. **All 41 `.q1p` files here are exactly 768 bytes**,
+so with this corpus the hypothesis was neither testable nor refutable — and it
+was still written as if it were. It had been flagged for re-checking "against
+another file"; what was missing was a file *of a different size*, not another
+file.
 
-Su lectura del contenedor, más completa que la nuestra:
+Their reading of the container, more complete than ours:
 
 ```
-offset 0     16 bytes   magia "YQ1PAT     V1.00"
-offset 16   112 bytes   metadatos: byte 0 = ranura destino (base 0)
-                        byte 19+2*(pagina-8) = paquetes de esa pagina
-                        bytes 98-99 = constante 02 22   <- nuestros 114-115
-offset 128        N     las paginas, ya desempaquetadas
-final       640 bytes   lo que nosotros llamamos la cabecera del patron
+offset 0     16 bytes   magic "YQ1PAT     V1.00"
+offset 16   112 bytes   metadata: byte 0 = destination slot (0-based)
+                        byte 19+2*(page-8) = that page's packet count
+                        bytes 98-99 = constant 02 22   <- our 114-115
+offset 128        N     the pages, already unpacked
+(end)       640 bytes   what we call the pattern header
 ```
 
-Y una consecuencia que no habíamos visto: **los 768 bytes de los archivos de
-doffu son 128 + 0 + 640.** No tienen ni una página de datos — son patrones
-vacíos, y por eso el «cuerpo» que comparamos era solo la cabecera.
+And a consequence we had not seen: **the 768 bytes of doffu's files are
+128 + 0 + 640.** They carry no page data at all — they are empty patterns, which
+is why the "body" we were comparing was only the header.
 
 Practically this matters a lot: **a SmartMedia card reader turns every experiment offline.** No `bulk mode`, no panel lock, no clock flooding the capture, no half-written transfers corrupting the memory accounting, no power cycles. Diff-and-extrapolate on files is what doffu has been doing all along, and it is strictly safer and faster than doing it over SysEx. SysEx remains necessary for playing the device live and for songs; for *decoding pattern structure*, files win.
 
@@ -388,94 +388,96 @@ Two traps in the extraction, both of the kind that pass every check:
 
 One erratum in Yamaha's own list: the first phrase of `GR` / `3/4 beat` (p. 28) is printed `01` instead of `001`. Normalized on extraction.
 
-### Las frases de fabrica son referencias y no cuestan memoria (2026-08-08)
+### Factory phrases are references and cost no memory (2026-08-08)
 
-**Medido sobre un equipo recien borrado**, que es la linea base ideal porque un
-patron vacio no devuelve absolutamente nada: cualquier cosa que aparezca es lo
-que se acaba de hacer.
+**Measured on a freshly cleared device**, which is the ideal baseline because an
+empty pattern returns absolutely nothing: anything that appears is what was just
+done.
 
-Asignar una frase preset a una pista desde el panel deja el patron **sin ningun
-bloque de pista**. Solo aparecen los 5 bloques de cabecera. Las notas se quedan
-en la ROM: el patron guarda una referencia. Confirmado tres veces seguidas.
+Assigning a preset phrase to a track from the panel leaves the pattern **with no
+track blocks at all**. Only the 5 header blocks come back. The notes stay in ROM:
+the pattern stores a reference. Confirmed three times running.
 
-La consecuencia practica es de arquitectura, no de detalle: **un estilo puede
-mezclar frases de fabrica referenciadas (gratis) con frases generativas propias
-(que si ocupan)**, y pagar memoria solo por lo segundo. Con 128 KB compartidos
-entre canciones, patrones y frases, eso cambia cuanto cabe.
+The consequence is architectural, not a detail: **a style can mix referenced
+factory phrases (free) with its own generated phrases (which do cost)**, paying
+memory only for the second kind. With 128 KB shared between songs, patterns and
+phrases, that changes how much fits.
 
-**La referencia a una frase preset son DOS BYTES del registro de la cabecera, y
-esta RESUELTA** (2026-08-08). Escribirla por SysEx funciona y no cuesta memoria
-de usuario: las notas se quedan en la ROM.
+**A preset-phrase reference is TWO BYTES of the header registry, and it is
+SOLVED** (2026-08-08). Writing it over SysEx works and costs no user memory: the
+notes stay in ROM.
 
 ```
-bandera  (bytes 21-68)    = (indice_de_categoria << 3) | estado
-tabla tr (bytes 69-116)   = numero de frase - 1
+flag     (bytes 21-68)    = (category_index << 3) | state
+tr table (bytes 69-116)   = phrase number - 1
 
-   estado 0   la pista tiene contenido propio
-   estado 1   frase preset, 16 beat
-   estado 2   frase preset, 8 beat
-   estado 3   frase preset, 3/4 beat
-   estado 6   vacia
+   state 0   the track has its own content
+   state 1   preset phrase, 16 beat
+   state 2   preset phrase, 8 beat
+   state 3   preset phrase, 3/4 beat
+   state 6   empty
 ```
 
-**Cinco bits de categoria y tres de estado, no cuatro y cuatro.** La tabla de
-categorias sale del **firmware**, offset `0x11AE24` de la imagen que produce
-`extraer_rom.py`: 32 entradas de 3 bytes con los quince codigos y huecos `__`
-reservados por Yamaha.
+**Five bits of category and three of state, not four and four.** The category
+table comes out of the **firmware**, at offset `0x11AE24` of the image
+`extraer_rom.py` produces: 32 three-byte entries holding the fifteen codes plus
+`__` gaps reserved by Yamaha.
 
 ```
 -- Da Db __ __ Fa Fb __ __ PC __ __ __ Ba Bb __ __ __ Ga Gb GR __ __ KC KR __ __ __ PD BR SE US
 ```
 
-Cuadra con las **ocho banderas medidas en el equipo, 8 de 8**, y explica los ocho
-valores que parecian invalidos: los ocho caen en huecos `__`.
+It matches the **eight flags measured on the device, 8 of 8**, and explains the
+eight values that looked invalid: all eight land in `__` gaps.
 
-Y encaja lo que llevaba semanas anotado como caso especial: **`F8` y `FE` no son
-valores magicos**. Son la categoria `US` —frase de usuario, indice 31— con estado
-0 y 6. El formato nunca tuvo excepciones; las teniamos nosotros.
+And it accounts for something noted for weeks as a special case: **`F8` and `FE`
+are not magic values**. They are category `US` — user phrase, index 31 — with
+states 0 and 6. The format never had exceptions; we did.
 
-`patternfmt.bandera_frase(categoria, beat)` y `leer_bandera(b)`.
+`patternfmt.bandera_frase(category, beat)` and `leer_bandera(b)`.
 
-La segunda tabla esta **sobrecargada**: guarda el `tr` cuando la pista tiene
-contenido propio y el numero de frase cuando referencia una preset. Por eso
-`set_registry` **preserva toda ranura cuyo estado no reconozca**; sin eso,
-escribir una sola pista generativa borraba en silencio las frases preset
-asignadas desde el panel — sin error y sin señal.
+The second table is **overloaded**: it stores the `tr` when a track has its own
+content, and the phrase number when it references a preset. That is why
+`set_registry` **preserves any slot whose state it doesn't recognise**; without
+that, writing a single generated track silently erased the preset phrases
+assigned from the panel — no error, no signal.
 
-**Por que costo una tarde entera, que es lo unico reutilizable de esto.** Se
-asumio una particion 4+4 y se barrio el nibble alto. Con el nibble bajo fijo en
-`9`, el indice resultante es `(k<<1)|1` — **solo los impares**. Las ocho
-categorias que "no existian" estaban todas en indices pares y el barrido no podia
-alcanzarlas jamas. Misma trampa que el denominador de compas: **un barrido que no
-cubre el rango entero no prueba una ausencia.**
+**Why it cost a whole afternoon, which is the only reusable part of this.** A
+4+4 split was assumed and the high nibble swept. With the low nibble fixed at
+`9`, the resulting index is `(k<<1)|1` — **odd numbers only**. The eight
+categories that "didn't exist" were all at even indices and the sweep could never
+reach them. The same trap as the time-signature denominator: **a sweep that
+doesn't cover the whole range does not prove an absence.**
 
-Por el camino se dieron por buenas tres lecturas falsas, todas por lo mismo: leer
-un campo mirando una sola variable. `09` frente a `B9` se atribuyo al rol de la
-pista por analogia con el byte 19 del prefijo (era la categoria); el nibble bajo
-`9` se leyo como "es una frase preset" (era el beat, quieto porque nunca se movio
-esa variable); y "vacio" se uso para dos cosas distintas —fila en blanco y fila
-con categoria pero sin nombre— lo que refuto en falso una hipotesis correcta.
+Along the way three false readings were accepted, all for the same reason:
+reading a field while varying only one other thing. `09` versus `B9` was
+attributed to the track's role by analogy with prefix byte 19 (it was the
+category); the low nibble `9` was read as "this is a preset phrase" (it was the
+beat, static because that variable was never moved); and "empty" was used for two
+different things — a blank row and a row with a category but no name — which
+falsely refuted a correct hypothesis.
 
-**Lo que lo resolvio fue dejar de preguntarle a la pantalla y mirar el firmware.**
-Doce lecturas de panel contra un `grep` que lo cerro entero. Cuando un campo
-resiste varias tandas de medicion, buscar su tabla en la ROM antes que seguir
-sondeando: el equipo tiene la respuesta escrita.
+**What solved it was to stop asking the screen and look at the firmware.** Twelve
+panel readings against one `grep` that closed it outright. When a field resists
+several rounds of measurement, look for its table in ROM before probing further:
+the device has the answer written down.
 
-**Verificado de extremo a extremo**: un estilo afrobeat en el patron 4 con
-bateria, percusion y bajo de `AfrJz` referenciados —incluidas `Db`, `Bb` y `Fb`,
-que son de las que antes no se alcanzaban— y guitarra y vientos generativos
-encima. **De 25,0 KB a 8,4.**
+**Verified end to end**: an afrobeat style in pattern 4 with drums, percussion
+and bass referenced from `AfrJz` — including `Db`, `Bb` and `Fb`, which were
+among the unreachable ones — and generated guitar and horns on top. **From
+25.0 KB to 8.4.**
 
-**`syx.py referencia` escribe referencias**, que es lo que faltaba: el formato
-estaba resuelto y medido desde el 2026-08-08 pero cada uso se hacia con un script
-suelto. Toma `SECCION:PISTA=CAT/BEAT/NUM` y **valida contra `frases.json` antes de
-tocar el equipo** — una referencia a una frase inexistente se escribe igual de
-bien, sin error, y el unico sintoma es una pista muda con la fila sin nombre en el
-panel.
+**`syx.py referencia` writes references**, which was the missing piece: the
+format had been solved and measured since 2026-08-08 but every use went through a
+one-off script. It takes `SECTION:TRACK=CAT/BEAT/NUM` and **validates against
+`frases.json` before touching the device** — a reference to a phrase that doesn't
+exist writes just as cleanly, with no error, and the only symptom is a silent
+track with a nameless row on the panel.
 
-Es ortogonal a `estilo` y `andina` y se encadena en cualquier orden, porque
-`set_registry` preserva las ranuras cuyo estado no reconoce. Si la pista tenia
-contenido propio, sus bloques se retiran: pasa a referenciar y deja de ocupar.
+It is orthogonal to `estilo` and `andina` and chains in any order, because
+`set_registry` preserves slots whose state it doesn't recognise. If the track had
+its own content, its blocks are removed: it switches to referencing and stops
+costing memory.
 
 ### User phrases are slots, not a bank — and `Us—NNN` is our `tr` byte
 
@@ -505,40 +507,40 @@ Job 17 carries a trap worth remembering: *"los datos de patrón fuente **se rear
 
 For generated material the better framing is that **the engine is the library, not the slots** — `syx.py generar` renders straight into any (pattern, section, track), so varying seed, length or section is a parameter rather than a copy.
 
-### Las transiciones de seccion son del modo CANCION, no del modo patron
+### Section transitions belong to SONG mode, not to pattern mode
 
-Medido el 2026-08-08, y decide donde se toca en vivo:
+Measured 2026-08-08, and it decides where the live set is played:
 
 ```
-Modo PATTERN   secciones como bucles crudos. El Intro no salta a Main A, los
-               fills no vuelven solos y el **Ending repite**.
-Modo SONG      Intro -> Main A, Fill AB -> Main B, Fill BA -> Main A, y el
-               **Ending cierra y para la reproduccion**.
+PATTERN mode   sections as raw loops. Intro does not jump to Main A, fills
+               don't return on their own, and the **Ending repeats**.
+SONG mode      Intro -> Main A, Fill AB -> Main B, Fill BA -> Main A, and the
+               **Ending closes and stops playback**.
 ```
 
-El manual describe las transiciones automaticas (p. 1211-1214) sin repetir en que
-modo, pero la pagina abre con *"los estilos predefinidos se seleccionan y
-reproducen en el **modo de cancion**"*. Se leyo como comportamiento general de la
-maquina de estilos y era de una pantalla concreta. **Una instruccion sin su
-contexto de modo no es una instruccion**: la frase era correcta y se aplico al
-sitio equivocado durante una sesion entera, con el usuario reportando tres veces
-que el Ending seguia en bucle.
+The manual describes the automatic transitions (p. 1211-1214) without repeating
+which mode they belong to, but the page opens with *"preset styles are selected
+and played back in **song mode**"*. It was read as general behaviour of the style
+engine and it was about one specific screen. **An instruction without its mode
+context is not an instruction**: the sentence was correct and was applied in the
+wrong place for a whole session, with the user reporting three times that the
+Ending kept looping.
 
-Practicamente: **el modo patron es para editar y probar; para tocar hay que estar
-en modo cancion** con una cancion vacia apuntando al estilo de usuario. Ahi el
-footswitch (p. 121) mas las transiciones automaticas dan estructura real — se
-pisa el fill y el aparato lleva solo a Main B.
+In practice: **pattern mode is for editing and testing; playing live means song
+mode**, with an empty song pointing at the user style. There the footswitch
+(p. 121) plus the automatic transitions give real structure — step on the fill
+and the device takes itself to Main B.
 
-**Y esa cancion se escribe entera por SysEx.** Verificado: cabecera con nombre y
-tempo mas la pista `Pt` apuntando a `U05`, releida exacta y sonando, con las
-transiciones y la parada final. `songfmt.encode_pattern_track`. Tope **~21
-compases**, porque el encadenado de bloques en canciones no esta comprobado y la
-pista tiene que caber en uno.
+**And that song is written entirely over SysEx.** Verified: a header with name
+and tempo plus the `Pt` track pointing at `U05`, read back exact and playing,
+with the transitions and the final stop. `songfmt.encode_pattern_track`. Cap
+**~21 bars**, because block chaining in songs is unverified and the track has to
+fit in one.
 
-Consecuencia para el set en vivo: **un tema es un estilo de usuario mas una
-cancion corta que lo dispara**, no una cancion con las notas escritas. La cancion
-cuesta un bloque; el estilo, lo que ocupe su material — y con referencias a
-frases preset, muy poco.
+Consequence for the live set: **a piece is a user style plus a short song that
+triggers it**, not a song with the notes written out. The song costs one block;
+the style costs whatever its material costs — and with preset-phrase references,
+very little.
 
 ### Playing a user style live — ABC, and Yamaha's rules for reharmonizable phrases
 
@@ -655,76 +657,74 @@ The **chord type list** (p. 36–37, rendered to `manuales-md/diagramas/qy100-ac
 
 The wall for actual firmware modification is the **SWX00B (HG73C205AFD)** CPU — Yamaha proprietary, two of them (IC1 main / IC2 sub), instruction set not publicly documented. Reading and rewriting the flash is solved; disassembling it is not. Prefer external augmentation (qy100-arp) or data-level changes over firmware patching.
 
-## qyTools — una segunda implementación, y qué dice de la nuestra
+## qyTools — a second implementation, and what it says about ours
 
-[qyTools](https://github.com/Max-Coppola/qyTools) (Max Coppola, AGPLv3) es una
-herramienta de navegador que sustituye al Data Filer de Yamaha: habla con el
-QY100 y el QY70 por MIDI o por el puerto serie ToHost, y lee y escribe `.BLK`,
-`.q1a`, `.q1p`, `.q1s`, `.syx` y `.mid`. Trae una **hoja de datos del protocolo
-independiente de su código**, que es lo que permite contrastar.
+[qyTools](https://github.com/Max-Coppola/qyTools) (Max Coppola, AGPLv3) is a
+browser tool that replaces Yamaha's Data Filer: it talks to the QY100 and QY70
+over MIDI or over the ToHost serial port, and reads and writes `.BLK`, `.q1a`,
+`.q1p`, `.q1s`, `.syx` and `.mid`. It ships a **protocol datasheet independent of
+its code**, which is what makes comparison possible.
 
-**Lo que coincide, y por qué importa que coincida.** La gramática de eventos es
-idéntica a la nuestra: el delta de un byte (`0x80|n`, n<32), el de dos
-(`0xA0|hi5, lo7`), y las notas de 3, 4 y 5 bytes según la duración (`0xC0`,
-`0xD0`, `0xE0`) seguidas de altura y velocity. También el byte 14 del compás con
-la misma fórmula, las longitudes por sección en 15–20 menos uno, y las dos tablas
-de registro en 21–68 y 69–115.
+**What agrees, and why it matters that it agrees.** The event grammar is
+identical to ours: the one-byte delta (`0x80|n`, n<32), the two-byte one
+(`0xA0|hi5, lo7`), and notes of 3, 4 and 5 bytes according to duration (`0xC0`,
+`0xD0`, `0xE0`) followed by pitch and velocity. Also byte 14 of the time
+signature with the same formula, the per-section lengths in 15–20 minus one, and
+the two registry tables at 21–68 and 69–115.
 
-**Las dos deducciones vinieron por caminos que no se tocan**: la nuestra del
-decodificador de Yamaha dentro de `QY100.exe`, la suya de 22.682 registros
-capturados del aparato. Cuando dos derivaciones independientes convergen byte a
-byte, eso vale mucho más que cualquiera de las dos por separado.
+**The two derivations came by routes that don't touch**: ours from Yamaha's own
+decoder inside `QY100.exe`, theirs from 22,682 records captured off the device.
+When two independent derivations converge byte for byte, that is worth far more
+than either on its own.
 
-**Lo que nos corrige.** Los bytes 114–115 del `.q1p` (ver arriba). Nuestra única
-hipótesis frágil del contenedor, y era falsa.
+**What it corrects.** Bytes 114–115 of the `.q1p` (see above). Our only fragile
+hypothesis about the container, and it was false.
 
-**Lo que tienen y no tenemos** — abierto, por si interesa:
+**What they have and we don't** — open, in case it's useful:
 
-- `[M]` **Los eventos que no son notas — y ya nos habían mordido.** Documentan
-  control change, aftertouch, RPN/NRPN, program change, bank select, pitch bend
-  y cambio de voz a mitad de pista. Nuestro decodificador solo entendía notas y
-  tiempos, y ante un byte desconocido **avanzaba uno y seguía**, con lo que todo
-  lo posterior salía con la altura y el tiempo equivocados sin dar error.
+- `[M]` **The events that aren't notes — and they had already bitten us.** They
+  document control change, aftertouch, RPN/NRPN, program change, bank select,
+  pitch bend and mid-track voice change. Our decoder understood only notes and
+  deltas, and on an unknown byte it **advanced one and carried on**, so
+  everything after that came out with the wrong pitch and time and no error.
 
-  Al hacerlo parar y pasarle nuestros propios volcados salieron 34 pistas malas
-  de 806. Mirándolas de cerca eran **dos problemas distintos**:
+  Making it stop and feeding it our own dumps produced 34 bad tracks out of 806.
+  Looking closely they were **two different problems**:
 
-  **`FB cc vv` es un control change de 3 bytes.** `[M]` — 451 apariciones en los
-  volcados, 438 con `cc = 64` (pedal de sostenido) y 13 con `cc = 71`, y los
-  valores **solo 0 y 127**, 224 sueltas contra 227 pisadas. Prácticamente
-  emparejadas: es alguien que grabó tocando con pedal. Consumirlo entero en vez
-  de saltar un byte recupera 7 pistas.
+  **`FB cc vv` is a three-byte control change.** `[M]` — 451 occurrences across
+  the dumps, 438 with `cc = 64` (sustain pedal) and 13 with `cc = 71`, and the
+  values **only 0 and 127**, 224 releases against 227 presses. Almost paired:
+  it is someone who recorded playing with a pedal. Consuming it whole instead of
+  skipping one byte recovers 7 tracks.
 
-  **Y 42 pistas no empiezan por `F0 00`.** Su primer bloque falta — volcados de
-  la época en que la captura por sondeo perdía bloques, aunque también aparece en
-  alguno posterior. Lo grave es que **solo 27 de esas 42 fallaban**: las otras 15
-  se decodificaban sin quejarse, desalineadas. Comprobar el marcador es mejor
-  prueba que esperar a un byte inválido, porque **el caso peligroso no es el que
-  falla sino el que no falla**.
+  **And 42 tracks do not start with `F0 00`.** Their first block is missing —
+  dumps from the era when polled capture lost blocks, though it also shows up in
+  a later one. The serious part is that **only 27 of those 42 were failing**: the
+  other 15 decoded without complaint, misaligned. Checking the marker is a better
+  test than waiting for an invalid byte, because **the dangerous case is not the
+  one that fails but the one that doesn't**.
 
-  Estado tras las dos correcciones: **760 decodifican, 42 sin marcador y 4 con un
-  evento que sigue sin identificarse.**
+  State after both corrections: **760 decode, 42 without a marker, and 4 with an
+  event still unidentified.**
 
-- **Un directorio de canciones y patrones** en la familia de direcciones
-  `15 xx xx`, que nunca hemos usado: pide la lista de lo que hay en el aparato
-  sin volcar el contenido.
-- **Los formatos `.q1s` (canción), `.q1a` y `.BLK`**, que no hemos tocado.
-- **Una región de la cabecera que el controlador de flash reescribe en cada
-  guardado**, cerca del offset 443, que no se puede derivar del contenido del
-  patrón. Explica por qué dos guardados del mismo patrón no son idénticos.
+- **A song and pattern directory** in the `15 xx xx` address family, which we
+  have never used: it asks the device for a listing without dumping the content.
+- **The `.q1s` (song), `.q1a` and `.BLK` formats**, which we haven't touched.
+- **A region of the header the flash controller rewrites on every save**, around
+  offset 443, which cannot be derived from the pattern's content. It explains why
+  two saves of the same pattern are not identical.
 
-**Lo que tenemos y no tienen**, por si sirve devolverlo:
+**What we have and they don't**, in case it's worth handing back:
 
-- **El mezclador desglosado.** Ellos agrupan los bytes 85–511 como «datos de
-  parámetros por pista»; nosotros tenemos programa en 154, bandera de batería en
-  162, volumen en 170, pan en 178, chorus en 194, reverb en 202 y variación en
-  210, medidos uno a uno.
-- **`CURRENT CHORD` es por sección**, raíces en 117–122 y tipos en 123–128, con
-  los 27 tipos medidos.
-- **El formato de referencia a frases de fábrica** — `(categoría << 3) | estado`
-  en la tabla de banderas — con la tabla de categorías sacada del firmware. Es lo
-  que permite que un estilo referencie material de fábrica sin gastar memoria.
-- **El desbloqueo de 32 compases verificado escribiéndolo**, no solo cargando el
-  archivo de doffu.
-- **La aritmética de memoria**: 128 bytes por bloque contra 128 KB de SRAM,
-  confirmada por dos vías independientes.
+- **The mixer broken out.** They group bytes 85–511 as "per-track parameter
+  data"; we have program at 154, drum flag at 162, volume at 170, pan at 178,
+  chorus at 194, reverb at 202 and variation at 210, measured one at a time.
+- **`CURRENT CHORD` is per section**, roots at 117–122 and types at 123–128, with
+  the 27 types measured.
+- **The preset-phrase reference format** — `(category << 3) | state` in the flag
+  table — with the category table pulled out of the firmware. It is what lets a
+  style reference factory material without spending memory.
+- **The 32-measure unlock verified by writing it**, not just by loading doffu's
+  file.
+- **The memory arithmetic**: 128 bytes per block against 128 KB of SRAM,
+  confirmed by two independent routes.
