@@ -667,6 +667,15 @@ over MIDI or over the ToHost serial port, and reads and writes `.BLK`, `.q1a`,
 `.q1p`, `.q1s`, `.syx` and `.mid`. It ships a **protocol datasheet independent of
 its code**, which is what makes comparison possible.
 
+**The author was asked and confirmed the citation is fine** (2026-08-12). Note
+what that covers and what it does not: it settles how this document cites the
+datasheet, and says nothing about reusing qyTools' code — which is **AGPLv3**,
+so importing any of it would put this repository under AGPLv3 too. That
+distinction is worth keeping straight, because **nothing here needs his code**.
+What is useful is the datasheet's facts, and facts are not what a licence
+covers. Anything taken from it gets implemented from the documented behaviour
+and cited, never copied.
+
 **What agrees, and why it matters that it agrees.** The event grammar is
 identical to ours: the one-byte delta (`0x80|n`, n<32), the two-byte one
 (`0xA0|hi5, lo7`), and notes of 3, 4 and 5 bytes according to duration (`0xC0`,
