@@ -106,7 +106,8 @@ the weight is on the 6/8 offbeats. The choice of time signature is **a
 consequence of the pattern**, not of the transcriber's taste. A hypothesis from
 two scores; confirming it needs more of each variant.
 
-`qy100syx/andina.py`. That sentence used to be followed by a `[V]` saying the
+`qy100syx/andina.py`. That provenance note used to be followed by a `[V]`
+saying the
 pasillo was still built by method 3 and unchecked against any score. **It was
 false, and it stayed published for more than thirty commits after it went
 stale**: the engine has `PASILLO_BAJO_EN = 0` and `PASILLO_ACORDE_EN = (3, 4)`,
@@ -127,7 +128,9 @@ Extracting cells from four scores produced a method that works for any of them:
 separates the genre's cell from the arranger's decisions.
 
 ```
-guabina      97%   (35 of 36 bars, across all three layers at once)
+guabina      97%   (35 of 36 bars — `[V]` this row predates the audit that
+                    demoted the guabina's bass to a choice; its source,
+                    santo-guabina.mid, is not in the repo to recheck)
 torbellino   97%   (bass drum on 1 and 5, 96 of 99 bars)
 bambuco      83%
 pasillo      60%
@@ -243,7 +246,9 @@ attacks      142    0    0  120   10  120    0    0
 
 `[M]` **Three equal attacks per half-bar, not 3+2+3.** The half-bar is 960
 clocks and the attacks land on 0, 320 and 640 — exact thirds, zero deviation
-across all 392 attacks — with each note holding its full third (319 clocks in
+in 382 of its 392 attacks — the other 10, also grid-exact, sit on the
+half (clock 480), printed in the table above — with each note holding its
+full third (319 clocks in
 372 of them). It is a quarter-note triplet over two quarters: a 3-against-2, and
 that is what makes the genre run.
 
@@ -254,9 +259,12 @@ not.
 
 **And then the ear overruled the paper — the mapalé is two genres now.** The
 ternary cell was written to the device on 2026-08-12, replacing the binary one,
-on the strength of five agreeing sources: this transcription, a band score in
+on the strength of five agreeing sources: Felipe's own 2/2 reading, this
+transcription, a band score in
 6/8 (*Prende la Vela*, Lucho Bermúdez), a drum method that labels the cell
-"Tres contra dos", and a recording measuring cleanly ternary (0.90 vs 0.26).
+"Tres contra dos", and a recording measuring ternary (re-measured 0.70 vs 0.44 at 149.8 bpm
+after the tool's own audit; the earlier 0.90/0.26 came from a version whose
+self-test now fails).
 Played against the Tribe reference loop, **it was wrong** — the groove sits
 elsewhere. The engines are split:
 
@@ -285,13 +293,17 @@ an octave oscillation over a fixed grid, and that two-bar phase is what keeps it
 from tiring.
 
 `[M]` The harmony barely moves: **126 bars on D, 14 on F and one on A**, with 29
-changes across 141 notated units — **half-bar cells of the piano
-transcription, which is written at half speed**, so roughly 71 real bars.
-The count is right; the unit label used to say "bars". It is an ostinato
-genre.
+changes across 141 notated units — half-bar cells of the piano
+transcription. The unit label used to say "bars"; and an earlier fix here
+converted them to "roughly 71 real bars", **dividing in the wrong direction of
+its own premise**: if the transcription is at half speed, each notated half-bar
+IS one real 6/8 bar, so the real count would be ~141, not 71. Since the
+half-speed reading is itself `[V]`, the figure is now stated only in the
+transcription's own units. It is an ostinato genre.
 
 `[V]` **Metre and tempo disagree across sources.** The piano transcription is
-4/4 at 100; Tribe's catalogue gives 180 in 2/2; the live-set plan says 202.7. The
+4/4 at 100; Tribe's catalogue gives 180 in 2/2; a live-set measurement (not published
+here) says 202.7. The
 clarinet score of *La Mecedora* (José Camilo Gómez) is in cut time, which
 supports the 2/2. Most likely the piano transcription is written in half time —
 100 × 2 = 200, close to 202.7 — but that is unconfirmed.
@@ -354,7 +366,8 @@ ternary six for bambuco, currulao and torbellino; the binary eight for mapalé,
 chandé and cumbia. `[V]` **The chandé's placement in the binary column is
 contested by its own primer**: Valencia's score is titled "RITMO DE CHANDÉ.
 BASE TERNARIA", while the Tribe loop measures decisively binary — 89 % of
-attacks on the binary grid against 47 % on the ternary one (2026-08-12). Two
+attacks on the binary grid against 47 % on the ternary one — reproducible with
+`medir_loops.py`, which recomputes every loop figure this document cites. Two
 sources, two answers, both real; the same shape as the mapalé split. This
 document keeps the loop's answer for the engine work and records the
 disagreement instead of picking silently. The same analytical device was reached by measurement,

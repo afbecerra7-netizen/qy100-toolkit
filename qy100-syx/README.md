@@ -38,7 +38,10 @@ en el dispositivo y el decodificador del Data Filer oficial de Yamaha.
 | [`test_protocol.py`](test_protocol.py) | 175 comprobaciones, sin hardware. Unas cuantas leen `dumps/`, asi que el total baja si el conjunto de volcados es parcial. |
 | [`test_regresiones.py`](test_regresiones.py) | Reintroduce cada defecto conocido y exige que la suite lo cace. |
 | [`medir_volcados.py`](medir_volcados.py) | Recuenta sobre los volcados las cifras que citan los documentos. |
-| [`test_generos.py`](test_generos.py) | 82 comprobaciones sobre los motores de género: procedencia, celdas y encaje en la sección. |
+| [`test_generos.py`](test_generos.py) | 102 comprobaciones sobre los motores de género (menos si `midi/` va incompleto: unas cuantas leen los loops). |
+| [`importar_tribe.py`](importar_tribe.py) | Traduce un loop de TRIBE Player al kit XG, con el criterio de cada golpe escrito al lado. |
+| [`medir_audio.py`](medir_audio.py) | ¿Binaria o ternaria? — sobre una grabación. Lleva `--autotest` con clicks sintéticos; si falla, ninguna medición suya vale. |
+| [`medir_loops.py`](medir_loops.py) | Lo mismo sobre loops MIDI: recalcula toda cifra de loop que citen los documentos. |
 | [`pesar_estilos.py`](pesar_estilos.py) | Pesa cada estilo en bloques y en KB de memoria del aparato. |
 | [`pantalla.py`](pantalla.py) | Escribe texto y mapas de bits de 16x16 en la pantalla, por XG Display Data. |
 | [`barrer_categorias.py`](barrer_categorias.py) | Barre valores de una referencia a frase preset **escribiendo y oyendo**, sin volcar. Guarda el método aunque su lectura acabara siendo el panel. |
@@ -74,12 +77,16 @@ Antes de transferir:
 
 - `HOST SELECT = MIDI`.
 - El secuenciador debe estar detenido y en la pantalla principal.
-- `MIDI CONTROL = Off` mientras se vuelca o escribe SysEx.
+- El aparato debe estar **en modo de reproducción de patrón** para recibir
+  bulk de patrón, y en modo canción para el de canción (manual, p. 129).
 - No se debe tocar el panel durante la transferencia.
-
-`MIDI CONTROL = Out` o `In/Out` hace que el QY100 emita cerca de 49 mensajes de
-reloj por segundo. En transferencias largas esa corriente puede provocar pérdida
-silenciosa de bloques aunque los mensajes recibidos tengan checksum válido.
+- `MIDI CONTROL = Off` es **recomendable pero no requisito**: el manual (p. 127)
+  lo limita a la reproducción sincronizada y un patrón entero se escribió y
+  releyó el 2026-08-12 sin tocarlo. La recomendación queda por otra razón,
+  medida: en `Out` o `In/Out` el QY100 emite ~49 mensajes de reloj por segundo,
+  y en transferencias largas esa corriente puede provocar pérdida silenciosa de
+  bloques aunque los checksums salgan válidos. Este documento lo daba por
+  requisito, y era la inferencia de siempre vestida de regla.
 
 ## Uso
 

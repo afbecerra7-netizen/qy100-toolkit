@@ -288,7 +288,11 @@ def main():
     import mido
     m = mido.MidiFile(ticks_per_beat=F.CLOCKS_PER_QUARTER)
     cab = mido.MidiTrack(); m.tracks.append(cab)
-    cab.append(mido.MetaMessage("time_signature", numerator=4, denominator=4, time=0))
+    # el compas declarado sale de lo que se midio, no de un 4/4 fijo: con
+    # --pulsos-por-compas 2 esto escribia 4/4 y el resumen decia "de 4/4".
+    cab.append(mido.MetaMessage("time_signature",
+                                numerator=int(args.pulsos_por_compas),
+                                denominator=4, time=0))
     if bpm:
         cab.append(mido.MetaMessage("set_tempo", tempo=int(60e6 / bpm), time=0))
     for idx in sorted(por_pista):
@@ -310,8 +314,8 @@ def main():
                                    note=alt, velocity=vel, time=int(t_ - prev)))
             prev = t_
     m.save(args.mid)
-    print("\nescrito %s — %d compases de 4/4, %.0f bpm, canal 10"
-          % (args.mid, compases, bpm or 0))
+    print("\nescrito %s — %d compases de %d/4, %.0f bpm, canal 10"
+          % (args.mid, compases, int(args.pulsos_por_compas), bpm or 0))
     print("\npara meterlo al QY100:")
     print("  .venv/bin/python importar.py %s \\" % args.mid)
     print("      --patron %d --seccion %d --compases 1-%d \\"

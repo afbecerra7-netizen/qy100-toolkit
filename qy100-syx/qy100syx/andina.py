@@ -746,7 +746,8 @@ class Torbellino(Genero):
 #
 # **La equivalencia con el torbellino era falsa, y era el unico aval que tenia
 # esta colocacion.** Decia "el bajo cae en 1 y 5 igual que en el torbellino", y
-# el bajo del torbellino cae en las tres negras —corcheas 1, 3 y 5—, no en 1 y
+# el bajo del MOTOR del torbellino cae en las tres negras —por diseno— pero el
+# contrabajo de su FUENTE cae en [1,5] el 52 % (medido 2026-08-12), no en
 # 5: sale de `TORB_CELDA`, la misma de la que salen sus acordes, y el propio
 # parrafo lo desmentia dos lineas mas abajo al decir que el torbellino pone los
 # acordes en los tres negros. Lo que el torbellino si tiene medido en 1 y 5 es
@@ -1347,7 +1348,8 @@ class MapaleTernario(Mapale):
                    "partitura de banda confirma el 6/8; la grabacion da "
                    "subdivision ternaria —las tres posiciones binarias son los "
                    "puntos mas vacios del ciclo— y la transcripcion para piano "
-                   "da las tres posiciones exactas, con desviacion cero en 392 "
+                   "da las tres posiciones exactas en 382 de 392 ataques (los "
+                   "10 restantes, exactos tambien, caen en el reloj 480) "
                    "ataques"),
     }
     #: `[V]` La grabacion da el compas en 0,80 s, lo que pondria la negra en 225.

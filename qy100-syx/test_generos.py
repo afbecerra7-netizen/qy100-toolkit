@@ -205,13 +205,51 @@ if os.path.exists("midi/CHANDE-xg.mid"):
     import importar_tribe as I2
     from qy100syx import loopmotor as L
     notas_f, _b = I2.leer_mid("midi/CHANDE-xg.mid")
-    mod = L.cargar(notas_f)
+    mod = L.cargar(notas_f, compases=4)
     check("el modelo separa esqueleto de variacion",
           (len(mod.esqueleto) > 0, len(mod.variaciones) > 0), (True, True))
+    # La rejilla y el wrap: la primera version perdia 4 de los 98 golpes del
+    # chande (el `% SUB` mandaba el final de un compas al downbeat del mismo) y
+    # SUB=24 convertia semicorcheas a contratiempo en tresillos.
+    # 98 golpes de fuente, 96 celdas: las DOS colisiones son las dos manos de
+    # la tambora a la vez —Cascara L+R van ambas a la nota 37, Open L+R a la
+    # 41— y la traduccion las colapsa en el mismo tick. Es correcto (el QY100
+    # no suena dos veces la misma nota en el mismo reloj) y EL AVISO EXISTE:
+    # la primera version perdia 4 golpes por el wrap y no decia nada.
+    check("los 98 golpes de la fuente estan contados",
+          mod.golpes_fuente, 98)
+    check("   dos se colapsan (manos L+R al mismo tick) y queda dicho",
+          (mod.golpes_modelo, len(mod.avisos)), (96, 1))
+    check("   el aviso dice cuantos", "2 golpe" in mod.avisos[0], True)
+    check("SUB contiene semicorcheas Y tresillos (mcm, no max)",
+          (L.SUB % 16, L.SUB % 24), (0, 0))
+    # semicorchea a contratiempo: pulso 0.25 tiene que volver como 0.25
+    semi = L.cargar([(c + 0.25, 38, 100, 0.1) for c in range(16)] +
+                    [(float(c), 36, 110, 0.1) for c in range(16)],
+                    compases=4)
+    gsemi = L.generar(semi, 1, 0.9, semilla=1)
+    # el dato sintetico pone la semicorcheas tras CADA pulso: en un compas son
+    # cuatro, en 120, 600, 1080 y 1560 relojes. Con SUB=24 salian 160, 640,
+    # 1120 y 1600 — corridas al tresillo. La expectativa inicial de esta prueba
+    # ([120]) era aritmetica mia mal hecha sobre mi propio dato.
+    check("las semicorcheas a contratiempo no se vuelven tresillos",
+          sorted({x.time for x in gsemi if x.pitch == 38}),
+          [120, 600, 1080, 1560])
+    # velocities: cada valor emitido existe en la fuente (no medias inventadas)
+    gen0 = L.generar(mod, 8, 0.7, semilla=1)
+    vel_fuente = {v for lista in mod.vel.values() for v in lista}
+    check("toda velocity emitida existe en la fuente",
+          all(x.velocity in vel_fuente for x in gen0), True)
+    # con menos de 4 compases el motor degenera: tiene que negarse
+    try:
+        L.cargar([(0.0, 36, 100, 0.1)], compases=1)
+        check("se niega con fuente de 1 compas", "no fallo", "ValueError")
+    except ValueError:
+        check("se niega con fuente de 1 compas", "ValueError", "ValueError")
     gen = L.generar(mod, 8, 0.7, semilla=1)
     largo = 480 * 4
     check("el esqueleto esta en TODOS los compases generados",
-          all(any(n.pitch == a and n.time == int(c*largo + p*largo/24.0)
+          all(any(n.pitch == a and n.time == int(c*largo + p*largo/float(L.SUB))
                   for n in gen)
               for c in range(8) for p, a in mod.esqueleto), True)
     import collections as C2
@@ -222,8 +260,8 @@ if os.path.exists("midi/CHANDE-xg.mid"):
           rep <= 3, True)
     fuente = set(mod.vel.keys())
     fuera = [n for n in gen
-             if (int(round((n.time % largo) / (largo/24.0))) % 24, n.pitch)
-             not in fuente]
+             if (int(round((n.time % largo) / (largo/float(L.SUB)))) % L.SUB,
+                 n.pitch) not in fuente]
     check("cero golpes fuera del vocabulario de la fuente", len(fuera), 0)
     check("determinista con la misma semilla",
           L.generar(mod, 8, 0.7, semilla=1) == gen, True)
