@@ -35,7 +35,7 @@ cd qy100-syx && .venv/bin/python test_protocol.py    # 175 checks — the last f
                                                      # read dumps/, so the total
                                                      # drops if those are absent
 cd qy100-syx && .venv/bin/python test_regresiones.py # checks the checks bite
-cd qy100-syx && .venv/bin/python test_generos.py     # 82 checks on the genre engines
+cd qy100-syx && .venv/bin/python test_generos.py     # 93 checks on the genre engines
 cd qy100-syx && .venv/bin/python medir_volcados.py   # recounts the cited figures
 ```
 
@@ -66,7 +66,7 @@ coherent inference sounds exactly like a fact. Hence the marks:
 [V]  unverified, or checked by a route that doesn't prove it
 ```
 
-The three cases that illustrate it best, all real:
+The cases that illustrate it best, all real:
 
 - **The time-signature denominator** was declared absent after sweeping four
   values of a three-bit field. Three values are valid and only one of them fell
@@ -84,6 +84,14 @@ The three cases that illustrate it best, all real:
   it claimed. **A number is only as good as the question it answers**, so any
   figure a document cites now has to come out of
   [`medir_volcados.py`](qy100-syx/medir_volcados.py), which can be re-run.
+
+- **Three separate failures in one day had the same shape**: the time-signature
+  denominator, a loop that gained an empty bar from `max(note) + 1`, and the
+  mapalé measured in 4/4 when the transcription was written at half speed. None
+  was a bad measurement. All three were **correct arithmetic on the wrong
+  unit**, and no check caught them because the numbers were coherent inside a
+  false frame. The `451` above is the same animal. Before trusting a figure, ask
+  what unit it is in — not whether it is right.
 
 And a corollary about tests, learned when three decoder fixes turned out to
 share one suite that passed identically before and after all three: **a test
@@ -107,7 +115,13 @@ All learned the hard way and detailed in the documents.
   hangs the device.
 - Every track starts with `F0 00`. Without it **the pattern sounds fine and
   hangs the editor**.
-- `MIDI CONTROL = Off` to transfer, `In/Out` to play. Mutually exclusive.
+- `[V]` **`MIDI CONTROL` has nothing documented to do with SysEx.** This file
+  used to state `Off` to transfer and `In/Out` to play, as a rule; the manual
+  (p. 127) scopes that parameter to synchronised playback and never mentions
+  bulk dump, and a full pattern was written and read back on 2026-08-12 without
+  touching it. What the manual *does* require, and this file did not say, is
+  that the device be **in pattern play mode to receive pattern bulk data, and in
+  song play mode for song data** (p. 129).
 - **Never send MIDI while someone is using the front panel.** It hangs.
 - **Verify by re-reading and decoding events**, never by comparing bytes: the
   device re-serialises and returns 95 of 147 bytes different for the same data.
@@ -118,9 +132,15 @@ successful proves nothing. The MOTU swallows writes silently, the QY100 ignores
 them while playing, and the Minitaur's editor shows a list that may not be the
 device's. **The only thing that proves state is reading it back.**
 
-**And before blaming a device, power-cycle the interface.** It's the cheapest
-check and it has resolved several false diagnoses. The next cheapest is asking
-for `dump setup`: if it answers, the device and the cable are fine.
+**And before blaming a device, look at both ends of every cable.** MIDI is two
+independent cables and one can be right while the other is wrong — notes played
+fine for a whole afternoon while nothing came back, and `HOST SELECT`,
+`MIDI CONTROL`, `MIDI FILTER`, the device mode, two interfaces and all sixteen
+device numbers were checked before anyone looked at where the return cable was
+plugged. **A link that works in one direction is not a link that works.**
+
+The next cheapest check is power-cycling the interface, and after that asking
+for `dump setup`: if it answers, the device and both cables are fine.
 
 ## Language
 

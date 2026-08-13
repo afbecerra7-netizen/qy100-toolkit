@@ -1109,10 +1109,34 @@ class Currulao(Genero):
 #
 # De `mapale-ashcolom.mid` (piano a dos manos, 4/4 a 100).
 #
-# `[M]` **La celda son tres golpes iguales por medio compas, no 3+2+3.** El
-# medio compas mide 960 relojes y los ataques caen en 0, 320 y 640: tercios
-# exactos, con desviacion cero en los 392 ataques. Es un tresillo de negra sobre
-# dos negras, o sea un 3 contra 2, que es lo que hace correr al genero.
+# `[M]` **El genero es 6/8 y su celda es un "tres contra dos".** Cinco fuentes
+# independientes, ninguna en contra:
+#
+#     metodo de bateria `MAPALE.pdf`   6/8, y **rotula la celda "Tres contra
+#                                      dos"** en su tercer ejercicio
+#     `PRENDE LA VELA`, Lucho Bermudez 6/8 en las seis partes de la banda
+#     Felipe                           2/2 — la misma estructura, otra notacion:
+#                                      dos tiempos por compas partidos en tres
+#     grabacion a 150, medida          subdivision ternaria; **las tres
+#                                      posiciones binarias son los tres puntos
+#                                      mas vacios del ciclo** (5, 3 y 3 contra
+#                                      26 y 17 en los tercios)
+#     transcripcion para piano         ataques en las corcheas 1, 3 y 5
+#
+# El compas mide 6 corcheas y los golpes caen en la **1, la 3 y la 5**: tres
+# ataques equidistantes cruzandose contra los dos tiempos de negra con puntillo.
+# Eso es el "tres contra dos", y es lo que hace correr al genero.
+#
+# **Estuvo escrito como 4/4 con celda "3+2+3 en semicorcheas", y era doblemente
+# falso.** La transcripcion para piano de la que salio esta escrita a mitad de
+# tiempo en 4/4, asi que cada "medio compas" suyo de 960 relojes es en realidad
+# un compas entero de 6/8; y dentro de el, 320 y 640 no caen en la rejilla de
+# semicorchea, de modo que al forzarlos a ella salian 360 y 600. El motor tocaba
+# el tresillo aplanado contra una rejilla binaria.
+#
+# El orden en que el metodo lo ensena dice algo que ninguna otra fuente daba:
+# tom, aro, **tres contra dos**, y solo entonces "incluimos bombo en el tiempo
+# 1". **El bombo no es la base del mapale: es lo ultimo que se anade.**
 #
 #     relojes desde el inicio del medio compas
 #       0    320    480    640
@@ -1154,42 +1178,80 @@ class Currulao(Genero):
 # Lo medido es la celda y la armonia, no los tambores, que en este genero son la
 # mitad del asunto.
 
-#: Desplazamientos en RELOJES desde el inicio del medio compas, no en indices
-#: de semicorchea. **Estuvo en semicorcheas y por eso el tresillo se aplano**:
-#: 320 y 640 no existen en esa rejilla.
-MAPALE_TERCIO = 2 * NEGRA // 3                 # 320 relojes
-MAPALE_CELDA = tuple(k * MAPALE_TERCIO for k in range(3))    # 0, 320, 640
-#: `[M]` velocity 85 de media en el apoyo y 80 exactos en los otros dos golpes.
+#: Las corcheas del 6/8 donde cae el "tres contra dos": la 1, la 3 y la 5.
+#: Se guardan como indices de corchea y no como relojes, porque **el marco
+#: metrico es lo que estuvo mal** y en indices se ve: 1, 3 y 5 de seis.
+#: **La celda binaria: semicorcheas 1, 4 y 6 de cada medio compas**, o sea
+#: huecos de 3+2+3. `[V]` Es la que suena bien —Felipe la valido de oido y
+#: rechazo la ternaria por groove— pero **su procedencia es un artefacto**: se
+#: obtuvo leyendo `mapale-ashcolom.mid`, que esta cuantizado a tercios, sobre
+#: una rejilla de semicorchea. La medicion de la que salio dice otra cosa.
+#: Se conserva porque el oido manda sobre el papel, y se marca `[V]` porque no
+#: hay ninguna fuente binaria que la sostenga. Si aparece una, sube a `[M]`.
+MAPALE_CELDA = (0, 3, 5)
+#: Las corcheas del 6/8 del `MapaleTernario`: la 1, la 3 y la 5.
+MAPALE_CORCHEAS = (0, 2, 4)
+#: `[M]` velocity 85 de media en el apoyo y 80 exactos en los otros dos golpes,
+#: medido sobre la transcripcion para piano.
 MAPALE_VEL = (85, 80, 80)
 
 
 def _mapale_ostinato(g, compases, intensidad):
-    """La oscilacion de octava sobre el tresillo."""
+    """La oscilacion de octava sobre la celda binaria de 3+2+3."""
     notas, golpe = [], 0
     for c in range(compases):
         _n, raiz, _v = g.acorde_de(c)
         base = _bar(c, g.beats)
         for mitad in range(g.beats // 2):
-            for k, off in enumerate(MAPALE_CELDA):
-                # La nota llena su tercio: 319 de 320 en la fuente.
+            for k, i in enumerate(MAPALE_CELDA):
                 notas.append(F.Note(raiz + (12 if golpe % 2 else 0),
-                                    MAPALE_VEL[k], MAPALE_TERCIO - 1,
-                                    base + mitad * 2 * NEGRA + off))
+                                    MAPALE_VEL[k], SEMI * 2 - 10,
+                                    base + mitad * 2 * NEGRA + i * SEMI))
                 golpe += 1
+    return notas
+
+
+def _mapale_ternario_ostinato(g, compases, intensidad):
+    """Lo mismo sobre el «tres contra dos» del 6/8: corcheas 1, 3 y 5."""
+    notas = []
+    for c in range(compases):
+        _n, raiz, _v = g.acorde_de(c)
+        base = _bar(c, g.beats)
+        for k, i in enumerate(MAPALE_CORCHEAS):
+            # Cada nota llena hasta la siguiente: 319 de 320 en la fuente.
+            notas.append(F.Note(raiz + (12 if (c * 3 + k) % 2 else 0),
+                                MAPALE_VEL[k], CORCHEA * 2 - 1,
+                                base + i * CORCHEA))
     return notas
 
 
 def _mapale_bombo(g, compases, intensidad):
     """Bombo en la misma celda; en las secciones flojas solo en el apoyo.
 
-    `[D]` La fuente es una transcripcion para piano y **no trae percusion**, asi
-    que poner el bombo sobre la misma celda es una deduccion, no una medicion.
+    `[V]` **El metodo de bateria lo contradice.** Ensena el patron por capas —
+    tom, aro, tres contra dos— y solo al final dice "incluimos bombo en el
+    tiempo 1": el bombo entra ahi, no doblando la celda entera. Esto se deja
+    como esta hasta leer la partitura con cuidado, pero **queda marcado como
+    contradicho, no como deducido**.
     """
     posiciones = MAPALE_CELDA if intensidad > 0.5 else (0,)
-    return [F.Note(CUERO, 112 if off == 0 else 96, SEMI,
-                   _bar(c, g.beats) + mitad * 2 * NEGRA + off)
+    return [F.Note(CUERO, 112 if i == 0 else 96, SEMI,
+                   _bar(c, g.beats) + mitad * 2 * NEGRA + i * SEMI)
             for c in range(compases) for mitad in range(g.beats // 2)
-            for off in posiciones]
+            for i in posiciones]
+
+
+def _mapale_ternario_bombo(g, compases, intensidad):
+    """Bombo sobre el tres contra dos.
+
+    `[V]` **El metodo de bateria lo contradice.** Ensena el patron por capas —
+    tom, aro, tres contra dos— y solo al final dice "incluimos bombo en el
+    tiempo 1": el bombo entra ahi, no doblando la celda entera.
+    """
+    posiciones = MAPALE_CORCHEAS if intensidad > 0.5 else (0,)
+    return [F.Note(CUERO, 112 if i == 0 else 96, SEMI,
+                   _bar(c, g.beats) + i * CORCHEA)
+            for c in range(compases) for i in posiciones]
 
 
 def _mapale_guasa(g, compases, intensidad):
@@ -1201,16 +1263,23 @@ def _mapale_guasa(g, compases, intensidad):
 
 
 class Mapale(Genero):
+    """El mapale binario. **Es el que suena**, validado de oido.
+
+    Felipe oyo la version ternaria en el equipo y la rechazo por groove. Eso
+    manda: es lo unico que oye, y el resto son papeles.
+    """
+
     nombre = "MAPALE"
     fuentes = {
         0: ("[D]", "-", "bombo sobre la misma celda del ostinato, deducido"),
         2: ("[D]", "-", "sonaja continua, deducida"),
-        3: ("[M]", "mapale-ashcolom.mid",
-                   "tres golpes iguales por medio compas (0, 320 y 640 relojes, "
-                   "desviacion cero en 392 ataques), cada nota llenando su "
-                   "tercio, y la alternancia de octava. **Estuvo escrito como "
-                   "«3+2+3 en semicorcheas», que era el redondeo de 320 y 640 a "
-                   "una rejilla que no los contiene**"),
+        3: ("[V]", "validado de oido por Felipe; sin fuente que lo sostenga",
+                   "la celda 3+2+3 en semicorcheas y la alternancia de octava. "
+                   "**La celda salio de leer `mapale-ashcolom.mid` sobre una "
+                   "rejilla binaria, y ese fichero esta cuantizado a tercios**: "
+                   "su procedencia documentada es un artefacto de lectura. El "
+                   "loop de Tribe se inclina binario pero no decide (74 % contra "
+                   "69 %). Sube a `[M]` en cuanto aparezca una fuente binaria"),
     }
     bpm = 100.0
     beats = 4
@@ -1225,6 +1294,50 @@ class Mapale(Genero):
         (0, "D1", "bombo en la celda",      "Rock Kit", True,  _mapale_bombo),
         (2, "PC", "sonaja en semicorcheas", "Rock Kit", True,  _mapale_guasa),
         (3, "BA", "ostinato de octavas",    "Aco.Bass", False, _mapale_ostinato),
+    )
+
+
+class MapaleTernario(Mapale):
+    """El mapale de banda, en 6/8. **No es el mismo groove que `Mapale`.**
+
+    Existe por la misma razon que el bambuco tiene tres motores: dos fuentes
+    traen patrones distintos y fundirlos daria un mapale que no existe en
+    ninguna parte. Aqui la diferencia es de cuatro por ciento del ciclo —el
+    golpe de en medio al 33,3 % en vez de al 37,5 %— y **es todo el groove**.
+
+    Se escribio primero como si fuera EL mapale, sustituyendo al binario. Sonaba
+    mal, y el error no fue de medicion sino de alcance: **una medicion correcta
+    sobre una fuente no autoriza a cambiar lo que otra fuente sostiene.**
+    """
+
+    nombre = "MAPALTER"
+    fuentes = {
+        0: ("[V]", "MAPALE.pdf (metodo de bateria)",
+                   "el metodo ensena el patron por capas y mete el bombo AL "
+                   "FINAL, solo en el tiempo 1 — aqui dobla la celda entera, "
+                   "que es lo contrario de como se ensena"),
+        2: ("[D]", "-", "sonaja continua, deducida"),
+        3: ("[M]", "MAPALE.pdf (metodo de bateria) + PRENDE LA VELA (Lucho "
+                   "Bermudez) + mapale-ashcolom.mid + grabacion medida",
+                   "el «tres contra dos» en 6/8: golpes en las corcheas 1, 3 y "
+                   "5. El metodo **rotula la celda con ese nombre**; la "
+                   "partitura de banda confirma el 6/8; la grabacion da "
+                   "subdivision ternaria —las tres posiciones binarias son los "
+                   "puntos mas vacios del ciclo— y la transcripcion para piano "
+                   "da las tres posiciones exactas, con desviacion cero en 392 "
+                   "ataques"),
+    }
+    #: `[V]` La grabacion da el compas en 0,80 s, lo que pondria la negra en 225.
+    #: Pero de la autocorrelacion **no se pudo establecer cual periodicidad era
+    #: el compas y cual el tiempo**, asi que este numero no esta medido: esta
+    #: derivado de una eleccion que no se verifico.
+    bpm = 225.0
+    beats = 3            # tres negras de duracion; la METRICA es 6/8
+    denominador = 8
+    pistas = (
+        (0, "D1", "bombo en la celda",      "Rock Kit", True,  _mapale_ternario_bombo),
+        (2, "PC", "sonaja en semicorcheas", "Rock Kit", True,  _mapale_guasa),
+        (3, "BA", "ostinato de octavas",    "Aco.Bass", False, _mapale_ternario_ostinato),
     )
 
 
@@ -1344,5 +1457,9 @@ GENEROS = {
     "guabina":      Guabina,
     "currulao":     Currulao,
     "mapale":       Mapale,
+    #: El ternario va aparte y NO sustituye al binario. Mismo motivo que
+    #: los tres bambucos: dos fuentes, dos patrones, y fundirlos daria uno
+    #: que no existe en ninguna parte.
+    "mapaleternario": MapaleTernario,
     "cumbia":       Cumbia,
 }

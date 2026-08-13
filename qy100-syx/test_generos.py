@@ -84,22 +84,37 @@ check("   y dice de quien lo heredaria",
 
 print("\nlas celdas, contra lo que declara su procedencia")
 
-# Mapale: tres golpes iguales por medio compas. **No 3+2+3 en semicorcheas.**
-# Los ataques de `mapale-ashcolom.mid` caen en 0, 320 y 640 de cada 960 relojes,
-# con desviacion cero en 392 ataques; escribirlos en la rejilla de semicorchea
-# los llevaba a 0, 360 y 600.
-check("mapale: la celda son tercios de medio compas",
-      A.MAPALE_CELDA, (0, 320, 640))
-check("   que NO caen en la rejilla de semicorchea",
-      [o % A.SEMI == 0 for o in A.MAPALE_CELDA], [True, False, False])
+# Mapale: **son DOS generos**, y el que no distingue cual es cual rompe el
+# groove. La diferencia es donde cae el golpe de en medio del ciclo:
+#
+#     binario   0, 360, 600 de 960   el segundo al 37,5 % — 3+2+3
+#     ternario  0, 320, 640          el segundo al 33,3 % — tres contra dos
+#
+# Cuatro por ciento del ciclo, y es todo el groove. El ternario tiene cinco
+# fuentes documentales y **suena mal**; el binario no tiene ninguna y **suena
+# bien**. Se escribio una vez el ternario encima del binario, sustituyendolo, y
+# hubo que deshacerlo de oido. Estas comprobaciones existen para que no vuelva
+# a pasar por descuido.
+check("mapale: el binario es 4/4", (A.Mapale.beats, A.Mapale.denominador), (4, 4))
+check("   celda 3+2+3 en semicorcheas", A.MAPALE_CELDA, (0, 3, 5))
 g = A.GENEROS["mapale"]()
 ost = sorted(g.construir(1, 1, 0.8)[3], key=lambda n: n.time)
-check("   y el motor los escribe donde estan",
-      [n.time for n in ost[:6]], [0, 320, 640, 960, 1280, 1600])
-check("   cada nota llena su tercio", {n.gate for n in ost}, {319})
-check("   la octava alterna en cada golpe",
-      [n.pitch for n in ost[:4]] == [ost[0].pitch, ost[0].pitch + 12,
-                                     ost[0].pitch, ost[0].pitch + 12], True)
+check("   golpes en 0, 360 y 600", [n.time for n in ost[:3]], [0, 360, 600])
+check("   y su celda va marcada [V], no [M]", A.Mapale.fuentes[3][0], "[V]")
+
+check("ternario: es 6/8", (A.MapaleTernario.beats, A.MapaleTernario.denominador),
+      (3, 8))
+check("   celda en las corcheas 1, 3 y 5", A.MAPALE_CORCHEAS, (0, 2, 4))
+gt = A.GENEROS["mapaleternario"]()
+ot = sorted(gt.construir(1, 1, 0.8)[3], key=lambda n: n.time)
+check("   golpes en 0, 480 y 960", [n.time for n in ot[:3]], [0, 480, 960])
+check("   y esa si va marcada [M]", A.MapaleTernario.fuentes[3][0], "[M]")
+
+# Lo que de verdad hay que impedir: que uno acabe tocando lo del otro.
+check("los dos NO tocan en el mismo sitio",
+      [n.time for n in ost[:3]] == [n.time for n in ot[:3]], False)
+check("y son generos distintos, no el mismo renombrado",
+      A.Mapale.nombre != A.MapaleTernario.nombre, True)
 
 # Currulao: la partitura trae CUATRO golpes —madera en 1, 3 y 4, cuero en la 6—
 # y el motor escribe cinco, anadiendo madera simultanea sobre el cuero. Ese
