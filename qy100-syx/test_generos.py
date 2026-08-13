@@ -160,14 +160,26 @@ g = A.GENEROS["melancolico"]()
 check("melancolico: el bajo nunca cae en la corchea 1",
       1 in corcheas(g.construir(2, 1, 0.85)[3], g.beats), False)
 
-# Torbellino: el bajo va en las TRES negras. Lo que va en 1 y 5 es el bombo, y
-# confundirlos era el unico aval del bajo de la guabina.
+# Torbellino: EL MOTOR toca bajo y bombo doblando `TORB_CELDA` en las tres
+# negras — por diseno. LA FUENTE toca otra cosa: bombo `[1,5]` en el 97 % y
+# contrabajo `[1,5]` en el 52 %. La version anterior de estas dos comprobaciones
+# afirmaba en su etiqueta que "el bombo lleva la celda de 1 y 5" mientras
+# comprobaba [1,3,5]: **dos aserciones identicas sobre pistas identicas no
+# pueden distinguir bombo de bajo**, y la suite imprimia en verde una frase
+# falsa. Ahora cada etiqueta dice de que lado esta.
 g = A.GENEROS["torbellino"]()
 p = g.construir(2, 2, 0.85)
-check("torbellino: el bajo va en las tres negras, no en 1 y 5",
+check("torbellino: el bajo del MOTOR va en las tres negras",
       corcheas(p[3], g.beats), [1, 3, 5])
-check("   el bombo es el que lleva la celda de 1 y 5",
+check("   y el bombo del MOTOR dobla esa misma celda",
       corcheas(p[0], g.beats), [1, 3, 5])
+check("   por eso su procedencia va en [D], no en [M]",
+      (A.Torbellino.fuentes[3][0], A.Torbellino.fuentes[0][0]), ("[D]", "[D]"))
+check("   y la fila del bajo ya no niega lo que la fuente si hace",
+      "NO cae" in A.Torbellino.fuentes[3][2], False)
+check("   la fuente vive DENTRO de la fila, citada como [M]",
+      "[M]" in A.Torbellino.fuentes[3][2]
+      and "52" in A.Torbellino.fuentes[3][2], True)
 check("guabina: su bajo en 1 y 5 va marcado [D], no [M]",
       A.GENEROS["guabina"].fuentes[3][0], "[D]")
 
@@ -180,6 +192,45 @@ check("   y los acordes en la 4 y la 5", A.PASILLO_ACORDE_EN, (3, 4))
 #
 # Ninguna nota puede caer fuera de su seccion: esa es la clase de fallo que el
 # denominador del compas producia y que nada miraba.
+
+# --- El motor de loop -----------------------------------------------------
+#
+# Existe por una medicion: los motores repetian 8 de 8 compases identicos donde
+# los loops reales repiten 1 de 4. Estas comprobaciones fijan el contrato: el
+# esqueleto SIEMPRE, el vocabulario SOLO el de la fuente, y variacion real.
+
+print("\nel motor de loop, contra el chande")
+import os
+if os.path.exists("midi/CHANDE-xg.mid"):
+    import importar_tribe as I2
+    from qy100syx import loopmotor as L
+    notas_f, _b = I2.leer_mid("midi/CHANDE-xg.mid")
+    mod = L.cargar(notas_f)
+    check("el modelo separa esqueleto de variacion",
+          (len(mod.esqueleto) > 0, len(mod.variaciones) > 0), (True, True))
+    gen = L.generar(mod, 8, 0.7, semilla=1)
+    largo = 480 * 4
+    check("el esqueleto esta en TODOS los compases generados",
+          all(any(n.pitch == a and n.time == int(c*largo + p*largo/24.0)
+                  for n in gen)
+              for c in range(8) for p, a in mod.esqueleto), True)
+    import collections as C2
+    hs = [frozenset((n.pitch, n.time - c*largo) for n in gen
+                    if c*largo <= n.time < (c+1)*largo) for c in range(8)]
+    rep = C2.Counter(hs).most_common(1)[0][1]
+    check("varia como la fuente, no como un secuenciador (<=3 de 8 identicos)",
+          rep <= 3, True)
+    fuente = set(mod.vel.keys())
+    fuera = [n for n in gen
+             if (int(round((n.time % largo) / (largo/24.0))) % 24, n.pitch)
+             not in fuente]
+    check("cero golpes fuera del vocabulario de la fuente", len(fuera), 0)
+    check("determinista con la misma semilla",
+          L.generar(mod, 8, 0.7, semilla=1) == gen, True)
+    check("y distinto con otra semilla",
+          L.generar(mod, 8, 0.7, semilla=2) != gen, True)
+else:
+    print("  (sin midi/CHANDE-xg.mid: seccion omitida)")
 
 print("\nlos seis tramos de cada genero")
 for nombre in sorted(A.GENEROS):

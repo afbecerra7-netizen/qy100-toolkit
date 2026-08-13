@@ -556,9 +556,12 @@ class PasilloDenso(Pasillo):
 #                 ^ aterriza aqui   ^^^^^^^^^^^^^^ empuja hacia el siguiente
 #
 # Medido en `suite-colombiana-torbellino-micontrabajo.mid`: el bombo hace
-# `c0 durando 4 corcheas, c4 durando 2` en el 97% de sus 99 compases (96 de
-# 99 — la cifra estuvo como '96 %', que es el recuento leido como porcentaje),
-# y la caja
+# `c0 durando 4 corcheas, c4 durando 2`: por POSICIONES son 96 de 99 compases
+# (97 %) y con las duraciones exactas 95 (96 %). Las dos cifras son de la
+# FUENTE — **el motor no toca esa figura**: dobla `TORB_CELDA` en las tres
+# negras. El parentesis correctivo que hubo aqui ("la cifra estuvo como 96 %,
+# que es el recuento leido como porcentaje") era el mismo falso: 96 % siempre
+# fue el porcentaje correcto de la figura CON duraciones. Y la caja
 # `c0:2 c3:1 c4:1 c5:1` en el 58%.
 #
 # **La primera version tenia las posiciones bien y el gesto perdido**: cuatro
@@ -583,7 +586,11 @@ TORB_BOMBO, TORB_CAJA, TORB_CHUCHO = 36, 38, 82
 #: Felipe: "tan(tonica) tan(tonica) tan(subdominante) tan(dominante)".
 #:
 #: Cuadra con lo medido en el arreglo, donde los instrumentos melodicos alternan
-#: `c0:2 c2:2 c4:2` (tres negras) con `c0:6` (una larga) — entre el 26% y el 37%
+#: `c0:2 c2:2 c4:2` (tres negras) con `c0:6` (una larga). **El rango real,
+#: medido atril a atril el 2026-08-12, es del 5 % al 37 %** — no "26 a 37":
+#: violin 1 da 5 %, flauta 16 %, y solo trompeta, trombon, viola y chelo pasan
+#: del 30 %. Flauta y oboe tienen como figura MAS frecuente `[1,5]`, la del
+#: bombo. "Los melodicos atacan en las tres negras" generalizaba de mas
 #: de sus compases cada figura. **Estaba en los datos y no se supo leer**: se
 #: miraron las dos figuras como patrones alternativos en vez de como las dos
 #: mitades de una sola celda de dos compases.
@@ -697,17 +704,33 @@ class Torbellino(Genero):
         (3, "BA", "bajo con la celda",   "Aco.Bass", False, _torbellino_bajo),
         (4, "C1", "acordes I I IV | V",  "NylonGtr", False, _torbellino_tiple),
     )
+    #: Reescrito 2026-08-12 tras auditarlo: dos filas llevaban `[M]` afirmando
+    #: lo contrario de lo que dice el fichero que citaban. El error de fondo:
+    #: **marcar EL MOTOR con la marca de LA FUENTE.** Lo que el motor toca es
+    #: diseno; lo que la fuente toca es medicion; cada cosa con su marca.
     fuentes = {
-        0: ("[M]", "suite-colombiana-torbellino-micontrabajo.mid",
-                   "el bombo: `c0` durando 4 corcheas y `c4` durando 2, en 96 "
-                   "de 99 compases (97 %)"),
-        1: ("[D]", "-", "la caja `tan tan tan` en 4, 5 y 6, deducida"),
+        0: ("[D]", "-",
+            "bombo doblando `TORB_CELDA`: par 1/3/5, impar solo la 1. `[M]` La "
+            "fuente ('Bombo 1') toca OTRA figura: `[1,5]` en 96 de 99 compases "
+            "(97 %), con duraciones 4+2 corcheas en 95 (96 %). El motor no la "
+            "reproduce, y esta fila lo contaba al reves"),
+        1: ("[D]", "-",
+            "caja `tan tan tan` en 4, 5 y 6. `[M]` La fuente ('Caja clara') da "
+            "`[1,4,5,6]` en 62 de 107 compases (58 %): trae el golpe de la "
+            "corchea 1 que este motor omite"),
         2: ("[D]", "-", "chucho continuo, deducido"),
-        3: ("[M]", "suite-colombiana-torbellino-micontrabajo.mid",
-                   "los melodicos atacan en las tres negras: `c0:2 c2:2 c4:2`. "
-                   "**El bajo NO cae en 1 y 5** — eso es el bombo"),
-        4: ("[M]", "suite-colombiana-torbellino-micontrabajo.mid",
-                   "acordes en las tres negras, misma celda que el bajo"),
+        3: ("[D]", "-",
+            "bajo doblando `TORB_CELDA` en las tres negras — por diseno, para "
+            "llevar la armonia. `[M]` La fuente ('Contrabajo') cae en `[1,5]` "
+            "—la celula del bombo— en 46 de 89 compases (52 %), y en las tres "
+            "negras solo 12 (13 %). **La equivalencia bombo/bajo que esta fila "
+            "negaba es cierta en la fuente**; el que toca 1/3/5 es el motor"),
+        4: ("[D]", "-",
+            "acordes en las tres negras. `[V]` El arreglo es orquestal y no "
+            "tiene instrumento de acordes; la celda `[1,3,5]` va del 5 % "
+            "(violin 1) al 37 % (trombon) segun el atril, y **la figura mas "
+            "frecuente de flauta y oboe es `[1,5]`**, la del bombo. Solo la "
+            "trompeta la lleva como figura principal (30 %)"),
     }
 
 

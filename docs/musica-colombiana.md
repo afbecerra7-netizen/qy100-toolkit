@@ -152,16 +152,24 @@ pasillo       BASS     ·      ·    CHORD   CHORD     ·
 pasillo denso  a continuous eighth-note line, flat velocity
 ```
 
-`[D]` **The guabina's bass on 1 and 5 is a choice, not a measurement.** This
-paragraph used to claim it shared that placement with the torbellino, and that
-equivalence was its only backing — but the torbellino's bass falls on the three
-quarters, the same cell as its chords, as the very next clause admits. What the
-torbellino has measured on 1 and 5 is **the bass drum**, not the bass. Mistaking
-one for the other and then using the mistake to support a second genre is the
-silent mixing of sources this project keeps a provenance table to prevent.
+`[D]` **The guabina's bass on 1 and 5 is a choice, not a measurement** — but
+the story of why took two corrections, and the second corrects the first.
 
-What survives is the difference: the torbellino answers on the three quarters,
-the guabina on the offbeats behind each bass note. And **the
+This paragraph originally claimed the guabina shared the 1-and-5 bass with the
+torbellino. An audit called that false, and the correction published here said
+"what the torbellino has measured on 1 and 5 is **the bass drum**, not the
+bass". **That correction was itself wrong about the source.** Measured on
+2026-08-12, per part: the score's *Bombo 1* sits on `[1,5]` in 96 of 99 bars
+(97 %) — and its *Contrabajo* also sits on `[1,5]`, in 46 of 89 bars (52 %),
+against only 12 bars (13 %) on the three quarters. **The bass drum and the
+bass of the source agree.** What plays the three quarters is our *engine's*
+bass, by design, because it carries the harmony; the earlier text confused the
+engine with the source, in the opposite direction from the first mistake.
+
+The guabina's `[D]` stands regardless — nothing here is a guabina measurement.
+What survives is the difference between the two genres as built: the torbellino
+answers on the three quarters, the guabina on the offbeats behind each bass
+note. And **the
 festive bambuco is the only one that occupies all six eighths**: that's why it
 pushes.
 
@@ -242,7 +250,27 @@ that is what makes the genre run.
 The table above is printed on a sixteenth grid, and **that grid is what produced
 the "3+2+3"**: 320 and 640 do not fall on it, and rounding them gives 360 and
 600. The attack counts were always right; the column they were printed in was
-not. The engine played the rounded version until 2026-08-11.
+not.
+
+**And then the ear overruled the paper — the mapalé is two genres now.** The
+ternary cell was written to the device on 2026-08-12, replacing the binary one,
+on the strength of five agreeing sources: this transcription, a band score in
+6/8 (*Prende la Vela*, Lucho Bermúdez), a drum method that labels the cell
+"Tres contra dos", and a recording measuring cleanly ternary (0.90 vs 0.26).
+Played against the Tribe reference loop, **it was wrong** — the groove sits
+elsewhere. The engines are split:
+
+```
+Mapale           4/4, 3+2+3          [V]  sounds right; no source supports it
+MapaleTernario   6/8, three-vs-two   [M]  five sources; sounds wrong
+```
+
+That asymmetry is deliberate. The binary cell's documented origin is an
+artifact (this ternary transcription read on a binary grid), so marking it
+`[M]` because it works would invent a provenance for an ear decision. The
+lesson, paid for twice in one day: **a correct measurement of one source does
+not license changing what another source supports.** The Tribe loop itself
+leans binary but does not decide (74 % vs 69 %).
 
 And the pitches say something the count alone cannot see:
 
@@ -257,7 +285,10 @@ an octave oscillation over a fixed grid, and that two-bar phase is what keeps it
 from tiring.
 
 `[M]` The harmony barely moves: **126 bars on D, 14 on F and one on A**, with 29
-changes across 141 bars. It is an ostinato genre.
+changes across 141 notated units — **half-bar cells of the piano
+transcription, which is written at half speed**, so roughly 71 real bars.
+The count is right; the unit label used to say "bars". It is an ostinato
+genre.
 
 `[V]` **Metre and tempo disagree across sources.** The piano transcription is
 4/4 at 100; Tribe's catalogue gives 180 in 2/2; the live-set plan says 202.7. The
@@ -320,7 +351,13 @@ de Música para la Convivencia, Ministry of Culture).
 
 **The attack tables this project has been measuring are exactly that.** The
 ternary six for bambuco, currulao and torbellino; the binary eight for mapalé,
-chandé and cumbia. The same analytical device was reached by measurement,
+chandé and cumbia. `[V]` **The chandé's placement in the binary column is
+contested by its own primer**: Valencia's score is titled "RITMO DE CHANDÉ.
+BASE TERNARIA", while the Tribe loop measures decisively binary — 89 % of
+attacks on the binary grid against 47 % on the ternary one (2026-08-12). Two
+sources, two answers, both real; the same shape as the mapalé split. This
+document keeps the loop's answer for the engine work and records the
+disagreement instead of picking silently. The same analytical device was reached by measurement,
 without knowing that Colombian pedagogy had already formalised it and named it.
 
 `[M]` **And the X convention is documented.** The primer gives the tambora's

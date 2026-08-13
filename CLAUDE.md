@@ -35,7 +35,7 @@ cd qy100-syx && .venv/bin/python test_protocol.py    # 175 checks — the last f
                                                      # read dumps/, so the total
                                                      # drops if those are absent
 cd qy100-syx && .venv/bin/python test_regresiones.py # checks the checks bite
-cd qy100-syx && .venv/bin/python test_generos.py     # 93 checks on the genre engines
+cd qy100-syx && .venv/bin/python test_generos.py     # 102 checks on the genre engines
 cd qy100-syx && .venv/bin/python medir_volcados.py   # recounts the cited figures
 ```
 
