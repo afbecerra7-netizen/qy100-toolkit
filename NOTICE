@@ -1,0 +1,43 @@
+# Third-party material referenced here
+
+**What is licensed by this repository is Felipe Becerra's own work**: the code,
+the reverse-engineering of the QY100's SysEx and pattern formats, and the
+written record of how each finding was established. What follows is not, and is
+identified here rather than silently folded into the licence.
+
+## Yamaha
+
+`voces.json`, `frases.json`, `estilos.json` and `tambores.json` are tables of
+**facts read off Yamaha's own documentation and firmware**: program numbers,
+voice and style names, preset-phrase indices, note assignments. They exist so
+software can address the device correctly. The names in them are Yamaha's; the
+tables are not claimed as original work, and are provided for interoperability.
+
+"Yamaha", "QY100", "QY70" and "XG" are Yamaha Corporation's marks, used here
+only to say which device this software talks to. This project is not affiliated
+with, endorsed by, or supported by Yamaha.
+
+The manuals, the Data Filer application and the firmware image are **not
+included** in this repository. Citations throughout are by page number and
+resolve against the originals.
+
+## qyTools
+
+`docs/qy100-protocolo.md` cites the protocol datasheet of
+[qyTools](https://github.com/Max-Coppola/qyTools) (Max Coppola), which
+independently corroborated the event grammar and corrected one hypothesis of
+ours. Its author confirmed the citation is fine. **No qyTools code is used
+here** — qyTools is AGPLv3, and only its documented findings are referenced,
+implemented independently from the described behaviour.
+
+## Reference dumps
+
+The `.syx` files under `qy100-syx/dumps/` are captures of the author's own
+device holding his own patterns.
+
+## TRIBE Player
+
+`tambores.json` maps the articulation layout of TRIBE Player 2 (Tribe
+Instruments) so that loops played with it can be addressed. It is a note-number
+map, not sample content; no audio from that library is included or
+redistributed. Using the tools that read it requires owning the plugin.

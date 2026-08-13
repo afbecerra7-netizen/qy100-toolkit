@@ -1,0 +1,25 @@
+# Documentation licence
+
+The prose documentation in this repository — everything under `docs/`, the
+`README.md` files, `CLAUDE.md`, `HALLAZGOS.md` and `PROTOCOLO-RE.md` — is
+licensed under a
+
+    Creative Commons Attribution 4.0 International Licence (CC BY 4.0)
+
+Human-readable summary: https://creativecommons.org/licenses/by/4.0/
+Full legal text:        https://creativecommons.org/licenses/by/4.0/legalcode
+
+In short: you may share and adapt this material, including commercially, as
+long as you give appropriate credit, link to the licence, and indicate whether
+you changed anything.
+
+**Why the documentation is licensed separately from the code.** The code is
+MIT — take it, vendor it, no friction. But the documentation is the actual
+work here: a protocol reconstructed measurement by measurement, and rhythmic
+cells counted bar by bar off scores and recordings. Attribution is the only
+thing asked in return, and CC BY says so precisely.
+
+Note that a licence covers *expression*, not *facts*. The measurements
+themselves — a byte offset, a note number, how many bars repeat a cell — are
+facts, and facts belong to nobody. Use them freely; the citation is for the
+writing, and for the courtesy of saying where a hard-won number came from.

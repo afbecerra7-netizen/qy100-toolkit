@@ -4,6 +4,11 @@ Herramientas de respaldo, análisis y autoría SysEx para el **Yamaha QY100**.
 Permiten conservar la SRAM del equipo, inspeccionar volcados y construir patrones
 o canciones que el secuenciador reproduce sin un computador conectado.
 
+> **Licencia**: el código va bajo [MIT](../LICENSE) y la documentación bajo
+> [CC BY 4.0](../LICENSE-DOCS). Las tablas derivadas de la documentación de
+> Yamaha y el material de terceros están identificados en [NOTICE](../NOTICE).
+
+
 El proyecto comenzó como una utilidad de ingeniería inversa. El formato de
 patrones ya está resuelto y verificado contra hardware; el código actual puede
 leer y escribir eventos, pistas multibloque, cabeceras, secciones, voces, mezcla,

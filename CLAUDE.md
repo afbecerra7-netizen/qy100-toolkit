@@ -158,6 +158,23 @@ stay in Spanish because they are never published.
 confirms that the productive route is **the data, not the firmware**: they get
 out-of-range BPM and patterns above the cap by writing style files.
 
+## Licence
+
+Code is [MIT](LICENSE); the prose documentation is
+[CC BY 4.0](LICENSE-DOCS). Third-party material — Yamaha's tables and marks,
+qyTools' cited datasheet, TRIBE Player's note map — is identified in
+[NOTICE](NOTICE) rather than folded into either.
+
+The split is deliberate. MIT keeps the code frictionless, and specifically
+lets the other people working on this device incorporate it into their own
+projects: qyTools is AGPLv3, and MIT flows into that direction while the
+reverse would not. CC BY covers the documentation because the measurements
+and how they were established are the actual work, and attribution is the
+only thing asked back.
+
+**A licence covers expression, not facts.** A byte offset, a note number, how
+many bars repeat a cell — those belong to nobody and can be used freely.
+
 The project's public repository lives at
 [`qy100-toolkit`](https://github.com/afbecerra7-netizen/qy100-toolkit) and is
 synced with `sincronizar-publico.py`.
