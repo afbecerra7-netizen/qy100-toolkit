@@ -1,0 +1,48 @@
+{
+  "_comment": "QY100 per-effect-type editable parameters, from the panel's effect Variation Edit menu (distinct from the effect-type selector in effect_types.json and the system send levels in fx_send_levels.json). Discovered/verified 2026-08-12. See ../CLAUDE.md ('Remote control over MIDI') for the full writeup.",
+  "message_format": "F0 43 1n 4C aa bb cc dd ee F7 -- address aa bb cc, 2-byte data (dd is 00 in everything captured so far, ee is the actual value).",
+  "note": "These parameters belong to whichever effect type is currently selected (captured here while Hall 1 was selected) -- unconfirmed whether the same address means the same parameter under a different effect type, or whether each effect type has its own parameter layout. Test before assuming portability across effect types.",
+  "address_pattern": "Every parameter slot found so far is exactly +2 from the previous one (42, 44, 46, 48, 4a) -- odd addresses in between are presumably unused/reserved, not yet confirmed. Useful for guessing the next untested slot, but the effect-type sweep in effect_types.json is a reminder not to assume an address is meaningful without testing it.",
+  "parameters": [
+    {
+      "name": "Reverb Time",
+      "address": "02 01 42",
+      "captured_under_effect": "Hall 1 (01 00)",
+      "data_range": "00 00 (confirmed minimum) through at least 00 45 -- does NOT reach 00 7f like the send levels do; this parameter's real ceiling is lower than the full byte range.",
+      "verified_bidirectional": true,
+      "note": "Captured a sweep from 00 13 to 00 45 turning the panel dial to max ('maxed out reverb time'). Sent '02 01 42 00 00' back over MIDI IN and reverb time visibly dropped to its minimum on the device -- confirmed bidirectional. The observed max (00 45 = 69) may or may not be the device's true ceiling -- the sweep started already in progress, so the real top end of the panel's turn wasn't captured from zero; worth re-verifying by turning the dial from the QY100's own minimum all the way to its own maximum in one pass."
+    },
+    {
+      "name": "Diffusion",
+      "address": "02 01 44",
+      "captured_under_effect": "Hall 1 (01 00)",
+      "data_range": "00 00 (confirmed minimum, panel showed 'minimized') through at least 00 09.",
+      "verified_bidirectional": false,
+      "note": "Captured turning the dial down to its minimum (09 -> 00 stepwise). Not independently sent back to confirm bidirectionality -- assumed to behave like Reverb Time given the identical message family, but not directly tested."
+    },
+    {
+      "name": "Initial Delay",
+      "address": "02 01 46",
+      "captured_under_effect": "Hall 1 (01 00)",
+      "data_range": "00 09 through 00 3f (63) -- panel showed 'maxed', so 3f is likely this parameter's true ceiling.",
+      "verified_bidirectional": false,
+      "note": "Captured turning the dial up to max in one clean stepwise sweep, 09 -> 3f. Not independently sent back to confirm."
+    },
+    {
+      "name": "HPF Cutoff",
+      "address": "02 01 48",
+      "captured_under_effect": "Hall 1 (01 00)",
+      "data_range": "00 0e through 00 34 (52) -- panel showed 'maxed', so 34 is likely this parameter's true ceiling.",
+      "verified_bidirectional": false,
+      "note": "High-pass filter cutoff for the reverb. Captured turning the dial up to max, 0e -> 34. Not independently sent back to confirm."
+    },
+    {
+      "name": "LPF Cutoff",
+      "address": "02 01 4a",
+      "captured_under_effect": "Hall 1 (01 00)",
+      "data_range": "00 32 through 00 3c (60) -- panel showed 'maxed', so 3c is likely this parameter's true ceiling.",
+      "verified_bidirectional": false,
+      "note": "Low-pass filter cutoff for the reverb. Captured turning the dial up to max, 32 -> 3c. Not independently sent back to confirm."
+    }
+  ]
+}

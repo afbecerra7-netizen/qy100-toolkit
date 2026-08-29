@@ -65,6 +65,23 @@ class ConsoleOutput:
         pass
 
 
+class TeeOutput:
+    """Envia en vivo a un puerto real y a la vez graba los mismos eventos,
+    para poder guardar despues un .mid de lo que sono en una sesion en vivo."""
+
+    def __init__(self, live_port, recorder):
+        self.live_port = live_port
+        self.recorder = recorder
+        self.name = getattr(live_port, "name", None)
+
+    def send(self, msg):
+        self.live_port.send(msg)
+        self.recorder.send(msg)
+
+    def close(self):
+        self.live_port.close()
+
+
 class RenderOutput:
     """Acumula mensajes con su tick para volcarlos a un archivo .mid.
 

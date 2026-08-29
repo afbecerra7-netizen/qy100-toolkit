@@ -11,6 +11,7 @@ import mido
 
 from . import patternfmt as F
 from . import protocol as P
+from . import qy70convert as Q
 from . import report, transfer
 
 TARGETS = {
@@ -166,6 +167,15 @@ def build_parser():
     ge.add_argument("--escribir", action="store_true",
                     help="escribir en el equipo (por defecto solo previsualiza)")
     ge.add_argument("--yes", action="store_true")
+
+    c = sub.add_parser("convert", help="convertir un volcado entre QY100 y QY70")
+    c.add_argument("direction", choices=["qy100-to-qy70", "qy70-to-qy100"])
+    c.add_argument("file", help="volcado .syx de origen")
+    c.add_argument("-o", "--output", required=True, help="archivo .syx de salida")
+    c.add_argument("--target-slot", type=lambda s: int(s, 0), default=Q.CURRENT_SLOT,
+                   help="numero de patron/cancion destino (0-63), o el valor por "
+                        "defecto 0x7E = 'la ranura seleccionada en el equipo' "
+                        "(la unica opcion confirmada para el sentido QY70)")
 
     v = sub.add_parser("voces", help="buscar voces del banco por nombre")
     v.add_argument("texto", nargs="?", default="",
@@ -1185,6 +1195,25 @@ def cmd_send(args):
     return 0
 
 
+def cmd_convert(args):
+    blob = open(args.file, "rb").read()
+    fn = Q.qy100_to_qy70 if args.direction == "qy100-to-qy70" else Q.qy70_to_qy100
+    out, n, errs = fn(blob, target_slot=args.target_slot)
+
+    if errs:
+        log("AVISO: %d bloques del origen no se pudieron leer, se ignoraron" % len(errs))
+    if n == 0:
+        log("No se encontro ningun bloque SEQ Data (147 bytes) que convertir.")
+        return 1
+
+    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
+    with open(args.output, "wb") as fh:
+        fh.write(out)
+    log("Convertido (%s): %d bloques, ranura destino %#04x" % (args.direction, n, args.target_slot))
+    log("Guardado %s (%d bytes)" % (args.output, len(out)))
+    return 0
+
+
 def main(argv=None):
     args = build_parser().parse_args(argv)
 
@@ -1203,5 +1232,6 @@ def main(argv=None):
 
     return {"dump": cmd_dump, "monitor": cmd_monitor, "inspect": cmd_inspect,
             "diff": cmd_diff, "send": cmd_send, "generar": cmd_generar,
+            "voces": cmd_voces, "convert": cmd_convert}[args.cmd](args)
             "estilo": cmd_estilo, "frases": cmd_frases, "andina": cmd_andina, "referencia": cmd_referencia,
             "voces": cmd_voces}[args.cmd](args)
