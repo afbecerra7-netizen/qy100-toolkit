@@ -115,17 +115,28 @@ def decode_pattern_track(payload, max_compases=512):
     return fuera
 
 
-def encode_pattern_track(compases):
-    """Construye la pista Pt. Devuelve los 147 bytes listos para `build_dump`.
+def encode_pattern_track(compases, bloques=None):
+    """Construye la pista Pt. Devuelve una LISTA de bloques de 147 bytes.
 
     **Verificado contra el equipo** (2026-08-08): una cancion escrita entera por
     SysEx —cabecera con nombre y tempo, mas esta pista apuntando a un estilo de
     usuario— se releyo exacta y sono, con sus transiciones de seccion y parando
     sola al final.
 
-    Ojo con el tamano: el encadenado de bloques en canciones **no** esta
-    comprobado, asi que la pista tiene que caber en uno. Son 4 bytes la primera
-    entrada y 6 cada una despues, mas inicio y fin: **unos 21 compases de tope**.
+    `[M]` **Y el encadenado de bloques tambien funciona, medido el 2026-08-16.**
+    Este docstring decia que no estaba comprobado y por eso la funcion se negaba
+    a pasar de 128 bytes, lo que dejaba el tope en **21 compases**. Se probo: una
+    pista de 39 compases en dos bloques se escribio en la cancion 3, se releyo
+    con `2 bloques, 294 bytes` y decodifico los 39 compases con el arreglo
+    intacto. **El tope era del codigo, no del aparato.**
+
+    Lo que cabe, contando 4 bytes la primera entrada y 6 cada una despues:
+
+        1 bloque    21 compases     42 s a 120 BPM
+        2 bloques   43 compases     86 s
+        3 bloques   64 compases    128 s
+
+    Los bloques se mandan en orden, como cualquier pista.
     """
     out = bytearray([EV_INICIO, 0x00])
     for k, c in enumerate(compases):
@@ -139,10 +150,11 @@ def encode_pattern_track(compases):
         out += bytes([EV_USUARIO if c.usuario else EV_PRESET, c.estilo - 1])
         out += bytes([EV_SECCION, c.seccion])
     out += bytes([EV_FIN])
-    if len(out) > 128:
-        raise ValueError("no cabe en un bloque: %d bytes. El encadenado de "
-                         "bloques en canciones no esta comprobado." % len(out))
-    return pack(bytes(out) + bytes(128 - len(out)))
+    out += bytes(-len(out) % 128)                    # relleno hasta bloque entero
+    if bloques is not None and len(out) // 128 > bloques:
+        raise ValueError("son %d bloques y se pidieron %d"
+                         % (len(out) // 128, bloques))
+    return [pack(bytes(out[i:i + 128])) for i in range(0, len(out), 128)]
 
 
 def decode_header(payloads):

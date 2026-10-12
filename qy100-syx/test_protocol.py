@@ -532,6 +532,37 @@ if os.path.exists("dumps/41-duracion.syx"):
         except ValueError:
             check("rechaza %d compases" % mal, "ValueError", "ValueError")
 
+    # --- el mezclador del patron, las seis filas -------------------------
+    #
+    # `[M]` DRY 186, CHORUS 194, REVERB 202, VARI. 210 — medidos contra la
+    # pantalla del aparato el 2026-08-16. **La prueba escribe un valor distinto
+    # en cada fila y en cada pista**, que es justo lo que hizo falta en el
+    # equipo: con valores iguales, chorus y variacion son indistinguibles
+    # —ambos arrancan en cero— y se asignaron al reves en el primer intento.
+    # **Los CINCO bloques.** `_cab` devuelve solo el primero, que son 128 bytes
+    # desempaquetados — y el mezclador empieza en el 154. Con un bloque suelto
+    # `set_mixer` no tiene donde escribir.
+    _ms, _ = P.parse_all(open("dumps/41-duracion.syx", "rb").read())
+    cab = [bytes(m.data) for m in _ms
+           if m.addr[0] == 0x12 and m.addr[2] == 0x7F]
+    distintos = {"reverb": 61, "chorus": 21, "variacion": 31, "dry": 11}
+    for k in range(F.TRACKS_PER_SECTION):
+        cab = F.set_mixer(cab, k, **{n: v + k for n, v in distintos.items()})
+    leido = F.decode_mixer(cab)
+    for nombre, v in distintos.items():
+        check("mezclador %s por pista" % nombre,
+              [leido[k][nombre] for k in range(F.TRACKS_PER_SECTION)],
+              [v + k for k in range(F.TRACKS_PER_SECTION)])
+    # y que no se pisen entre si: seis filas, seis valores distintos en D1
+    check("las filas del mezclador no se solapan",
+          len({leido[0][n] for n in distintos}), len(distintos))
+    for malo in (-1, 128):
+        try:
+            F.set_mixer(cab, 0, chorus=malo)
+            check("rechaza chorus %d" % malo, "no fallo", "ValueError")
+        except ValueError:
+            check("rechaza chorus %d" % malo, "ValueError", "ValueError")
+
 print()
 if FAILS:
     print("FALLARON %d: %s" % (len(FAILS), ", ".join(FAILS)))

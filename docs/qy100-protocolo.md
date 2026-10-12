@@ -111,7 +111,85 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
 - **Never drive MIDI while someone is using the panel.** `bulk mode ON` locks the front panel by design, so a dump request issued while the user is navigating menus puts the device in two states at once. Doing exactly that hung it: a clock/busy icon stuck on the display, unresponsive to the panel and to MIDI, not cleared by repeated `bulk mode OFF` — a power cycle was needed. Either the tool is talking to it or the human is, never both.
 - **`bulk mode` locks the front panel.** Leave it on and the device appears dead to its own buttons — `dump` now always sends OFF in a `finally`, including on failure.
 - **A panel-initiated dump is self-framing**: `bulk mode ON → CLEAR ALL → data blocks → bulk mode OFF`. The CLEAR ALL is part of the payload so a restore wipes before writing. That framing also makes it possible to split a capture containing several dumps.
-- **`MIDI CONTROL` must be `Off` while dumping** (2026-07-29). With it on, the QY100 emits ~49 clock messages per second continuously and bulk captures lose whole blocks: the same pattern returned 8 blocks, then 3, then 2, then a different subset each attempt — the 5-block pattern header came back as 2. Everything that arrives is well-formed with a valid checksum, so it looks like the data changed rather than like loss. Filtering the clock in the driver (`rtmidi.ignore_types(timing=True)`, now applied automatically in `transfer.silenciar_reloj`) is **not sufficient** — it must be turned off at the device. Practical workflow: `In/Out` to sync a recording, `Off` to dump.
+- **`MIDI CONTROL` must be `Off` while dumping** — and the reason is not the one
+  written here for two weeks. **Re-measured 2026-08-15, patron 16, six runs per
+  condition:**
+
+  | | |
+  | --- | --- |
+  | `MIDI CONTROL = Off` | **41 blocks**, six identical runs |
+  | `MIDI CONTROL = In/Out` + `SYNC = Internal` | **3 blocks, then it stops** |
+  | with the clock filter / without it | **no difference** |
+  | length of everything received | **158 bytes, never truncated** |
+  | bus load | **2.4 %** (72 clocks/s + 3.8 active sensing) |
+  | waiting 90 s instead of 30 | **still 3** |
+
+  The old entry said the clock avalanche floods the host's input queue and that
+  `ignore_types` fixes it by discarding before the queue. **The symptom was
+  correctly observed; the mechanism was wrong, and the fix never could have
+  worked.** Nothing is lost in any queue: the bus is nearly idle, every block
+  arrives whole, and ninety seconds brings no more. `[D]` **The QY100 cannot
+  transmit a bulk dump while it is transmitting clock** — it sends about three
+  blocks and stops. That is upstream of anything a host can filter, so no
+  interface change and no driver setting helps. **Turning the clock off at the
+  device is the only fix, and there is no plan B.**
+
+- `[M]` **The clock rate is not a property of the device.** "49 messages per
+  second" is **BPM x 0.4** — 24 pulses per quarter. At 180 BPM it measures 72.1;
+  49 corresponds to about 122 BPM, whatever was loaded that day. A figure that
+  answered a different question than the sentence around it claimed.
+
+- `[M]` **`MIDI CONTROL` can be set over SysEx, and this removes an
+  architectural blocker.** Found by dumping setup, changing the parameter on the
+  panel, dumping again and diffing — one setting at a time, because the first
+  diff moved two and that is a one-datum hypothesis.
+
+  | | |
+  | --- | --- |
+  | Field | **data offset 11** of the setup block (`13 00 00`) |
+  | Mask | **bits 4-5**, `0x30` |
+  | `Off` | `0x00` |
+  | `In/Out` | `0x30` |
+  | `In` | **`0x10`** |
+  | `Out` | **`0x20`** |
+
+  All four measured 2026-08-15, one at a time, and **checked by effect rather
+  than by echo**: `Out` and `In/Out` produce 72 clocks/s, `Off` and `In` produce
+  none. The order matches the manual's listing, `Off, In, Out, In/Out` = 0,1,2,3
+  in bits 4-5 — but it was measured, not assumed, because the DrumBrute trigger
+  parameter ended up on the wrong byte for exactly that assumption.
+
+  ⚠️ `[M]` **Reading setup is unreliable while the device transmits clock.**
+  With `MIDI CONTROL` in `Out` or `In/Out`, a setup request sometimes answers
+  first try and sometimes fails four in a row. Same fight that stops pattern
+  dumps in that state. **The recipe that works: set it to `Off` first, and read
+  the block while it is `Off`.** `ajustar_midi_control.py`
+  retries for this reason.
+
+  **How to write it:** send the **whole 37-byte setup block** back with that byte
+  changed and the checksum recomputed (two's complement over
+  `bytecount+addr+data`), framed `bulk mode ON → block → bulk mode OFF`.
+
+  ⚠️ **Without bulk mode the write is silently ignored.** Measured: the first
+  attempt reported "Enviados 1 mensajes" and changed nothing. `syx.py dump`
+  defaults bulk mode **on** (`--no-bulk-mode` to disable) but `syx.py send`
+  defaults it **off** (`--bulk-mode` to enable) — an asymmetry that looks exactly
+  like a device that ignores writes.
+
+  Verified both ways, and **not by reading the byte back**: after writing `Off`
+  the 72 clocks per second stopped and only active sensing remained. The
+  behaviour changed, which is the only thing that proves state.
+
+- `[M]` **`MIDI SYNC` is NOT in the setup block.** Two dumps that differ only in
+  `Internal` vs `External` are byte-for-byte identical. So it cannot be set this
+  way and stays a panel setting.
+
+- `[M]` **The avalanche needs TWO settings, and only one was ever written down.**
+  `MIDI CONTROL` in `Out`/`In/Out` **and** `MIDI SYNC` in `Internal`. With
+  `MIDI SYNC = External` the QY100 waits for a clock nobody is sending and emits
+  none at all — the manual warns it "will not work on its own" (p. 127). The
+  first attempt to reproduce this failure measured nothing for exactly that
+  reason, and the test said so instead of reporting a clean result.
 - **Before blaming the QY100, power-cycle the interface.** After a long transfer a USB-MIDI interface can leave its port half-open, and from software that looks exactly like a device that isn't answering: the verification dump gets no reply and tracks don't leave MIDI OUT even though they sound. Cycling it fixes it.
 
   **And it swallows WRITES just as silently** (2026-08-08, the second time the
@@ -234,13 +312,108 @@ Yamaha's own procedure for this (manual p. 126–127) is three settings, and it 
 
 It also settles the architectural bet behind the EP: **writing songs with one part per MIDI channel is what makes them exportable.** The 16 song tracks arrive in the DAW already separated, so no de-interleaving is needed afterwards. Patterns would not have given this — they are 8 tracks tied to sections.
 
-**Song Position Pointer works, so the DAW can start anywhere and the QY100 lands on the same bar** — verified. Relocating Ableton's transport and hitting play reproduces exactly that part of the song, with no rewind to the top. Service manual §(3-3-1): `F2H`, 14 bits, *"transmitted when you move to a different measure in SONG PLAY Mode, **received when in SONG PLAY Standby**"* — so the reposition is taken while stopped, which is what a DAW does anyway (SPP, then Continue `FB`, not Start `FA`).
+**Song Position Pointer works, so the DAW can start anywhere and the QY100 lands on the same bar** — verified. Relocating Ableton's transport and hitting play reproduces exactly that part of the song, with no rewind to the top.
+
+**Felipe found this, and he found it by working.** It came out of tracking the EP's songs in Ableton, not out of reading a chart — the service manual was consulted *afterwards*, to explain a behaviour that had already shown up on its own. Worth recording because the route matters: **the manual describes what the device is specified to do; using it for real is what surfaces what it actually does.** The `MIDI CONTROL` clock flood, the missing `F0 00` track marker and the DrumBrute's cowbell on note 42 all arrived the same way. A spec read cold would have given none of the four.
+
+Service manual §(3-3-1): `F2H`, 14 bits, *"transmitted when you move to a different measure in SONG PLAY Mode, **received when in SONG PLAY Standby**"* — so the reposition is taken while stopped, which is what a DAW does anyway (SPP, then Continue `FB`, not Start `FA`).
 
 The unit is a **MIDI beat = 6 clocks = one sixteenth**, counted from the start of the song. 14 bits caps it at 16,384 sixteenths = **1,024 bars in 4/4**, far beyond the EP's longest at 112.
 
 This closes a symmetry with [`qy100-arp/`](../qy100-arp/), which uses SPP the other way round — repositioning its absolute tick counter so patterns align to the QY100's bars when the QY100 is master. The same mechanism holds with the QY100 as slave.
 
 `SONG SELECT` (`F3H`) is also **received** in song play standby, so which of the 20 songs is loaded can be switched remotely. Not the same `F3` as the section event in the song pattern track — that one is a byte inside bulk dump payload, unrelated to live MIDI status bytes.
+
+### A QY100 dump is many small messages, not one big one — measured (2026-08-14)
+
+Counted over all 124 `.syx` files in `dumps/`: **6,392 SysEx messages, the
+longest 158 bytes, none above 255.** A 62 KB dump is ~397 messages of ~158
+bytes, not a 62 KB blob.
+
+This bounds a whole class of failure out of existence **for this device**. The
+notorious cheap-USB-MIDI bug — chips like the CH345 mangling SysEx longer than
+255 bytes, or payloads that aren't a multiple of 3 — **cannot fire on QY100
+traffic**. And if such a chip did drop payload here it would be **noisy, not
+silent**: every block carries a declared ByteCount and a Yamaha checksum, and
+`syx.py inspect` already prints both.
+
+**Where it can fire, on this rig, is `Banks/Minitaur Bank.syx` — 46,625 bytes in
+a single SysEx message.** That file, not the QY100, is the one that exercises
+the >255-byte failure family.
+
+Worth writing down because the reasoning that produced the wrong fear was
+**correct arithmetic on the wrong unit** — the same animal as the `451` control
+changes and the mapalé measured at half speed. "Thousands of bytes" was true of
+the *file* and false of the *message*, and every conclusion downstream inherited
+the error.
+
+⚠️ **The failure that no checksum catches is the other one, and it is already
+measured here.** Whole 158-byte messages vanish while every message that does
+arrive is perfect — see `collect()` in
+[`transfer.py`](../qy100-syx/qy100syx/transfer.py): *"los mensajes que sí
+llegaban estaban perfectos y con checksum válido, solo faltaban algunos."* Cause
+measured: the QY100 floods 48–49 clocks per second with `MIDI CONTROL` on and
+the input queue overflows. Fix at driver level,
+`ignore_types(timing=True, active_sense=True)`.
+
+**Nothing detects it from inside one dump** — neither the checksums nor
+`inspect`, because nothing knows how many blocks there should be. **Only
+comparing two dumps of the same data reveals it.**
+
+`[D]` **And on iPadOS this comes back.** Discarding realtime before queuing is
+the librarian app's job, not the interface's — so the same symptom will appear
+with *any* interface and will look like the interface's fault. Whatever app runs
+this must drop timing and active sensing before enqueuing, or repeat the dump
+and compare.
+
+### A song's pattern track can span blocks — measured (2026-08-16)
+
+`[M]` **The 21-bar ceiling was in the code, not the device.**
+`encode_pattern_track` refused to emit more than 128 bytes because its docstring
+said block chaining in songs was unverified. It was never tried.
+
+Tried: a 39-bar pattern track split into two 128-byte blocks, written to song 3
+and read back as `2 bloques, 294 bytes`, decoding to all 39 bars with the
+arrangement intact. Then the same for song 2, which now runs 78 seconds instead
+of 42.
+
+| Blocks | Bars | Seconds at 120 BPM |
+| --- | --- | --- |
+| 1 | 21 | 42 |
+| 2 | 43 | 86 |
+| 3 | 64 | 128 |
+
+Counting 4 bytes for the first entry and 6 for each after, plus start and end.
+The blocks go in order, like any other track.
+
+**Worth noting how the limit survived**: the docstring's "no está comprobado"
+was honest and correct when written. What made it a ceiling is that the code
+enforced it as if it were a device limit — a `[V]` hardened into a `raise`. An
+unverified claim that blocks work is cheap to test; an unverified claim wired
+into a guard costs whatever it prevents, silently, until someone asks why.
+
+### Two mixers, and knowing which one you are looking at — measured (2026-08-16)
+
+`[M]` **A pattern and a song each have their own mixer, and they are not the
+same bytes.** Raising the pattern's volumes changed nothing audible while a song
+was playing, and the panel kept showing the old value — which reads exactly like
+a write that did not land.
+
+| | Where | API |
+| --- | --- | --- |
+| Pattern mixer | pattern header, offsets `154/162/170/178/202` | `patternfmt.set_mixer(payloads, pista, ...)`, **pista 0-7** |
+| Song mixer | song header, offsets `32/64/96/112/160` | `songfmt.set_mixer(payloads, pista, ...)`, **pista 1-16** |
+
+⚠️ **The two APIs index tracks differently** — 0-based for patterns, 1-based for
+songs. Passing `range(16)` to the song one raises on the first iteration, and if
+that exception is swallowed the whole loop does nothing and reports success.
+That happened.
+
+⚠️ `[V]` **Which mixer wins for voices is not established.** A song header copied
+from another song carries `programa 0, banco 0` on every channel, and a song
+built from a pattern track still sounded like the pattern's own voices. So the
+pattern's programs appear to survive — but that was one listen, not a
+measurement, and the fields have not been swept.
 
 ### Pattern format — SOLVED
 
@@ -535,14 +708,146 @@ and the device takes itself to Main B.
 
 **And that song is written entirely over SysEx.** Verified: a header with name
 and tempo plus the `Pt` track pointing at `U05`, read back exact and playing,
-with the transitions and the final stop. `songfmt.encode_pattern_track`. Cap
-**~21 bars**, because block chaining in songs is unverified and the track has to
-fit in one.
+with the transitions and the final stop. `songfmt.encode_pattern_track`. ~~Cap
+**~21 bars**, because block chaining in songs is unverified.~~ **Wrong, and the
+cap was ours**: measured 2026-08-16, the track spans blocks — 21 bars in one,
+43 in two, 64 in three.
 
 Consequence for the live set: **a piece is a user style plus a short song that
 triggers it**, not a song with the notes written out. The song costs one block;
 the style costs whatever its material costs — and with preset-phrase references,
 very little.
+
+### Sections can be driven remotely, in pattern mode — measured (2026-08-16)
+
+The section above says live playing means song mode, because pattern mode gives
+no automatic transitions. That is still true about *automatic* transitions. But
+the sections can be **switched from outside**, live, and that was not known:
+
+```
+(3-6-2) SECTION CONTROL, service manual p. 58
+
+    F0 43 7E 00 ss dd F7
+       ss = 08–0D   Intro, Main A, Main B, Fill AB, Fill BA, Ending
+       dd = on      0x7F works; the manual never states the value
+```
+
+`[M]` Measured against pattern 1 (Shea's `GALAXY`, whose six sections are all
+populated) playing in pattern mode: **all six sections changed on their own, in
+order, with nobody at the panel.**
+
+`[M]` **The change waits for the bar line**, exactly as pressing the button does.
+That is a design result, not a detail: the app sends the message the instant the
+finger lands and the device aligns it, so **no bar-edge queueing has to be
+written**. Had it cut in immediately, holding the message would have been the
+app's job.
+
+**This is a different family of message.** Byte 3 is not the usual substatus but
+`7E`, which the manual calls *Style* — unrelated to the sequencer's `5F` or XG's
+`4C`. `protocol.Message` rejects it rather than translating it, which is why it
+never surfaced in any dump we parsed.
+
+`[M]` **The manual promises seven sections and the device does six.** `BLANK`
+(`ss=0E`) was ignored in both states tested — behind the `Ending`, and over a
+live `Main A`. It fits the pattern format storing six sections and no `Blank`.
+**Two states are not all states**, so this is *ignored where tested*, not
+impossible; `control_seccion.py Blank` still sends it for a retry elsewhere.
+
+Worth the contrast: the previous time this project collided with a manual it was
+the opposite error — omission, with `MIDI CONTROL` and the bulk dump, and with
+the VoiceLive's looper. **A manual errs in both directions**, and a silence reads
+exactly like a promise until somebody measures.
+
+**What it changes.** Everything else we can write to the QY100 is bench work —
+patterns, voices, mixer, arrangement. This is stage work: it fires while the
+thing is playing. It does not remove the reason to play the set from song mode,
+but it does mean **an external controller can supply the transitions that pattern
+mode lacks**, which puts pattern mode back on the table for live use.
+
+### The mixer is live in song mode, deferred in pattern mode — measured (2026-08-16)
+
+`[M]` The QY100's effect-send screen has six rows — `M/S · VOICE · REVERB ·
+CHORUS · VARI. · DRY`, one column per track. **How you change them depends on
+the mode, and the difference is not cosmetic:**
+
+```
+SONG mode      live, per MIDI channel. Track n = channel n.
+PATTERN mode   pattern-header data. Read, modify, rewrite — seconds.
+```
+
+Measured by sweeping a control and watching the device's own knobs turn: a
+single channel first, then a second one to make sure it wasn't one knob
+following everything, then a travelling wave across all sixteen.
+
+**The pattern-mode half is a negative with a control, not an absence of
+evidence.** The identical sweep — same channel, same CC, same rate — moved
+nothing in pattern mode. It was run *after* setting `PATT OUT CH` to `1~8`,
+which rules out the obvious suspect: that parameter governs **transmission** of
+pattern playback, and has no bearing on whether the mixer responds. An earlier,
+tentative negative had been taken while it was `Off`, and was worth repeating
+for exactly that reason.
+
+⚠️ **And live is not saved.** A `CC` moves the current state; what survives a
+power cycle is the byte in the pattern header. In song mode both can be true at
+once — the knob turns and nothing is stored — so an app must not label a live
+knob "saved".
+
+| Row | How | Source |
+| --- | --- | --- |
+| `REVERB` | `CC 91` — EFFECT SEND LEVEL 1 | Data List |
+| `CHORUS` | `CC 93` — EFFECT SEND LEVEL 3 | Data List |
+| `VARI.` | `CC 94` — EFFECT SEND LEVEL 4 | Data List |
+| `DRY` | `F0 43 10 4C 08 nn 11 vv F7` | XG Multi Part, measured here |
+| volume · pan | `CC 7` · `CC 10` | Data List |
+
+⚠️ `[M]` **`CC 94` only responds with `Connection = 1 (System)`** — the Data List
+says so in the control-change table itself. In pattern mode the variation block
+is always system (manual p. 122), so it never bites there; in song mode it can.
+
+`[M]` **`DRY` has no control change.** It is absent from the QY100's
+control-change list, so it is the one row that cannot be a live CC knob. It is
+reachable by SysEx at the XG Multi Part `Dry Level` address — **and that
+identifies one of the addresses Shea Kennedy captured and left unexplained**:
+his Undo/Redo resync burst carries `08 0N 11` per channel, recorded in his
+writeup as not yet decoded. It is the dry level of each part.
+
+**Throughput, calculated rather than guessed.** A travelling wave over 16
+channels × 3 sends ran at **485 messages/s, 1,454 bytes/s — 47% of the 31,250
+baud DIN link** — with the device playing, and nothing was dropped. What makes
+that possible is sending only when the value actually changes: without that it
+is 48 messages per step regardless, saturating the link to say the same thing.
+
+**Consequence for the live set, and it is a clean one.** These documents already
+concluded that a set is played in **song mode**, because that is where section
+transitions are automatic and the Ending closes instead of looping. The mixer
+now points the same way: **song mode is the stage, pattern mode is the bench.**
+An app can offer real knobs in song mode and a read-modify-write panel in
+pattern mode, and it can tell which is which from the Song Position Pointer.
+
+### Menu changes emit no SysEx — measured (2026-08-16)
+
+`[M]` Two runs, 75 s and 65 s, `MIDI CONTROL` in `In/Out`, navigating menus by
+hand: **zero SysEx**. Not a dead link — three and four Song Position Pointers got
+through respectively, proving the return path.
+
+This tested a suggestion from Shea Kennedy (email, 2026-08-12) that the devices
+transmit SysEx on menu changes, which would allow *«programmatic menu macros»*.
+On the QY100 it does not hold; his note came right after a passage about the
+QY70, and may well have been about that device.
+
+`[M]` **The QY100 sends no active sensing either** — zero across both runs. Worth
+recording because active sensing is the usual heartbeat for telling whether a
+device is still there, and with this one it is unavailable.
+
+`[D]` **The Song Position Pointers are a mode signature.** They arrived one per
+*round trip* of `SONG`⇄`PATTERN`, not one per press — ~8.8 s apart against a
+~5 s-per-press hand count. The manual explains why: SPP is *«transmitted when you
+move to a different measure in the SONG PLAY Mode»* (p. 57), so only entering
+`SONG` fires it. Two independent routes to the same conclusion.
+
+**The gap it was meant to close is still open**: the device must be in pattern
+play to receive pattern data and song play for song data, and nothing found so
+far sets that remotely. But an app can now *detect* the mode instead of asking.
 
 ### Playing a user style live — ABC, and Yamaha's rules for reharmonizable phrases
 
@@ -566,7 +871,7 @@ These map straight onto what we have. Rule 3 says the **euclidean generator is e
 
 This reframes an earlier fix: we made generated melodies sound right by setting `Bypass`, which works but *gives up* reharmonization. The principled version is to generate chord-tone material and keep `Chord 1`.
 
-One practical constraint: `SOURCE CHORD` (prefix bytes 21–22) is readable but **writing it is unverified**, so generate material in whatever source chord the target track's prefix already declares rather than trying to set it — `build_prefix()` copies the prefix from an existing track, so the value comes along with it.
+~~One practical constraint: `SOURCE CHORD` is readable but **writing it is unverified**.~~ **Also wrong, and measured the same day**: prefix bytes 21–22 are writable without touching byte 75, and the device's own `Phrase Table` screen confirmed `Cm7` → `Fm7`. So material can be generated *and* its source chord set to match.
 
 ### Playing the device live, and the shortest route into a DAW
 

@@ -640,6 +640,29 @@ MIXER_DRUM_OFF = 162        # 1 = la pista usa kit de bateria
 MIXER_VOL_OFF = 170         # 0-127
 MIXER_PAN_OFF = 178         # 0 izquierda, 64 centro, 127 derecha
 MIXER_REVERB_OFF = 202      # 0-127
+MIXER_DRY_OFF = 186         # 0-127, por defecto 127
+MIXER_CHORUS_OFF = 194      # 0-127, por defecto 0
+MIXER_VARI_OFF = 210        # 0-127, por defecto 0
+
+# `[M]` **Los tres se midieron el 2026-08-16**, escribiendo `base + pista` en los
+# cinco offsets candidatos de una sola vez y leyendo la pantalla de envios del
+# aparato. Con `REVERB` —ya conocido— puesto en 61..68 dentro de la misma
+# escritura, para que la lectura tuviera un control: si esa fila no mostraba 61,
+# nada del resto valia. Mostro 61.
+#
+# **El orden en memoria no es el de la pantalla**, y por eso los dos huecos
+# llevaban tanto sin identificar: la pantalla va REVERB, CHORUS, VARI., DRY y la
+# memoria va DRY(186), CHORUS(194), REVERB(202), VARI.(210). Buscarlos «despues
+# del reverb» solo podia encontrar uno de los tres.
+#
+# ⚠️ Y **los valores por defecto no bastaban para distinguirlos**: 194 y 210
+# venian los dos en cero, asi que la lectura «este debe ser VARI. porque el
+# variation send arranca en 0» valia igual para chorus. Se asignaron al reves en
+# el primer intento por ese razonamiento. Lo unico que los separo fue la
+# escritura con un valor distinto en cada offset.
+#
+# 218 y 226 siguen sin identificar. **No son de esta pantalla**: aparecen los
+# dos con 64 en todas las pistas y no cambiaron ninguna de sus filas.
 
 
 def decode_mixer(header_payloads):
@@ -649,23 +672,39 @@ def decode_mixer(header_payloads):
              "bateria": bool(d[MIXER_DRUM_OFF + k]),
              "volumen": d[MIXER_VOL_OFF + k],
              "panoramico": d[MIXER_PAN_OFF + k],
-             "reverb": d[MIXER_REVERB_OFF + k]}
+             "reverb": d[MIXER_REVERB_OFF + k],
+             "chorus": d[MIXER_CHORUS_OFF + k],
+             "variacion": d[MIXER_VARI_OFF + k],
+             "dry": d[MIXER_DRY_OFF + k]}
             for k in range(TRACKS_PER_SECTION)]
 
 
-def set_mixer(header_payloads, pista, volumen=None, panoramico=None, reverb=None):
-    """Ajusta niveles de una pista. Panoramico: 0 izquierda, 64 centro, 127 derecha."""
+def set_mixer(header_payloads, pista, volumen=None, panoramico=None, reverb=None,
+              chorus=None, variacion=None, dry=None):
+    """Ajusta niveles de una pista. Panoramico: 0 izquierda, 64 centro, 127 derecha.
+
+    `chorus`, `variacion` y `dry` son las tres filas restantes de la pantalla de
+    envios del aparato, medidas el 2026-08-16.
+
+    ⚠️ **`variacion` solo suena si el bloque de variacion tiene un tipo puesto**
+    distinto de `Thru`, y en modo patron ese bloque es siempre de sistema sobre
+    las 8 pistas (manual p. 122). Subir este envio con el tipo en `Thru` no hace
+    nada — y ese silencio se lee igual que un fallo de escritura.
+    """
     if not 0 <= pista < TRACKS_PER_SECTION:
         raise ValueError("pista fuera de rango 0-7: %d" % pista)
     d = bytearray(b"".join(unpack(p) for p in header_payloads))
     # La cabecera son 5 bloques. Si llegan menos, el volcado vino incompleto y
     # escribir aqui corromperia lo que si llego, o reventaria por indice.
-    if len(d) < MIXER_REVERB_OFF + TRACKS_PER_SECTION:
+    if len(d) < MIXER_CHORUS_OFF + TRACKS_PER_SECTION:
         raise ValueError("cabecera incompleta: %d bytes de %d. Repite el volcado."
                          % (len(d), 5 * UNPACKED_BYTES))
     for valor, off, nombre in ((volumen, MIXER_VOL_OFF, "volumen"),
                                (panoramico, MIXER_PAN_OFF, "panoramico"),
-                               (reverb, MIXER_REVERB_OFF, "reverb")):
+                               (reverb, MIXER_REVERB_OFF, "reverb"),
+                               (chorus, MIXER_CHORUS_OFF, "chorus"),
+                               (variacion, MIXER_VARI_OFF, "variacion"),
+                               (dry, MIXER_DRY_OFF, "dry")):
         if valor is None:
             continue
         if not 0 <= valor <= 127:
@@ -849,12 +888,6 @@ def set_header_hikey(payloads, tipo):
 SRC_CHORD_ROOT_OFF = 21
 SRC_CHORD_TYPE_OFF = 22
 
-# Solo los tipos medidos. Los 26 del equipo se completan midiendo, no
-# conjeturando: un volcado por tipo.
-SRC_CHORD_TYPES = {
-    "M7": 0x00,
-    "m7": 0x08,
-}
 
 
 def decode_source_chord(payload):
@@ -868,11 +901,24 @@ def decode_source_chord(payload):
 def set_source_chord(payload, raiz, tipo):
     """Reescribe el acorde fuente en el primer bloque de una pista.
 
-    **SIN VERIFICAR CONTRA EL EQUIPO.** Leerlo si esta comprobado, pero al
-    escribirlo queda un cabo suelto: el byte 75 del bloque 3 de la cabecera
-    tambien se mueve cuando se cambia esto desde el panel, y no sabemos que
-    parte de el corresponde al acorde fuente. Escribir solo la pista puede
-    dejar el patron incoherente. Comprobar en el equipo antes de fiarse.
+    `[M]` **VERIFICADO el 2026-08-16.** Se escribio el byte 21 del prefijo de
+    `Main A` de `00` a `05` **sin tocar el byte 75**, y la pantalla `Phrase
+    Table` del propio aparato paso de `Cm7` a `Fm7`.
+
+    Este docstring decia antes «SIN VERIFICAR» y advertia que escribir solo la
+    pista «puede dejar el patron incoherente», porque el byte 75 de la cabecera
+    se mueve tambien al cambiarlo desde el panel. **Esa advertencia estuvo
+    frenando el trabajo sin haberse comprobado nunca**, y ademas el byte 75 no
+    podia ser el acorde fuente: en 66 de 89 volcados un unico byte 75 convive
+    con varios acordes fuente distintos, y un patron admite hasta 48 frases.
+
+    ⚠️ Y esto hace algo que **el aparato no puede hacer solo**: en las frases de
+    fabrica el QY100 no deja editar el acorde fuente desde sus propios botones
+    (manual p. 120).
+
+    ⚠️ Solo hay dos tipos medidos, `M7` y `m7`. Los demas existen en el aparato
+    y **nadie los ha barrido**; `SRC_CHORD_TYPES` es lo comprobado, no lo que
+    hay.
     """
     if raiz not in CHORD_ROOTS:
         raise ValueError("raiz desconocida: %r" % (raiz,))
@@ -1014,6 +1060,27 @@ CHORD_TYPES = {
     "6(9)":   25,
     "7(b5)":  26,
 }
+
+
+#: `[M]` **Es la misma tabla que el acorde actual.** Confirmado el 2026-08-17
+#: escribiendo el byte 22 y leyendo la `Phrase Table` del propio aparato:
+#:
+#:     0x00 -> M7        0x01 -> F  (mayor, sin sufijo)     0x08 -> m7
+#:     0x15 -> 7sus4     0x17 -> dim
+#:
+#: **Cinco de veintisiete, repartidos por todo el rango.** Los otros veintidos
+#: entran **por analogia**, no medidos — y esa distincion es el motivo de este
+#: comentario. Antes aqui solo habia dos entradas con la nota «los 26 del equipo
+#: se completan midiendo, no conjeturando», que era la disciplina correcta
+#: aplicada a una muestra de dos: con `M7=0x00` y `m7=0x08` la hipotesis de la
+#: tabla compartida y la de una tabla propia predicen lo mismo.
+#:
+#: Se eligieron nombres que no se parecen entre si —`dim`, `7sus4`, `M`— para
+#: que un fallo se viera. Con `M7(9)` contra `m7(9)` no se habria visto.
+#:
+#: `SRC_CHORD_MEDIDOS` es lo comprobado; la interfaz lo marca distinto.
+SRC_CHORD_MEDIDOS = frozenset(("M7", "M", "m7", "7sus4", "dim"))
+SRC_CHORD_TYPES = dict(CHORD_TYPES)
 _CHORD_BY_BYTE = {v: k for k, v in CHORD_TYPES.items()}
 
 

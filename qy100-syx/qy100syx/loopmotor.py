@@ -66,7 +66,53 @@ class Modelo:
         self.avisos = []
 
 
-def cargar(notas, pulsos_por_compas=4, compases=None, permitir_corto=False):
+#: Rejillas musicales legitimas dentro de una negra, en unidades de SUB=48.
+#: Fusa (6), tresillo de semicorchea (8), semicorchea (12), tresillo de
+#: corchea (16). Todo lo demas es microtiempo de la ejecucion, no una celda.
+REJILLAS = (6, 8, 12, 16)
+
+
+def _a_rejilla(pos):
+    """Lleva una posicion a la rejilla musical mas cercana.
+
+    `[M]` Existe porque en el porro generado **9 golpes de 336 caian en el paso
+    28 de 48** —siete doceavos de negra, un sextillo— a 29,4 ms de cualquier
+    rejilla. Metidos en un contexto de semicorcheas y fusas se oyen como un
+    tropiezo, y Felipe los localizo de oido antes de que ningun test los viera.
+    La puya generada tiene cero, y por eso suena limpia.
+
+    **No se activa por defecto, y despues de oirlo NO DEBE ACTIVARSE para este
+    material.** Se escribieron las dos versiones del porro —patron 21 sin
+    cuantizar, 26 cuantizado— y el veredicto de Felipe fue inmediato: *«uff no,
+    el 21 suena mucho mejor»*.
+
+    **Eso corrige una doctrina de este proyecto.** Se venia tratando la CELULA
+    ritmica como lo medido y el microtiempo como ruido de la transcripcion.
+    Medido por oido: **el microtiempo no es ruido, es el genero.** Los nueve
+    golpes del paso 28 no eran un defecto — eran parte de por que el porro suena
+    a porro.
+
+    Y hay que decir lo que no se logro: se buscaba explicar unos "triples raros"
+    que Felipe oyo en el 21. Se encontraron esos nueve golpes, se quitaron, y
+    **sono peor**. Asi que no eran eso. Se encontro algo real y no era la cosa.
+
+    `[V]` **Y la comparacion esta confundida**, avisado antes de oirla: el 26
+    cambiaba DOS cosas —posiciones cuantizadas y un esqueleto mas regular, 33
+    golpes contra 31, porque al caer en rejilla comun mas golpes coinciden entre
+    compases y ascienden de variacion a esqueleto—. "El 21 mejor" no dice cual
+    de las dos lo estropeo. Para separarlo haria falta una tercera version:
+    posiciones cuantizadas con el reparto esqueleto/variacion original.
+
+    Se conserva la opcion porque puede servir para material distinto —una
+    transcripcion de partitura, donde el microtiempo si es artefacto del
+    programa que la exporto— pero para loops tocados por alguien, no.
+    """
+    candidatos = {r * int(round(pos / float(r))) for r in REJILLAS}
+    return min(candidatos, key=lambda q: (abs(q - pos), q))
+
+
+def cargar(notas, pulsos_por_compas=4, compases=None, permitir_corto=False,
+           cuantizar=False):
     """Construye el modelo desde [(pulso, nota, velocity, duracion_en_pulsos)].
 
     `compases` es el numero declarado de compases del loop (el que dice
@@ -88,7 +134,10 @@ def cargar(notas, pulsos_por_compas=4, compases=None, permitir_corto=False):
     celdas = []
     for t, a, v, d in notas:
         g = int(round(t / celda))
-        celdas.append((g // SUB, g % SUB, a, v, d))
+        compas, pos = g // SUB, g % SUB
+        if cuantizar:
+            pos = _a_rejilla(pos) % SUB
+        celdas.append((compas, pos, a, v, d))
 
     m.compases_fuente = compases or (max(c for c, _p, _a, _v, _d in celdas) + 1)
     if m.compases_fuente < MIN_COMPASES and not permitir_corto:

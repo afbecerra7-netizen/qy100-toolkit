@@ -260,11 +260,17 @@ def cmd_dump(args):
 
     if not blob:
         log("")
-        log("No contesto nada. Cosas que comprobar:")
-        log("  - HOST SELECT del QY100 en MIDI")
-        log("  - cableado: QY100 OUT -> interfaz IN, interfaz OUT -> QY100 IN")
-        log("  - MIDI CONTROL en Out o In/Out (pag. 127)")
-        log("  - que no este en un modo que bloquee el bulk (prueba desde el modo song)")
+        log("No contesto nada. En orden, de lo que mas ha pasado a lo que menos:")
+        log("")
+        log("  1. **El patron esta VACIO.** El QY100 no contesta nada a un patron")
+        log("     sin contenido — no dice 'vacio', se queda callado. Mismo sintoma")
+        log("     que un enlace caido. Prueba con uno que sepas que tiene algo.")
+        log("  2. Los cables: QY100 OUT -> interfaz IN, interfaz OUT -> QY100 IN.")
+        log("     Ha sido la causa las dos veces que el enlace fallo de verdad.")
+        log("     `comprobar_enlace.py` lo resuelve en 8 segundos.")
+        log("  3. MIDI CONTROL en **Off**. Con Out o In/Out el aparato manda tres")
+        log("     bloques y se detiene — medido 2026-08-15. `ajustar_midi_control.py off`")
+        log("  4. HOST SELECT en MIDI.")
         return 1
 
     with open(out, "wb") as fh:

@@ -85,6 +85,18 @@ The cases that illustrate it best, all real:
   figure a document cites now has to come out of
   [`medir_volcados.py`](qy100-syx/medir_volcados.py), which can be re-run.
 
+- **The VoiceLive 3's looper was declared unable to sync** on the strength of a
+  full-text search: the word `clock` appears nowhere in its 127-page manual, and
+  the looper's `Sync` menu only relates its own three tracks. Both true. But the
+  manual is dated **2014-03-29** and firmware **v1.2.02** added MIDI Sync years
+  later — the owner had already installed it. What was measured was *the
+  document*; what was claimed was *the device*. **A document has a date, and the
+  date bounds the claim.** The footer carrying that date was printed in the
+  tool output over and over and read as decoration instead of as data. So:
+  before citing a manual for an *absence*, check its date against the firmware —
+  and prefer `[V]` over `[M]` for anything a manual fails to mention, because a
+  silence is the one thing a stale document reports identically to a true one.
+
 - **Three separate failures in one day had the same shape**: the time-signature
   denominator, a loop that gained an empty bar from `max(note) + 1`, and the
   mapalé measured in 4/4 when the transcription was written at half speed. None
@@ -92,6 +104,46 @@ The cases that illustrate it best, all real:
   unit**, and no check caught them because the numbers were coherent inside a
   false frame. The `451` above is the same animal. Before trusting a figure, ask
   what unit it is in — not whether it is right.
+
+- **The microtiming turned out to be the genre, not noise.** This project's
+  documents treat the *rhythmic cell* as the measured thing — where the strokes
+  fall in the grid — and implicitly treated the rest as transcription slop. In
+  the generated porro, 9 of 336 strokes sat 29 ms off any musical grid, on a
+  sextuplet position; the puya, which sounded good, had none. Quantising them to
+  the nearest grid looked obviously right. **It sounded worse, immediately and
+  not subtly.** So the deviation was carrying the genre, and the doctrine was
+  backwards for played material. Keep it for score transcriptions, where the
+  offset really is the exporter — not for a loop somebody played.
+
+  Two smaller lessons came out of the same hour. **The "29 ms off grid" figure
+  started life as "88 ms off grid"**, because the first check compared only
+  against sixteenths and eighth-triplets: thirty-seconds are multiples of 6 and
+  were simply not in the list, so strokes that were perfectly on a grid got
+  counted as off it. And the whole investigation **found something real that was
+  not the thing being looked for** — the nine strokes were genuine and were not
+  what the ear had objected to. Finding an anomaly is not the same as finding
+  the cause.
+
+- **And the opposite failure, which showed up three times in one day.** Every
+  case above is a claim that said too much. This one says too little and then
+  enforces it. Three unverified notes had quietly become prohibitions:
+
+  - `encode_pattern_track` refused to emit more than one block because its
+    docstring said block chaining was *«no está comprobado»*. Songs were capped
+    at 21 bars. Tried once: it works, and the cap doubled to 43.
+  - `SOURCE CHORD` was listed as unwritable because changing it from the panel
+    also moves a header byte, so writing the track alone *«podría dejar el
+    patrón incoherente»*. Tried once: the device took it and its own screen
+    confirmed the new chord.
+  - The bank LSB of 397 voices was *«nunca decodificado»*. It was printed in the
+    Data List's own header: `Bank Select MSB=000, LSB=Bank Number`.
+
+  **`[V]` is a request to go measure, not a verdict.** It costs nothing while it
+  sits in a document and everything once it sits in a `raise`, a "can't", or a
+  reason not to look. The tell is a hedge — *podría*, *no está comprobado*,
+  *nunca se decodificó* — load-bearing in a sentence that stops work. When a
+  hedge is doing that much work, the cheapest move is almost always to try the
+  thing once.
 
 And a corollary about tests, learned when three decoder fixes turned out to
 share one suite that passed identically before and after all three: **a test
@@ -115,11 +167,21 @@ All learned the hard way and detailed in the documents.
   hangs the device.
 - Every track starts with `F0 00`. Without it **the pattern sounds fine and
   hangs the editor**.
-- `[V]` **`MIDI CONTROL` has nothing documented to do with SysEx.** This file
-  used to state `Off` to transfer and `In/Out` to play, as a rule; the manual
-  (p. 127) scopes that parameter to synchronised playback and never mentions
-  bulk dump, and a full pattern was written and read back on 2026-08-12 without
-  touching it. What the manual *does* require, and this file did not say, is
+- `[M]` **`MIDI CONTROL` must be `Off` for a MULTI-BLOCK dump, and does not
+  matter for a single block.** This file first stated `Off` as a blanket rule,
+  then over-corrected to "nothing to do with SysEx" on the strength of one
+  successful transfer. Measured 2026-08-17 with a clean A/B — same code, same
+  pattern, two values:
+
+  ```
+  Off      -> read fine
+  In/Out   -> header incomplete, 2 of 5 blocks
+  ```
+
+  The setup block reads fine at any value because it is **one** block. With the
+  device transmitting, a multi-block dump loses blocks partway. **Both earlier
+  versions of this note were wrong in the same way**: they generalised from one
+  case to every case, in opposite directions. What the manual *does* require, and this file did not say, is
   that the device be **in pattern play mode to receive pattern bulk data, and in
   song play mode for song data** (p. 129).
 - **Never send MIDI while someone is using the front panel.** It hangs.

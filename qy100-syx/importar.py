@@ -384,6 +384,22 @@ if __name__ == "__main__":
     leidos = {}
     for m in (x for x in m2 if x.sub == P.SUB_DUMP and x.addr[2] != F.HEADER_TR):
         leidos.setdefault(m.addr[2], []).append(bytes(m.data))
+
+    # **Si no llego NADA, esto no es una verificacion fallida: es una
+    # verificacion que no ocurrio.** La version anterior imprimia "NO ESTA en el
+    # aparato" pista por pista, que suena a hecho medido y es silencio — el
+    # mismo error que el guardia destructivo de mas arriba, en su version
+    # inofensiva. El QY100 ignora las peticiones mientras toca o fuera del modo
+    # patron, asi que el silencio es tan probable como el fallo real.
+    if not leidos:
+        print("\nSIN VERIFICAR: el aparato no contesto a la relectura.")
+        print("Los bloques se mandaron, pero **no se sabe si entraron**. El")
+        print("QY100 ignora las peticiones mientras toca o si no esta en modo")
+        print("patron; para el transporte, dejalo quieto y vuelve a leer con:")
+        print("   syx.py dump pattern %d --in %s --out %s"
+              % (args.patron, args.inp, args.out))
+        raise SystemExit(2)
+
     print("\nverificacion:")
     mal = 0
     for idx, (_bl, _prog, _eb) in sorted(bloques.items()):

@@ -16,6 +16,40 @@ Where each document is and how to read it without opening the PDF.
 | `QY100_1.37/_QY100_v137.mid` | Firmware v1.37 image, delivered as a Standard MIDI File (format 0, 1 track, 96 PPQN, ~1.8 MB). Not a musical performance — the ROM payload is encoded as MIDI data and streamed to the device. |
 | `QY100_1.37/QY100 Firmware Update Readme.txt` | Step-by-step flashing procedure for that file. |
 
+## The Torso T-1: a manual with no PDF
+
+Torso publishes the T-1 guide **only as a website**, at
+<https://docs.torsoelectronics.com/t1/>. There is nothing in `Manuales/` for it,
+and it was the only device in the rig without a manual here.
+
+`manuales-md/TorsoT1.md` is its 77 pages, in the
+order of the site's own index, each carrying the URL it came from so any claim
+stays checkable. The 80 figures are in
+`manuales-md/diagramas/` under `torso-t1-`.
+
+Refresh it — Torso ships firmware regularly and revises the guide with it — via
+
+```bash
+python3 -I manuales-md/torso-t1-convertir.py /tmp/t1 manuales-md/TorsoT1.md --descargar
+```
+
+Three things that document records about itself, because each one bounds what it
+can be cited for:
+
+- **It was current when taken.** The guide dates its own last revision
+  2026-08-21 and documents firmware v2.1.5 (2026-08-05), downloaded 2026-10-12.
+  That is the opposite of the VoiceLive 3 case, where a 2014 manual was used to
+  deny a feature later firmware had added — so here a silence in the document is
+  weak evidence about the device rather than none. It is still `[V]`: what was
+  read is the document.
+- **Ten figures 404 on Torso's own server** — the `voicingstyles/` set, which
+  its own HTML both preloads and requests. The VOICING table describes each
+  style in prose, so the illustration is lost and the fact is not.
+- **One page is empty at the source.** `miscellaneous/chromatic-keyboard/` has a
+  title and nothing else, and the site is static — no JavaScript payload holds
+  the missing text. Torso has not written it. That is the page on playing the
+  T-1 as a keyboard.
+
 ## Markdown conversions — read these, not the PDFs
 
 `manuales-md/` holds a Markdown conversion of **every** PDF here. Grep or `Read` these instead of extracting PDF pages; it is far faster and the content is equivalent.

@@ -26,18 +26,42 @@ def resolve(name, available, kind):
 def silenciar_reloj(inport, log=None):
     """Descarta reloj y active sensing en el driver, dejando pasar el SysEx.
 
-    VERIFICADO contra el equipo: con `MIDI CONTROL` en `Out` o `In/Out` el
-    QY100 emite **49 mensajes de reloj por segundo de forma continua, tambien
-    con el secuenciador parado**. Esa avalancha hace perder bloques SysEx
-    enteros incluso capturando por callback: un volcado que devolvia 7 bloques
-    paso a devolver 3, y luego 2.
+    **[M] Y para el fallo por el que se escribio, NO SIRVE. Medido el 2026-08-15.**
 
-    Antes no se notaba porque `MIDI CONTROL` estaba apagado y no habia reloj.
-    En cuanto se enciende —que hace falta para sincronizar una grabacion— el
-    problema reaparece.
+    Lo que se creia: con `MIDI CONTROL` en `Out` o `In/Out` el QY100 inunda de
+    reloj, esa avalancha llena la cola de entrada del anfitrion y se pierden
+    bloques; filtrar antes de la cola lo resolveria.
 
-    `ignore_types` de python-rtmidi lo filtra antes de que llegue a la cola, que
-    es donde hay que resolverlo: filtrarlo en Python ya seria tarde.
+    **El sintoma estaba bien observado. El mecanismo estaba mal.** Medido contra
+    el equipo, patron 16, seis corridas por condicion:
+
+      MIDI CONTROL = Off              41 bloques, seis veces identicas
+      MIDI CONTROL = In/Out           3 bloques, y se detiene
+      con filtro / sin filtro         exactamente igual
+      longitud de lo recibido         158 bytes siempre, ninguno partido
+      carga del bus                   2,4 % (72 relojes/s + 3,8 active sensing)
+      esperando 90 s                  siguen siendo 3
+
+    O sea: **no se pierde nada en ninguna cola.** El bus va casi vacio, los
+    bloques llegan integros, y darle noventa segundos no trae ni uno mas.
+    `[D]` **El QY100 no puede volcar mientras transmite reloj**: manda unos tres
+    bloques y para. Es limitacion del aparato, aguas arriba de cualquier cosa que
+    el anfitrion pueda filtrar.
+
+    **La unica solucion es apagar el reloj en el origen**, que es lo que ya decia
+    la regla practica — pero por otra razon, y sin plan B.
+
+    `[M]` De paso: los "49 relojes por segundo" tampoco eran una propiedad del
+    aparato. Son **BPM x 0,4** (24 pulsos por negra). A 180 BPM se midieron 72,1;
+    los 49 corresponden a ~122 BPM, el tempo que hubiera cargado ese dia.
+
+    `[M]` Y la avalancha necesita **DOS** ajustes, no uno: `MIDI CONTROL` en
+    `Out`/`In/Out` **y** `MIDI SYNC` en `Internal`. Con `MIDI SYNC = External` el
+    QY100 espera un reloj ajeno y no emite ninguno — el manual avisa que "no
+    funcionara por si solo" (p. 127).
+
+    Se conserva porque descartar reloj y active sensing sigue siendo correcto y
+    barato en cualquier captura. Lo que no hace es arreglar el volcado.
     """
     rt = getattr(inport, "_rt", None)
     if rt is None:                       # otro backend de mido: no se puede

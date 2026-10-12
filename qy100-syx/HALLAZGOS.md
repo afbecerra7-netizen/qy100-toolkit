@@ -250,7 +250,7 @@ con el acorde.
 necesariamente consecuencia de lo que tocaste.** Abrir una pantalla de edición
 ya es una acción con efectos.
 
-## Acorde fuente (SOURCE CHORD) — leer resuelto, escribir no (2026-07-29)
+## Acorde fuente (SOURCE CHORD) — RESUELTO, leer y escribir (2026-08-16)
 
 Es **por pista**, así que vive en el prefijo de 26 bytes, no en la cabecera.
 
@@ -266,11 +266,63 @@ misma tabla que el acorde actual. Confirmados.
 El **byte 16** cambia con la calidad del acorde pero no con la raíz: es algo
 derivado del tipo. Se escribe copiándolo de la tabla medida, no calculándolo.
 
-**Escribirlo está sin verificar**, y hay una razón concreta: al cambiar esto
-desde el panel también se mueve el byte 75 del bloque 3 de la cabecera, que
-además se mueve con el tipo de frase y con la raíz. Ese byte empaqueta varias
-cosas y no está separado. Escribir solo la pista podría dejar el patrón
-incoherente.
+**ESCRIBIRLO FUNCIONA. Medido el 2026-08-16.** Este párrafo decía que estaba
+sin verificar porque al cambiarlo desde el panel también se mueve el byte 75 del
+bloque 3, y que escribir solo la pista *«podría dejar el patrón incoherente»*.
+
+**Nadie lo había intentado.** Se intentó: se escribió el patrón 4, se cambió el
+byte 21 de `00` a `05` en el prefijo de `Main A` pista 0 —**sin tocar el byte
+75**— y la pantalla `Phrase Table` del equipo pasó de `SOURCE CHORD = Cm7` a
+`Fm7`. Confirmado a ojo por Felipe, que es la única verificación que vale aquí.
+
+`[M]` **Y el byte 75 no era el problema.** Dos cosas lo descartan:
+
+1. **No cabe.** En 66 de 89 volcados de `dumps/`, un solo byte 75 convive con
+   varios acordes fuente distintos en el mismo patrón. Un patrón tiene hasta 48
+   frases —8 pistas × 6 secciones— y un byte no guarda 48 acordes.
+2. **Es volátil.** El mismo patrón volcado varias veces da valores distintos, y
+   **vuelve a valores anteriores** (`06 → 08 → 08 → 06 → 08`), lo que descarta
+   un contador de ediciones. Durante esta prueba cambió solo a `E7` sin que se
+   escribiera. Se comporta como estado de interfaz, no como dato.
+
+⚠️ Un detalle del método: **el primer intento de escribir el byte 21 se releyó
+sin cambiar**, y el segundo —idéntico salvo que además cambiaba el nombre de la
+frase— tomó los dos. Es la misma intermitencia de lectura tras escribir que ya
+apareció con el bloque de setup. **Un solo intento fallido no prueba que algo no
+se pueda escribir**, y por poco se concluye lo contrario.
+
+⚠️ Y esto vale más de lo que parece: el manual (p. 120) dice que **en las frases
+predefinidas solo se pueden editar `CURRENT CHORD` y `FNGR`**. O sea que por
+SysEx se puede cambiar algo que el aparato **no deja cambiar con sus propios
+botones**.
+
+### Los tipos: es la misma tabla que el acorde actual (2026-08-17)
+
+`[M]` Confirmado escribiendo el byte 22 y leyendo la `Phrase Table` del aparato:
+
+```
+0x00 → M7      0x01 → F (mayor, sin sufijo)     0x08 → m7
+0x15 → 7sus4   0x17 → dim
+```
+
+**Cinco de veintisiete, repartidos por todo el rango.** Los otros veintidós
+entran por analogía, y `SRC_CHORD_MEDIDOS` marca cuáles son cuáles — la hoja de
+acordes de la app los pinta distinto.
+
+Antes había **dos** entradas con la nota «los 26 del equipo se completan
+midiendo, no conjeturando». La disciplina era correcta y la muestra no servía:
+con `M7=0x00` y `m7=0x08`, la hipótesis de tabla compartida y la de tabla propia
+**predicen exactamente lo mismo**, así que esos dos datos no distinguían nada.
+
+Dos detalles del método que valen para la próxima:
+
+- **Nombres que no se parecen entre sí** — `dim`, `7sus4`, `M`. Con `M7(9)`
+  contra `m7(9)` un fallo no se habría visto.
+- **Un bloque de pista existe aunque no haya frase**, y la `Phrase Table` solo
+  muestra las que sí la tienen. Se escribieron ocho pistas de `Main A` y el
+  aparato solo enseñaba una: siete eran prefijos vacíos. Releer los bytes
+  confirmó que la escritura llegó a las ocho — **releer prueba la escritura, y
+  solo la pantalla prueba el significado.**
 
 ## Acorde actual (CURRENT CHORD) — RESUELTO (2026-07-29)
 
@@ -379,6 +431,69 @@ beat estaba fijo. Y se dio por refutada una lista ordenada de categorías usando
 nombre—. **Un campo que no varía en el experimento parece una constante**, y
 llamarlo constante es afirmar algo que no se ha probado.
 
+## Mezclador del patrón — las tres filas que faltaban (2026-08-16)
+
+La pantalla de envíos del aparato tiene seis filas y el códec sólo tenía tres.
+Ahora están las seis:
+
+```
+154  programa      186  DRY        por defecto 127
+162  batería       194  CHORUS     por defecto 0
+170  volumen       202  REVERB     ya conocido
+178  panorámico    210  VARI.      por defecto 0
+```
+
+**El orden en memoria no es el de la pantalla**, y por eso llevaban tanto sin
+identificar: la pantalla va `REVERB · CHORUS · VARI. · DRY` y la memoria va
+`DRY · CHORUS · REVERB · VARI.`. Buscarlos «después del reverb» sólo podía
+encontrar uno de los tres; los otros dos estaban antes, en dos huecos que ya se
+habían visto y descartado.
+
+**El método**: escribir `base + pista` en los cinco offsets candidatos **de una
+sola vez**, con `REVERB` —el conocido— dentro de la misma escritura como
+control. Si esa fila no mostraba 61, nada del resto valía. Mostró 61.
+
+⚠️ **Los valores por defecto no bastaban para distinguirlos.** 194 y 210 venían
+los dos en cero, así que el razonamiento «éste es `VARI.` porque el variation
+send arranca en cero» valía igual para el chorus — y se asignaron al revés en el
+primer intento por esa vía. Lo único que los separó fue **un valor distinto en
+cada offset**. Es la misma disciplina que fijó los offsets originales, y el
+motivo por el que aquel comentario dice «deliberadamente distintos».
+
+⚠️ Y `VARI.` **sólo suena si el bloque de variación tiene un tipo distinto de
+`Thru`**: en modo patrón ese bloque es siempre de sistema sobre las 8 pistas
+(manual p. 122). Subir el envío con el tipo en `Thru` no hace nada, y ese
+silencio se lee igual que un fallo de escritura.
+
+`218` y `226` siguen sin identificar. **No son de esta pantalla**: los dos vienen
+con 64 en todas las pistas y ninguna de sus filas se movió.
+
+## Los CC del mezclador, contra el Data List (2026-08-16)
+
+`[M]` Estaban asumidos por analogía con XG y ahora salen de la fuente primaria —
+la lista de control change del propio QY100:
+
+```
+c = 91   EFFECT SEND LEVEL 1   Reverb send       Bn 5B vv
+c = 93   EFFECT SEND LEVEL 3   Chorus send       Bn 5D vv
+c = 94   EFFECT SEND LEVEL 4   Variation send    Bn 5E vv
+c =  7   MAIN VOLUME
+c = 10   PANPOT
+```
+
+Los números eran correctos, pero conviene tenerlos medidos: **una analogía que
+acierta es indistinguible de una que no** hasta que alguien la comprueba.
+
+⚠️ **Y el Data List trae una condición que no habíamos visto**: el `CC 94` dice
+literalmente *«Only when Connection = 1 (System)»*. El envío de variación no
+responde si el bloque está en inserción. En modo patrón siempre es sistema
+(manual p. 122), así que ahí no estorba; en modo canción sí puede.
+
+`[M]` **`DRY` no tiene CC.** No aparece en la lista. Esa fila solo se alcanza
+por SysEx — `[D]` el `08 nn 11` del bloque Multi Part de XG, o `[M]` el offset
+186 de la cabecera del patrón. Es la única de las seis que no puede ser un
+control en vivo por vía de CC.
+
 ## Lo que sigue sin resolver
 
 - El marcador `F0 xx` de cada pista: qué significa el segundo byte
@@ -387,10 +502,35 @@ llamarlo constante es afirmar algo que no se ha probado.
   21–22 acorde fuente. El byte 12 **parece** ser `compases − 1`, pero las 9
   coincidencias vienen de patrones con las mismas longitudes: son dos
   observaciones repetidas, no nueve independientes
-- **Escribir `SOURCE CHORD`**, bloqueado por el byte 75 del bloque 3, que
-  empaqueta varios campos y no se deja aislar
+- ~~**Escribir `SOURCE CHORD`**, bloqueado por el byte 75 del bloque 3~~
+  **RESUELTO el 2026-08-16.** No estaba bloqueado: nunca se había intentado.
+  Se escribe en los bytes 21 y 22 del prefijo de la pista, sin tocar el byte 75,
+  y la pantalla del equipo lo confirma.
 - El array del **byte 218** del mezclador (64 en todas las pistas)
-- El **bank LSB** de las 397 voces XG por encima del programa 127
+- ~~El **bank LSB** de las 397 voces XG por encima del programa 127~~
+  **El mecanismo esta resuelto (2026-08-16); falta terminar de leer la tabla.**
+
+  `[M]` El Data List lo dice en el encabezado de su lista de voces normales
+  (`QY100E2.pdf` p. 2): **`Bank Select  MSB=000, LSB=Bank Number`**. No hay que
+  barrer el equipo — estaba escrito. Los bancos son semanticos y no
+  consecutivos: `0 GM`, `1 Key Scale Panning`, `3 Stereo`, `18 Dark`,
+  `20 Resonant`, `40 Tutti`, `64-72 Other wave`.
+
+  `[M]` **Y `voces.json` esta ordenado banco-mayor, programa-menor.** Sus
+  indices 0-127 son el banco 0 en orden de programa; de 128 en adelante vienen
+  todas las del banco 1 en orden de programa (`GrndPnoK`, `BritPnoK`,
+  `ElGrPnoK`, `HnkyTnkK`... = programas 1, 2, 3, 4), luego el banco 3, y asi.
+  Se establecio refutando la hipotesis contraria —que fuera programa-mayor— que
+  daba 2 aciertos de 350.
+
+  `[V]` **Lo que falta es un parser limpio, no descifrar nada.**
+  [`extraer_bancos.py`](extraer_bancos.py) saca 449 voces y cruza **442 de 525**
+  contra la ROM normalizando espacios. Los tres problemas que quedan estan
+  identificados: (1) se cuelan voces de la lista SFX, que comparte pagina;
+  (2) el contador de elementos que sigue a cada nombre es ambiguo cuando el
+  nombre acaba en digito —`60sEl.P1` se lee como `60sEl.P` + elementos `1`—;
+  (3) faltan ~29 voces de banco 0, que igual no hacen falta porque el banco 0
+  son los 128 GM que ya se conocen.
 - Los estados `F1`, `F5`–`FF` (`F3` y `F4` se resolvieron en canciones)
 
 
