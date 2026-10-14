@@ -885,7 +885,22 @@ until something bridges it.
   by listening to the cable passively: at 31,250 the device's active sensing (`FE`)
   arrives clean, one every 255 ms; at 38,400 the same stream arrives as a mix of
   `FC` and `FE`, which is what a mismatched frame looks like.
-- `[M]` **An RS-232 adapter works in both directions with the switch on `PC-1`.** The
+- `[M]` **`HOST SELECT = PC-2` runs at 38,400 baud, as the manual says, and behaves
+  exactly like `PC-1`.** Same cable, same bridge with `--baud 38400`: `dump setup`
+  answered first try with a valid checksum; pattern 4 read **byte-identical** to the
+  last read taken on `PC-1`; written back (16 messages, bulk mode, 0.10 s) and re-read,
+  it came back identical in content and to the byte. **Negative control: with the switch
+  on `PC-2` and the bridge at 31,250, 0 of 5 requests were answered**, and going back
+  to 38,400 answered at once, so the silence was the speed and not a hung device.
+- `[M]` **Passive listening to `FE` can rule a speed out but cannot confirm one.** On
+  `PC-2` the stream read clean at *both* 31,250 and 38,400, which contradicted a
+  prediction made beforehand. It is a property of the byte: `FE` has only two low bits
+  (start plus bit 0), so a stream sent at 38,400 and read at 31,250 still lands on the
+  right samples, while one sent at 31,250 and read at 38,400 lands on the edge and
+  yields the `FC`/`FE` mix. So "clean at X" is necessary, not sufficient — the
+  confirmation is that the device answers a request. The `PC-1` result stands,
+  because there 38,400 read dirty, which a device sending at 38,400 could not produce.
+- `[M]` **An RS-232 adapter works in both directions with the switch on `PC-1` (and on `PC-2`, below).** The
   manual lists `Mac` as RS-422 differential (`TxD+/-`, `RxD+/-`) and `PC-2` as
   RS-232C, which is why an FTDI looked like it could only ever serve `PC-2`. The
   device answered a `dump setup` and the reply decoded with a valid checksum.

@@ -17,6 +17,12 @@ guion lo convierte en un puerto virtual.
 
 ## Lo medido (2026-10-13)  `[M]`
 
+- **`HOST SELECT = PC-2` va a 38.400 y se porta igual que `PC-1`** `[M]` (2026-10-13):
+  `--baud 38400`; lectura de un patron identica al byte a la de `PC-1`, escritura
+  de vuelta y relectura identicas. Control negativo: con el selector en `PC-2` y el
+  puente a 31.250, 0 de 5 peticiones contestadas; al volver a 38.400 contesta al
+  primer intento. **Escuchar el `FE` en pasivo solo DESCARTA velocidades**: enviado a
+  38.400 y leido a 31.250 sale limpio igual (el `FE` tiene solo dos bits en bajo).
 - **`HOST SELECT = PC-1` va a 31.250 baudios, 8N1.** El manual da 31.250 para
   `Mac` y 38.400 para `PC-2`, y **no dice nada de `PC-1`**. Se midio escuchando
   el cable en pasivo: a 31.250 llegan `FE` (active sensing) limpios, uno cada
