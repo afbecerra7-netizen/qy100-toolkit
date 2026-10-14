@@ -28,10 +28,17 @@ def check(label, got, want_fn, want_desc):
         FAILS.append(label)
 
 
-# Puerto que hace de "QY100 MIDI IN": escucha lo que emite la caja.
-listener = mido.open_input("FAKE QY100 IN", virtual=True)
-# Puerto que hace de "controlador": le manda notas a la caja.
-controller = mido.open_output("FAKE CONTROLLER", virtual=True)
+# Esta prueba necesita puertos MIDI virtuales, que solo existen sobre CoreMIDI
+# (macOS) y ALSA (Linux). La Windows MultiMedia API no los soporta y mido lanza
+# NotImplementedError al crearlos: ahi no hay nada que probar, se omite.
+try:
+    # Puerto que hace de "QY100 MIDI IN": escucha lo que emite la caja.
+    listener = mido.open_input("FAKE QY100 IN", virtual=True)
+    # Puerto que hace de "controlador": le manda notas a la caja.
+    controller = mido.open_output("FAKE CONTROLLER", virtual=True)
+except NotImplementedError as e:
+    print("OMITIDA: requiere puertos MIDI virtuales (CoreMIDI/ALSA) — %s" % e)
+    sys.exit(0)
 time.sleep(0.3)
 
 proc = subprocess.Popen(
