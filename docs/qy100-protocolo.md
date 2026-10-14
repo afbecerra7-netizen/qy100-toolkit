@@ -895,9 +895,24 @@ until something bridges it.
   In/Out` a multi-block dump loses blocks partway (see the `MIDI CONTROL`
   measurements above). `MIDI CONTROL` was **not** checked during this test, so 5 of 5 is consistent with
   `Off` but does not prove it.
-- `[V]` **Writing a pattern over this cable is untested.** The serial line has no
-  flow control, so whether the pacing in `send_blob` is enough here is unmeasured.
-  Read it back before trusting it, as everywhere else in this document.
+- `[M]` **A whole pattern also writes through it.** Pattern 4 went back as it was read
+  — 16 messages, 2,528 bytes, framed in bulk mode, 0.10 s between blocks, 2.1 s
+  in all — with `MIDI CONTROL = Off`, `MIDI SYNC = External`, pattern play mode,
+  stopped. The device stayed alive and the read-back decodes to the same content:
+  **9 tracks, 92 events, prefixes and durations identical**, and the mixer, tempo,
+  time signature, registry and chords all equal. Writing the device's own dump a
+  second time and reading again came back **identical to the byte**, so the
+  result is a fixed point, not a one-off. The serial line has no flow control and
+  the pacing of `send_pattern` was enough.
+- `[M]` **The header does not come back byte-identical on the first write, and that
+  is the device, not the cable.** 110 of 640 header bytes changed: 94 of them, at
+  546..639, were `FE` filler and became **exactly the bytes of a freshly created
+  pattern** (`dumps/61-desde-cero.syx` matches that span byte for byte), and 16 at
+  442..473 look like identifiers the device reassigns (`00 81 00 82 …` became
+  `03 4b 03 4c …`). None of those fields is decoded by `patternfmt`. `[V]` Whether the
+  same normalisation happens over a DIN-MIDI write was not measured, because no
+  MIDI interface was connected to compare against; 71 of 73 older dumps still show the
+  `FE` filler there. Compare **decoded content**, not bytes, as everywhere else here.
 - `[M]` **Everything that comes in through `TO HOST` also goes out of `MIDI OUT`, and
   the reverse** (service manual, p. 54). A bulk dump request does nothing to the rest
   of a rig; a note would sound on whatever hangs off that output.

@@ -38,9 +38,14 @@ guion lo convierte en un puerto virtual.
   CONTROL` en `In/Out` esa misma lectura se quedaba en 2 de 5. **El estado de `MIDI
   CONTROL` no se comprobo en la prueba**, asi que 5 de 5 es coherente con `Off`
   pero no lo prueba.
-- **ESCRIBIR un patron por este cable no se ha probado** `[V]`. El puerto serie no
-  tiene control de flujo; los bloques largos los pausa `transfer.send_blob`, pero
-  que esa pausa baste aqui esta sin medir.
+- **Escribir un patron entero tambien funciona** `[M]` (2026-10-13): 16 mensajes,
+  `--bulk-mode --delay 0.10`, y la relectura decodifica al mismo contenido (9
+  pistas, 92 eventos). Reescribir el volcado del propio aparato da un resultado
+  identico al byte. La cabecera cambia en 110 bytes la primera vez —el aparato
+  inicializa una zona sin modelar— y eso es del equipo, no del cable. El puerto no
+  tiene control de flujo y la pausa de `send_pattern` basto.
+- **`syx.py send` NO enmarca en bulk mode por defecto**: hay que pasar
+  `--bulk-mode`, o un bloque suelto borra el patron y cuelga el equipo.
 - `syx.py` toma `--in/--out` **despues** del subcomando (`dump setup --in ...`):
   puestos antes los pisa el subcomando y el error dice que falta el puerto.
 - Lanzado con `nohup ... &`, ignora `SIGINT`: se cierra con `SIGTERM`.
