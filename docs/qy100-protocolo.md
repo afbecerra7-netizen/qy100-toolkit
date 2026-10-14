@@ -873,6 +873,51 @@ This reframes an earlier fix: we made generated melodies sound right by setting 
 
 ~~One practical constraint: `SOURCE CHORD` is readable but **writing it is unverified**.~~ **Also wrong, and measured the same day**: prefix bytes 21–22 are writable without touching byte 75, and the device's own `Phrase Table` screen confirmed `Cm7` → `Fm7`. So material can be generated *and* its source chord set to match.
 
+### The TO HOST port is a working MIDI link, with no MIDI interface — measured (2026-10-13)
+
+The QY100 can talk MIDI through its `TO HOST` connector, which needs a mini-DIN 8
+cable to a serial port. A USB-serial adapter (an FTDI `FT232R`) is enough. CoreMIDI
+knows nothing about it — it is a serial port, not a MIDI port — so no tool sees it
+until something bridges it.
+
+- `[M]` **`HOST SELECT = PC-1` runs at 31,250 baud, 8N1.** The manual gives 31,250
+  for `Mac` and 38,400 for `PC-2`, and **says nothing about `PC-1`**. It was measured
+  by listening to the cable passively: at 31,250 the device's active sensing (`FE`)
+  arrives clean, one every 255 ms; at 38,400 the same stream arrives as a mix of
+  `FC` and `FE`, which is what a mismatched frame looks like.
+- `[M]` **An RS-232 adapter works in both directions with the switch on `PC-1`.** The
+  manual lists `Mac` as RS-422 differential (`TxD+/-`, `RxD+/-`) and `PC-2` as
+  RS-232C, which is why an FTDI looked like it could only ever serve `PC-2`. The
+  device answered a `dump setup` and the reply decoded with a valid checksum.
+- `[M]` **A whole pattern reads through it.** Pattern 4 is 16 messages and 2,528
+  bytes in 3.9 s; three reads in a row came back byte-for-byte identical, all
+  checksums valid and **5 of 5 header blocks**. Over MIDI with `MIDI CONTROL =
+  In/Out` a multi-block dump loses blocks partway (see the `MIDI CONTROL`
+  measurements above). `MIDI CONTROL` was **not** checked during this test, so 5 of 5 is consistent with
+  `Off` but does not prove it.
+- `[V]` **Writing a pattern over this cable is untested.** The serial line has no
+  flow control, so whether the pacing in `send_blob` is enough here is unmeasured.
+  Read it back before trusting it, as everywhere else in this document.
+- `[M]` **Everything that comes in through `TO HOST` also goes out of `MIDI OUT`, and
+  the reverse** (service manual, p. 54). A bulk dump request does nothing to the rest
+  of a rig; a note would sound on whatever hangs off that output.
+
+The bridge is [`qy100-syx/puente_host.py`](../qy100-syx/puente_host.py). It opens the
+cable and exposes a virtual port called `QY100 TO HOST`, input and output, so the
+tools that accept a port by name use it as they would any other:
+
+```bash
+.venv/bin/python puente_host.py &
+.venv/bin/python syx.py dump pattern 4 --in "QY100 TO HOST" --out "QY100 TO HOST" -o p4.syx
+```
+
+Two things that cost time: `syx.py` takes `--in/--out` **after** the subcommand (before
+it, the subcommand's own defaults override them and the error just says the port is
+missing); and a process started with `nohup ... &` ignores `SIGINT`, so it needs
+`SIGTERM`. Scripts that open `get_output_names()[0]` rather than taking a port name
+will not pick the bridge up — with a virtual port present they open whichever port
+CoreMIDI lists first.
+
 ### Playing the device live, and the shortest route into a DAW
 
 Two tools added 2026-08-02, both of which change how the rest of the project should work.
