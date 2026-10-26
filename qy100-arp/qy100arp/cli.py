@@ -14,8 +14,8 @@ import mido
 from .clock import PPQN, InternalClock
 from .control import ControlMap
 from .engine import Engine
-from .midiio import (ConsoleOutput, RenderOutput, list_ports, open_input,
-                     open_output)
+from .midiio import (ConsoleOutput, RenderOutput, TeeOutput, list_ports,
+                     open_input, open_output)
 from .scales import note_name, parse_note
 
 LOCAL_CONTROL_CC = 122
@@ -206,6 +206,15 @@ def feed_notes(engine, spec, log):
     log("Notas retenidas: %s" % " ".join(note_name(n) for n in notes))
 
 
+def _next_generation_path(carpeta="midi"):
+    """midi/midi_generation0.mid, midi_generation1.mid, ... el primer numero libre."""
+    os.makedirs(carpeta, exist_ok=True)
+    n = 0
+    while os.path.exists(os.path.join(carpeta, "midi_generation%d.mid" % n)):
+        n += 1
+    return os.path.join(carpeta, "midi_generation%d.mid" % n)
+
+
 def run_render(cfg, args, log):
     engine = Engine(cfg, None, log=log)
     out = RenderOutput(engine)
@@ -220,6 +229,12 @@ def run_render(cfg, args, log):
         engine.on_tick()
     engine.all_notes_off()
 
+    destino = args.render
+    if not os.path.dirname(destino):
+        os.makedirs("midi", exist_ok=True)
+        destino = os.path.join("midi", destino)
+    args.render = destino
+
     n = out.save(args.render, bpm=args.bpm)
     log("Escrito %s: %d eventos, %d compases a %.1f BPM"
         % (args.render, n, args.bars, args.bpm))
@@ -232,6 +247,7 @@ def run_live(cfg, args, log):
     outport = None
     clockport = None
     engine = None
+    recorder = None
     send_clock = False
     try:
         if use_console:
@@ -241,6 +257,8 @@ def run_live(cfg, args, log):
         else:
             outport = open_output(args.out_port, virtual=args.virtual)
             engine = Engine(cfg, outport, log=log)
+            recorder = RenderOutput(engine)
+            engine.out = TeeOutput(outport, recorder)
             log("Salida  : %s" % outport.name)
 
         if args.virtual:
@@ -328,6 +346,10 @@ def run_live(cfg, args, log):
             if args.local_off and not use_console:
                 send_local_control(outport, True)
                 log("Local Control ON restaurado")
+            if recorder is not None and recorder.events:
+                path = _next_generation_path()
+                n = recorder.save(path, bpm=args.bpm)
+                log("Grabado %s: %d eventos" % (path, n))
         except Exception:
             pass
         for port in (inport, clockport, outport):

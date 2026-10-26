@@ -1,0 +1,25 @@
+{
+  "_comment": "Drum note remap between GS / GM Level 2 files and the QY100's XG kits. See ../docs/performance-shaping.md ('Drums: GS and GM2 files play the wrong sounds on the QY100'). Apply to drum channels only.",
+  "certainty": "[M] QY100 note names from the Data List p. 4 (Standard Kit), which also shows notes 85 to 87 empty. [D] pairs matched by sound name. 25 and 26 exist only on GS kits from the SC-88 onward.",
+  "gm2_to_xg": {
+    "25": {"to": 29, "sound": "Snare Roll", "gs_only": true},
+    "26": {"to": 19, "sound": "Finger Snap", "gs_only": true},
+    "27": {"to": 15, "sound": "High Q"},
+    "28": {"to": 16, "sound": "Slap / Whip Slap"},
+    "29": {"to": 17, "sound": "Scratch Push / Scratch H"},
+    "30": {"to": 18, "sound": "Scratch Pull / Scratch L"},
+    "31": {"to": 32, "sound": "Sticks"},
+    "32": {"to": 20, "sound": "Square Click / Click Noise", "approximate": true},
+    "33": {"to": 21, "sound": "Metronome Click"},
+    "34": {"to": 22, "sound": "Metronome Bell"},
+    "85": {"to": 30, "sound": "Castanets"},
+    "86": {"to": 13, "sound": "Mute Surdo"},
+    "87": {"to": 14, "sound": "Open Surdo"}
+  },
+  "xg_to_gm2_note": "19 and 29 map to GS-only notes (26, 25); use them only for GS targets.",
+  "xg_to_gm2": {
+    "13": 86, "14": 87, "15": 27, "16": 28, "17": 29, "18": 30,
+    "19": 26, "21": 33, "29": 25, "22": 34, "30": 85, "32": 31
+  },
+  "xg_without_gm2_counterpart": [20, 23, 24, 25, 26, 27, 28, 31, 33, 34]
+}

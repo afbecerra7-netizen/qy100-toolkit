@@ -1,0 +1,195 @@
+{
+  "_comment": "Channel-message equivalents of XG Multi Part and Drum Setup parameters on the QY100. See ../docs/xg-remote-control.md for how and why to use them, and for what is measured versus deduced.",
+  "certainty": "[M] every controller number is on the QY100's receive list (Data List pp. 42-43, NRPN/RPN tables pp. 47-48). [D] that each one sets the same internal value as the XG address beside it follows the XG definition and has not been confirmed individually on the device.",
+  "message_forms": {
+    "cc": "Bn cc vv",
+    "program_change": "Cn vv",
+    "nrpn": "Bn 63 msb, Bn 62 lsb, Bn 06 vv",
+    "rpn": "Bn 65 msb, Bn 64 lsb, Bn 06 vv"
+  },
+  "routing_note": "A Parameter Change is addressed to Multi Part nn; a channel message reaches every part whose Rcv Channel (08 nn 04) is n. They coincide by default (Rcv Channel defaults to the part number).",
+  "multi_part": [
+    {
+      "address": "08 nn 01",
+      "parameter": "Bank Select MSB",
+      "type": "cc",
+      "controller": 0
+    },
+    {
+      "address": "08 nn 02",
+      "parameter": "Bank Select LSB",
+      "type": "cc",
+      "controller": 32
+    },
+    {
+      "address": "08 nn 03",
+      "parameter": "Program Number",
+      "type": "program_change"
+    },
+    {
+      "address": "08 nn 0B",
+      "parameter": "Volume",
+      "type": "cc",
+      "controller": 7
+    },
+    {
+      "address": "08 nn 0E",
+      "parameter": "Pan",
+      "type": "cc",
+      "controller": 10
+    },
+    {
+      "address": "08 nn 12",
+      "parameter": "Chorus Send",
+      "type": "cc",
+      "controller": 93
+    },
+    {
+      "address": "08 nn 13",
+      "parameter": "Reverb Send",
+      "type": "cc",
+      "controller": 91
+    },
+    {
+      "address": "08 nn 14",
+      "parameter": "Variation Send",
+      "type": "cc",
+      "controller": 94
+    },
+    {
+      "address": "08 nn 15",
+      "parameter": "Vibrato Rate",
+      "type": "nrpn",
+      "msb": "01",
+      "lsb": "08"
+    },
+    {
+      "address": "08 nn 16",
+      "parameter": "Vibrato Depth",
+      "type": "nrpn",
+      "msb": "01",
+      "lsb": "09"
+    },
+    {
+      "address": "08 nn 17",
+      "parameter": "Vibrato Delay",
+      "type": "nrpn",
+      "msb": "01",
+      "lsb": "0A"
+    },
+    {
+      "address": "08 nn 18",
+      "parameter": "Filter Cutoff Frequency",
+      "type": "cc",
+      "controller": 74
+    },
+    {
+      "address": "08 nn 19",
+      "parameter": "Filter Resonance",
+      "type": "cc",
+      "controller": 71
+    },
+    {
+      "address": "08 nn 1A",
+      "parameter": "EG Attack Time",
+      "type": "cc",
+      "controller": 73
+    },
+    {
+      "address": "08 nn 1B",
+      "parameter": "EG Decay Time",
+      "type": "nrpn",
+      "msb": "01",
+      "lsb": "64"
+    },
+    {
+      "address": "08 nn 1C",
+      "parameter": "EG Release Time",
+      "type": "cc",
+      "controller": 72
+    },
+    {
+      "address": "08 nn 23",
+      "parameter": "Bend Pitch Control (pitch bend range)",
+      "type": "rpn",
+      "msb": "00",
+      "lsb": "00",
+      "conversion": "XG value runs 28..58 centred on 40 (-24..+24 semitones); RPN 00 00 takes 0..24, so send max(0, xg - 0x40)."
+    },
+    {
+      "address": "08 nn 67",
+      "parameter": "Portamento Switch",
+      "type": "cc",
+      "controller": 65,
+      "conversion": "Send 0 for off and 127 for on."
+    },
+    {
+      "address": "08 nn 68",
+      "parameter": "Portamento Time",
+      "type": "cc",
+      "controller": 5
+    }
+  ],
+  "drum_setup": {
+    "address": "3n rr pp, n = drum setup (0 or 1), rr = note number, pp = offset below",
+    "nrpn_lsb": "the drum note number rr",
+    "parameters": [
+      {
+        "offset": "00",
+        "parameter": "Pitch Coarse",
+        "nrpn_msb": "18"
+      },
+      {
+        "offset": "01",
+        "parameter": "Pitch Fine",
+        "nrpn_msb": "19"
+      },
+      {
+        "offset": "02",
+        "parameter": "Level",
+        "nrpn_msb": "1A"
+      },
+      {
+        "offset": "04",
+        "parameter": "Pan",
+        "nrpn_msb": "1C"
+      },
+      {
+        "offset": "05",
+        "parameter": "Reverb Send",
+        "nrpn_msb": "1D"
+      },
+      {
+        "offset": "06",
+        "parameter": "Chorus Send",
+        "nrpn_msb": "1E"
+      },
+      {
+        "offset": "07",
+        "parameter": "Variation Send",
+        "nrpn_msb": "1F"
+      },
+      {
+        "offset": "0B",
+        "parameter": "Filter Cutoff Frequency",
+        "nrpn_msb": "14"
+      },
+      {
+        "offset": "0C",
+        "parameter": "Filter Resonance",
+        "nrpn_msb": "15"
+      },
+      {
+        "offset": "0D",
+        "parameter": "EG Attack Rate",
+        "nrpn_msb": "16"
+      },
+      {
+        "offset": "0E",
+        "parameter": "EG Decay 1 Rate",
+        "nrpn_msb": "17"
+      }
+    ]
+  },
+  "sysex_only": "Everything else: effect types and parameters, Detune, Note Limits, Element Reserve, Part Mode, the controller routing depths, and all System parameters have no channel-message form."
+}

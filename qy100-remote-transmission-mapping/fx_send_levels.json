@@ -1,0 +1,27 @@
+{
+  "_comment": "QY100 FX send-level parameters, discovered and verified 2026-08-11/12. Same XG Parameter Change message family as effect_types.json (F0 43 1n 4C aa bb cc dd F7); see ../CLAUDE.md ('Remote control over MIDI') for the full writeup.",
+  "message_format": "F0 43 1n 4C aa bb cc dd F7 -- address aa bb cc, one data byte dd (continuous 0-127).",
+  "parameters": [
+    {
+      "name": "Reverb Send Level",
+      "address": "02 01 58",
+      "data_range": "00-7f (0-127), continuous",
+      "verified_bidirectional": true,
+      "note": "Captured a clean sweep of 127 messages (01..7f) turning the panel knob fully up. Sent '02 01 58 00' back over MIDI IN and the send audibly/visually dropped to 0 on the device -- confirmed bidirectional, same as effect type. Distinct from the per-channel Reverb Send seen as plain CC91 in the Undo/Redo mixer-resync burst (CLAUDE.md) -- likely this address is the system/global send, CC91 the per-channel one; not yet confirmed which is which or how they interact."
+    },
+    {
+      "name": "Chorus Send Level",
+      "address": "02 01 59",
+      "data_range": "00-7f (0-127), continuous",
+      "verified_bidirectional": "partial",
+      "note": "Captured the same clean 01..7f sweep turning the chorus send knob fully up, at the address immediately after Reverb Send (58 -> 59). Not yet independently sent back and confirmed changing the device (only Reverb Send got that specific test), but the parallel structure makes it very likely to behave the same way."
+    }
+  ],
+  "tested_and_negative": [
+    {
+      "address": "02 01 5a",
+      "hypothesis": "Following the 58=Reverb, 59=Chorus sequence, guessed this would be a Variation/Effect send (the panel has no visible knob for it).",
+      "result": "Sent '02 01 5a 7f' (max). No audible or visual difference observed. Either not a real parameter, or real but not routed anywhere perceptible on this pattern/setup. The simple next-address-in-sequence pattern does not hold universally -- don't assume adjacent addresses are always related parameters without verifying."
+    }
+  ]
+}
