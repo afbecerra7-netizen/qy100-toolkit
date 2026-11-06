@@ -422,10 +422,13 @@ def gate_for(figure_clocks, ratio=0.90):
 
 # ---------------------------------------------------------------- pendiente
 #
-#   - COMO SE ENCADENAN VARIOS BLOQUES en una misma pista. Es el limite
-#     practico hoy: en un bloque solo caben 16 notas, y un arpegio de
-#     semicorcheas en 3 compases son 48. Nunca hemos visto una pista de mas de
-#     un bloque porque todas las pruebas fueron demasiado pequenas.
+#   - COMO SE ENCADENAN VARIOS BLOQUES en una misma pista: RESUELTO, y esta
+#     nota decia lo contrario durante semanas: afirmaba que nunca se habia visto
+#     una pista de mas de un bloque, y un colaborador la leyo como un tope de 16
+#     notas. No lo es. `encode_blocks` esta verificado contra el equipo desde el
+#     2026-07-29 (32 notas -> dos bloques, releidas exactas), y los patrones del
+#     propio aparato traen pistas de dos bloques (el patron 4 tiene dos pistas
+#     asi, la 9 y la 12).
 #   - los 26 bytes de cabecera del PRIMER bloque de cada pista. Lo poco que se
 #     sabe:
 #       * bytes 0-11: doce caracteres, en nuestros volcados todo espacios (0x20)
