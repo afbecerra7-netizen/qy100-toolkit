@@ -20,8 +20,8 @@
 
 Guidance for Claude Code (claude.ai/code) when working in this repository.
 
-Tools and findings for the **Yamaha QY100** (hardware sequencer, 2000), in two
-independent Python subprojects, each with its own `.venv`.
+Tools and findings for the **Yamaha QY100** (hardware sequencer, 2000), in four
+Python subprojects, each with its own `.venv`; the app prototype imports two of the others by path.
 
 | Where | What it is |
 | --- | --- |

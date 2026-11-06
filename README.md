@@ -1,12 +1,14 @@
 # qy100-toolkit
 
 Python tools and reverse-engineering notes for the **Yamaha QY100** (2000), a
-hardware sequencer with an XG tone generator. Two independent subprojects:
+hardware sequencer with an XG tone generator. Four subprojects:
 
 | | |
 | --- | --- |
 | [`qy100-syx/`](qy100-syx/) | Read, decode, generate and write the QY100's user memory over SysEx. Also plays it live and exports standard MIDI. |
 | [`qy100-arp/`](qy100-arp/) | External arpeggiator and generative sequencer driven by the QY100's MIDI clock. |
+| [`qy100-vida/`](qy100-vida/) | Conway's Game of Life as a sequencer, with its step slaved to the QY100's MIDI clock. |
+| [`qy100-app/`](qy100-app/) | **A prototype** of a touch control app for the QY100 (Kivy, sized for an iPad): sections, mixer, voice and drum edit, and the Game of Life above. Each screen says on its face whether it really drives the device. [README](qy100-app/README.md) |
 
 **[`CLAUDE.md`](CLAUDE.md) is the real documentation.** It records every decoded
 field, how each one was established, and — deliberately — the conclusions that
