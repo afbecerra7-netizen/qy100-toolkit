@@ -27,16 +27,19 @@ Python subprojects, each with its own `.venv`; the app prototype imports two of 
 | --- | --- |
 | [`qy100-arp/`](qy100-arp/) | External arpeggiator and generative sequencer, over MIDI. [README](qy100-arp/README.md) |
 | [`qy100-syx/`](qy100-syx/) | Dumping, decoding and writing over SysEx. [README](qy100-syx/README.md) |
+| [`qy100-vida/`](qy100-vida/) | Conway's Game of Life as a sequencer, its step slaved to the QY100's MIDI clock |
+| [`qy100-app/`](qy100-app/) | **Prototype** of a touch control app (Kivy). Imports `qy100-syx` and `qy100-vida` by path. [README](qy100-app/README.md) |
 | `Manuales/` · `manuales-md/` | Referenced throughout but **not included** — see the note at the top. Citations are by page number and still resolve against the real manuals |
 
 ```bash
 cd qy100-arp && .venv/bin/python test_engine.py      # tests, no hardware
-cd qy100-syx && .venv/bin/python test_protocol.py    # 175 checks — the last few
+cd qy100-syx && .venv/bin/python test_protocol.py    # 182 checks — the last few
                                                      # read dumps/, so the total
                                                      # drops if those are absent
 cd qy100-syx && .venv/bin/python test_regresiones.py # checks the checks bite
 cd qy100-syx && .venv/bin/python test_generos.py     # 109 checks on the genre engines
 cd qy100-syx && .venv/bin/python medir_volcados.py   # recounts the cited figures
+cd qy100-vida && .venv/bin/python test_automata.py   # 105 checks, no hardware
 ```
 
 ## The documents
@@ -52,6 +55,8 @@ index; the detail lives one topic per file:
 | [`docs/musica-colombiana.md`](docs/musica-colombiana.md) | The measured rhythmic cells of each genre |
 | [`docs/manuales.md`](docs/manuales.md) | Where each manual is and how to read it |
 | *(not published)* | The plan for one particular live set. The memory measurements that came out of it are here, in the protocol document |
+| *(not published)* | The plan for wiring one particular studio |
+| *(not published)* | Notes on neighbouring projects and correspondence |
 | *(not published)* | Plugin inventory of one particular studio |
 
 ## How certainty is marked
@@ -211,8 +216,9 @@ terminology appears in both. When quoting the owner's manual, keep the Spanish
 term and gloss it — **the physical buttons are labelled in English**.
 
 Documents that are published are written in English at the source, so that no
-translation layer has to be maintained. `docs/equipo.md` and `PLAN-LIVESET.md`
-stay in Spanish because they are never published.
+translation layer has to be maintained. `docs/equipo.md`, `PLAN-LIVESET.md`,
+`docs/laboratorio-remoto.md` and `docs/proyectos-vecinos.md` stay in Spanish
+because they are never published.
 
 ## External resource
 

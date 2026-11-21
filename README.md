@@ -58,7 +58,7 @@ the pattern and freezes the device.
 ```bash
 python3 -m venv qy100-syx/.venv
 qy100-syx/.venv/bin/pip install -r qy100-syx/requirements.txt
-qy100-syx/.venv/bin/python qy100-syx/test_protocol.py    # 117 checks, no hardware
+qy100-syx/.venv/bin/python qy100-syx/test_protocol.py    # 179 checks, no hardware
 ```
 
 ```bash
