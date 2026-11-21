@@ -33,32 +33,46 @@ en el dispositivo y el decodificador del Data Filer oficial de Yamaha.
 
 ## Qué hay aquí
 
+Cada script vive en la subcarpeta de lo que hace, y **todos se corren desde
+`qy100-syx/`**, estén donde estén: `.venv/bin/python herramientas/tocar.py`.
+
+| Carpeta | Qué guarda |
+| --- | --- |
+| `qy100syx/` | El paquete: protocolo, formatos de patrón y canción, generadores |
+| `herramientas/` | Lo que se usa contra el aparato o contra archivos: tocar, importar, exportar, pantalla, sondas |
+| `medir/` | Lo que recuenta las cifras que citan los documentos |
+| `extraer/` | Extracción de solo lectura desde los manuales y la imagen del firmware |
+| `experimentos/` | Barridos y diagnósticos de una vez, guardados como prueba de un hallazgo |
+| `datos/` | Las tablas JSON: voces, frases, estilos, tambores, bancos, efectos |
+| `dumps/` · `midi/` | Volcados de referencia y MIDI generado |
+
+
 | Archivo | Para qué |
 | --- | --- |
 | [`syx.py`](syx.py) | La herramienta principal: volcar, inspeccionar, restaurar, generar pistas y estilos enteros, buscar voces y frases. |
-| [`tocar.py`](tocar.py) | Toca el generador de tonos en tiempo real. **Aquí el maestro del reloj somos nosotros**, al revés que en `qy100-arp`. No escribe nada en el equipo. |
-| [`exportar_midi.py`](exportar_midi.py) | Escribe un `.mid` estándar. Para mover notas a un DAW **le gana a la transferencia**: exacto, instantáneo, y no pierde bloques en silencio. |
-| [`extraer_rom.py`](extraer_rom.py) | Decodifica la ROM del firmware; de aquí salió `voces.json`. |
-| [`extraer_frases.py`](extraer_frases.py) | Extrae las 4.285 frases preset del Data List. Se valida solo. |
-| [`test_protocol.py`](test_protocol.py) | 175 comprobaciones, sin hardware. Unas cuantas leen `dumps/`, asi que el total baja si el conjunto de volcados es parcial. |
+| [`herramientas/tocar.py`](herramientas/tocar.py) | Toca el generador de tonos en tiempo real. **Aquí el maestro del reloj somos nosotros**, al revés que en `qy100-arp`. No escribe nada en el equipo. |
+| [`herramientas/exportar_midi.py`](herramientas/exportar_midi.py) | Escribe un `.mid` estándar. Para mover notas a un DAW **le gana a la transferencia**: exacto, instantáneo, y no pierde bloques en silencio. |
+| [`extraer/extraer_rom.py`](extraer/extraer_rom.py) | Decodifica la ROM del firmware; de aquí salió `datos/voces.json`. |
+| [`extraer/extraer_frases.py`](extraer/extraer_frases.py) | Extrae las 4.285 frases preset del Data List. Se valida solo. |
+| [`test_protocol.py`](test_protocol.py) | 182 comprobaciones, sin hardware. Unas cuantas leen `dumps/`, asi que el total baja si el conjunto de volcados es parcial. |
 | [`test_regresiones.py`](test_regresiones.py) | Reintroduce cada defecto conocido y exige que la suite lo cace. |
-| [`medir_volcados.py`](medir_volcados.py) | Recuenta sobre los volcados las cifras que citan los documentos. |
-| [`test_generos.py`](test_generos.py) | 102 comprobaciones sobre los motores de género (menos si `midi/` va incompleto: unas cuantas leen los loops). |
-| [`importar_tribe.py`](importar_tribe.py) | Traduce un loop de TRIBE Player al kit XG, con el criterio de cada golpe escrito al lado. |
-| [`medir_audio.py`](medir_audio.py) | ¿Binaria o ternaria? — sobre una grabación. Lleva `--autotest` con clicks sintéticos; si falla, ninguna medición suya vale. |
-| [`medir_loops.py`](medir_loops.py) | Lo mismo sobre loops MIDI: recalcula toda cifra de loop que citen los documentos. |
-| [`pesar_estilos.py`](pesar_estilos.py) | Pesa cada estilo en bloques y en KB de memoria del aparato. |
-| [`pantalla.py`](pantalla.py) | Escribe texto y mapas de bits de 16x16 en la pantalla, por XG Display Data. |
-| [`barrer_categorias.py`](barrer_categorias.py) | Barre valores de una referencia a frase preset **escribiendo y oyendo**, sin volcar. Guarda el método aunque su lectura acabara siendo el panel. |
-| `probe.py` | Sondas sueltas de ingeniería inversa. |
+| [`medir/medir_volcados.py`](medir/medir_volcados.py) | Recuenta sobre los volcados las cifras que citan los documentos. |
+| [`test_generos.py`](test_generos.py) | 109 comprobaciones sobre los motores de género (menos si `midi/` va incompleto: unas cuantas leen los loops). |
+| [`herramientas/importar_tribe.py`](herramientas/importar_tribe.py) | Traduce un loop de TRIBE Player al kit XG, con el criterio de cada golpe escrito al lado. |
+| [`medir/medir_audio.py`](medir/medir_audio.py) | ¿Binaria o ternaria? — sobre una grabación. Lleva `--autotest` con clicks sintéticos; si falla, ninguna medición suya vale. |
+| [`medir/medir_loops.py`](medir/medir_loops.py) | Lo mismo sobre loops MIDI: recalcula toda cifra de loop que citen los documentos. |
+| [`medir/pesar_estilos.py`](medir/pesar_estilos.py) | Pesa cada estilo en bloques y en KB de memoria del aparato. |
+| [`herramientas/pantalla.py`](herramientas/pantalla.py) | Escribe texto y mapas de bits de 16x16 en la pantalla, por XG Display Data. |
+| [`experimentos/barrer_categorias.py`](experimentos/barrer_categorias.py) | Barre valores de una referencia a frase preset **escribiendo y oyendo**, sin volcar. Guarda el método aunque su lectura acabara siendo el panel. |
+| `herramientas/probe.py` | Sondas sueltas de ingeniería inversa. |
 
 Datos de referencia, todos generados y verificados, no transcritos a mano:
 
 | Archivo | Contenido |
 | --- | --- |
-| [`voces.json`](voces.json) | 525 voces normales y 22 kits. **Solo las 128 primeras son direccionables**: más allá son variaciones XG cuyo *bank LSB* no está descifrado. |
-| [`frases.json`](frases.json) | Las 4.285 frases preset, por categoría, compás y número. |
-| [`tambores.json`](tambores.json) | Mapa de notas de *Tambores de San Jacinto* (Tribe Instruments): 8 instrumentos, 32 articulaciones. Incluye los pares L/R, que son mano izquierda y derecha — alternarlos es lo que hace que un patrón suene tocado. |
+| [`datos/voces.json`](datos/voces.json) | 525 voces normales y 22 kits. **Solo las 128 primeras son direccionables**: más allá son variaciones XG cuyo *bank LSB* no está descifrado. |
+| [`datos/frases.json`](datos/frases.json) | Las 4.285 frases preset, por categoría, compás y número. |
+| [`datos/tambores.json`](datos/tambores.json) | Mapa de notas de *Tambores de San Jacinto* (Tribe Instruments): 8 instrumentos, 32 articulaciones. Incluye los pares L/R, que son mano izquierda y derecha — alternarlos es lo que hace que un patrón suene tocado. |
 
 ## Instalación
 
@@ -202,7 +216,7 @@ bytes del registro de la cabecera y nada más. Un estilo puede apoyar toda su ba
 rítmica en las 4.285 de Yamaha y pagar solo por el material propio.
 
 Hoy se pueden escribir 7 de las 15 categorías (`Da` `Fa` `PC` `Ba` `Gb` `KC`
-`BR`); el resto solo desde el panel. Ver `CLAUDE.md`.
+`BR`); el resto solo desde el panel. Ver `AGENTS.md`.
 
 ### Buscar voces
 
@@ -216,9 +230,9 @@ Hoy se pueden escribir 7 de las 15 categorías (`Da` `Fa` `PC` `Ba` `Gb` `KC`
 No escribe nada en la memoria del equipo: solo suena.
 
 ```bash
-.venv/bin/python tocar.py barrido          # tres notas en cada uno de los 16 canales
-.venv/bin/python tocar.py acompanar        # base en Mi menor para tocar guitarra encima
-.venv/bin/python tocar.py andino --tono G  # huayno, transportable
+.venv/bin/python herramientas/tocar.py barrido          # tres notas en cada uno de los 16 canales
+.venv/bin/python herramientas/tocar.py acompanar        # base en Mi menor para tocar guitarra encima
+.venv/bin/python herramientas/tocar.py andino --tono G  # huayno, transportable
 ```
 
 Dos ajustes del equipo son obligatorios. **`ECHO BACK` no puede estar en
@@ -230,7 +244,7 @@ porque un Program Change reescribe la voz del mezclador de la canción cargada.
 ### Exportar a MIDI
 
 ```bash
-.venv/bin/python exportar_midi.py mi-tema --cuantizar 16
+.venv/bin/python herramientas/exportar_midi.py mi-tema --cuantizar 16
 ```
 
 Los motores trabajan a 480 relojes por negra, que es el `ticks_per_beat` del
@@ -270,7 +284,7 @@ el bajo de la semicorchea 3 al tiempo fuerte.
 El registro del descubrimiento está en [`HALLAZGOS.md`](HALLAZGOS.md). Su parte
 inferior conserva hipótesis históricas que después resultaron incorrectas; para
 el comportamiento vigente mandan `qy100syx/patternfmt.py`,
-`qy100syx/songfmt.py`, las pruebas y el resumen raíz [`../CLAUDE.md`](../CLAUDE.md).
+`qy100syx/songfmt.py`, las pruebas y el resumen raíz [`../AGENTS.md`](../AGENTS.md).
 
 ## Pruebas
 

@@ -471,7 +471,7 @@ def _cargar_voces():
     mostrado es trabajo hecho y tirado.
     """
     import json
-    ruta = os.path.join(_SYX, "voces.json")
+    ruta = os.path.join(_SYX, "datos", "voces.json")
     try:
         v = json.load(open(ruta))
         # **Los kits no son una lista paralela**: son 22 diccionarios con su
@@ -552,7 +552,7 @@ def nombre_programa_kit(nombre):
 
 
 def _cargar_bancos():
-    """`nombre normalizado -> programa`, de `bancos.json`.
+    """`nombre normalizado -> programa`, de `datos/bancos.json`.
 
     **477 de 525**, confirmadas contra la ROM por dos fuentes independientes.
     Las 48 restantes viven en la seccion «Other wave» del Data List, listadas en
@@ -562,7 +562,7 @@ def _cargar_bancos():
     """
     import json
     try:
-        b = json.load(open(os.path.join(_SYX, "bancos.json")))
+        b = json.load(open(os.path.join(_SYX, "datos", "bancos.json")))
         prog, banco, msb = {}, {}, {}
         for v in b.get("voces", []):
             k = v["nombre"].replace(" ", "").lower()
@@ -685,7 +685,7 @@ class Mezclador:
             Off      -> leido del aparato
             In/Out   -> cabecera incompleta (2 de 5)
 
-        **El matiz importa porque el proyecto lo tenia mal escrito.** `CLAUDE.md`
+        **El matiz importa porque el proyecto lo tenia mal escrito.** `AGENTS.md`
         decia que `MIDI CONTROL` no tiene nada que ver con SysEx, citando una
         transferencia completa sin tocarlo. Eso vale para **un bloque suelto** —
         el setup se lee bien en cualquier valor— y **no vale para multibloque**:
@@ -1032,7 +1032,7 @@ BLOQUE_POR_FAMILIA = {
 def _cargar_parametros():
     import json
     try:
-        d = json.load(open(os.path.join(_SYX, "parametros_efecto.json")))
+        d = json.load(open(os.path.join(_SYX, "datos", "parametros_efecto.json")))
         return {k: {int(n): v for n, v in ps.items()}
                 for k, ps in d["bloques"].items()}
     except Exception:

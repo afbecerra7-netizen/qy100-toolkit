@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Importa un loop de TRIBE Player al QY100, traduciendo su mapa al kit XG.
 
-    .venv/bin/python importar_tribe.py Proyecto.als --patron 16
-    .venv/bin/python importar_tribe.py Proyecto.als --patron 16 --escribir
+    .venv/bin/python herramientas/importar_tribe.py Proyecto.als --patron 16
+    .venv/bin/python herramientas/importar_tribe.py Proyecto.als --patron 16 --escribir
 
 Existe porque un loop de Tribe **no es un patron de bateria**: es un conjunto de
 San Jacinto con seis instrumentos y varias articulaciones cada uno —la tambora
 sola tiene cascara, abierto y apagado— y el QY100 tiene un kit General MIDI.
-Meterlo por `importar.py` a pelo manda cada nota a la altura que le toque en el
+Meterlo por `herramientas/importar.py` a pelo manda cada nota a la altura que le toque en el
 kit, que es como la marimba acabo sonando por platos y campanas.
 
 **La tabla de abajo es una decision musical, no una conversion.** Cada linea
@@ -23,7 +23,11 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import patternfmt as F                                  # noqa: E402
 from qy100syx import protocol as P, transfer                          # noqa: E402
 
@@ -277,13 +281,13 @@ def main():
 
     # --- exportar a MIDI ---
     #
-    # **La escritura al QY100 no se hace aqui, a proposito.** `importar.py` ya
+    # **La escritura al QY100 no se hace aqui, a proposito.** `herramientas/importar.py` ya
     # sabe leer el patron antes de escribirlo, conservar las otras secciones y
     # negarse cuando el volcado llega sin cabecera. Escribir un segundo escritor
     # seria tener dos caminos y que solo uno tenga los guardias.
     #
     # Las pistas salen por el **canal 10 de General MIDI**, que es como
-    # `importar.py` sabe que son percusion. Sin eso trataria la tambora como
+    # `herramientas/importar.py` sabe que son percusion. Sin eso trataria la tambora como
     # material melodico y le pondria una guitarra.
     import mido
     m = mido.MidiFile(ticks_per_beat=F.CLOCKS_PER_QUARTER)
@@ -305,7 +309,7 @@ def main():
         ev.sort()
         prev = 0
         # **El canal decide si es percusion.** Las tres pistas de tambores van
-        # por el 10 de GM (indice 9); el bajo NO, porque `importar.py` mira el
+        # por el 10 de GM (indice 9); el bajo NO, porque `herramientas/importar.py` mira el
         # canal para elegir kit o voz melodica y un contrabajo por el canal 10
         # saldria tocando platos. Se escribio asi la primera vez.
         canal = 9 if idx < 3 else idx - 2      # 10 = percusion; el resto, melodicas
@@ -317,7 +321,7 @@ def main():
     print("\nescrito %s — %d compases de %d/4, %.0f bpm, canal 10"
           % (args.mid, compases, int(args.pulsos_por_compas), bpm or 0))
     print("\npara meterlo al QY100:")
-    print("  .venv/bin/python importar.py %s \\" % args.mid)
+    print("  .venv/bin/python herramientas/importar.py %s \\" % args.mid)
     print("      --patron %d --seccion %d --compases 1-%d \\"
           % (args.patron, args.seccion, compases))
     print("      %s \\" % " ".join('--pista "%s=%s"' % (DESTINOS[i], DESTINOS[i])

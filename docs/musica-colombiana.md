@@ -4,7 +4,7 @@ The rhythmic cells of the genres this project uses, taken from scores and
 transcriptions rather than from theory. The code is in
 [`qy100-syx/qy100syx/andina.py`](../qy100-syx/qy100syx/andina.py) and the
 measurements are reproducible with
-[`analizar_loop.py`](../qy100-syx/analizar_loop.py).
+[`medir/analizar_loop.py`](../qy100-syx/medir/analizar_loop.py).
 
 > **How to read the marks.** Everything here is in one of three states, and
 > keeping them apart is what stops the same mistakes repeating: nearly all of
@@ -324,7 +324,7 @@ From **Paz Hernández (2005)**, *Producción musical contemporánea utilizando l
 células rítmicas del Pacífico colombiano* (San Buenaventura, Bogotá) — advised by
 **Javier Martínez Maya**, the same person who signs the bombo golpeador score.
 Converted at
-`manuales-md/Paz2005_Celulas_Ritmicas_Pacifico.md`.
+`manuales/md/Paz2005_Celulas_Ritmicas_Pacifico.md`.
 
 `[M]` **The marimba de chonta is 24 bars and two instruments in one:**
 
@@ -367,7 +367,7 @@ chandé and cumbia. `[V]` **The chandé's placement in the binary column is
 contested by its own primer**: Valencia's score is titled "RITMO DE CHANDÉ.
 BASE TERNARIA", while the Tribe loop measures decisively binary — 89 % of
 attacks on the binary grid against 47 % on the ternary one — reproducible with
-`medir_loops.py`, which recomputes every loop figure this document cites. Two
+`medir/medir_loops.py`, which recomputes every loop figure this document cites. Two
 sources, two answers, both real; the same shape as the mapalé split. This
 document keeps the loop's answer for the engine work and records the
 disagreement instead of picking silently. The same analytical device was reached by measurement,

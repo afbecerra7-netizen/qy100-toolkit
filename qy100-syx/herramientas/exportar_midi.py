@@ -1,6 +1,6 @@
 """Escribe un tema del EP como archivo MIDI estandar, para arrastrar a Ableton.
 
-    .venv/bin/python exportar_midi.py mi-tema --cuantizar 16
+    .venv/bin/python herramientas/exportar_midi.py mi-tema --cuantizar 16
 
 **Es la ruta corta hacia el DAW.** Pasar por el QY100 tiene sentido cuando se
 quiere su secuenciador o sus voces, o para tocarlo en vivo; pero si lo unico
@@ -25,7 +25,11 @@ import sys
 
 import mido
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import patternfmt as F                                 # noqa: E402
 
 Q = F.CLOCKS_PER_QUARTER
@@ -33,7 +37,7 @@ Q = F.CLOCKS_PER_QUARTER
 
 def cargar(modulo):
     nombre = modulo.replace("-", "_")
-    ruta = os.path.join(os.path.dirname(os.path.abspath(__file__)), modulo + ".py")
+    ruta = os.path.join(RAIZ, "piezas", modulo + ".py")
     return importlib.machinery.SourceFileLoader(nombre, ruta).load_module()
 
 

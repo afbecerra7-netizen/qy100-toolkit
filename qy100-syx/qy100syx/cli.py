@@ -767,7 +767,7 @@ def cmd_frases(args):
     import re
 
     ruta = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "frases.json")
+                        "datos", "frases.json")
     d = json.load(open(ruta))
     cats = d["categorias"]
 
@@ -1035,7 +1035,7 @@ def cmd_referencia(args):
     from . import patternfmt as F
 
     ruta = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "frases.json")
+                        "datos", "frases.json")
     cats = json.load(open(ruta))["categorias"]
 
     try:

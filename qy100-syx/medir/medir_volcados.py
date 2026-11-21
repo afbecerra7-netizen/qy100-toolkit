@@ -8,7 +8,7 @@ de las pistas sin marcador salio de una cuenta que ya no se puede reproducir.
 
 Cualquier cifra de estas que aparezca en un documento tiene que salir de aqui.
 
-    .venv/bin/python medir_volcados.py
+    .venv/bin/python medir/medir_volcados.py
 
 Dos trampas, las dos padecidas:
 
@@ -24,6 +24,11 @@ import glob
 import os
 import sys
 
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import protocol as P
 from qy100syx import patternfmt as F
 

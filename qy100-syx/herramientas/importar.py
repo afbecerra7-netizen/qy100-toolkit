@@ -1,6 +1,6 @@
 """Escribe un tramo de una partitura MIDI en un patron del QY100, tal cual.
 
-    .venv/bin/python importar.py partitura.mid --patron 14 --compases 1-8 \\
+    .venv/bin/python herramientas/importar.py partitura.mid --patron 14 --compases 1-8 \\
         --pista "Flauta=C1" --pista "Contrabajo=BA" --pista "Bombo 1=D1"
 
 **No deduce nada.** Los motores de `andina.py` extraen una celda y la repiten;
@@ -34,7 +34,11 @@ import time
 
 import mido
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import patternfmt as F                                 # noqa: E402
 from qy100syx import protocol as P, transfer                         # noqa: E402
 

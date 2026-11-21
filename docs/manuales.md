@@ -9,28 +9,28 @@ Where each document is and how to read it without opening the PDF.
 | `QY100S.pdf` | Owner's manual, **Spanish** (*Manual del Usuario*). Operating instructions for the end user. |
 | `Que_te_pasa_vo_cartilla_Pacifico_Sur.pdf` | **The South Pacific primer** — marimba, cununos, guasá and bombos (Duque, Sánchez and Tascón, Plan Nacional de Música, Colombian Ministry of Culture). Gives the taxonomy of the two systems (*bunde* in 2/4, *currulao* in 6/8), the *«Déle duro»* mnemonic for the lead bombo, and the cycle of three bases plus a variation. Notation is images: render with `pdftoppm`. |
 | `Valencia_Pitos_y_Tambores_cartilla.pdf` | **The most useful rhythmic source the project has taken in.** A musical primer from the Plan Nacional de Música para la Convivencia (Ministry of Culture), by Victoriano Valencia. 55 pages carrying the notation key for tambora, llamador and alegre, the **metric matrix**, and **notated** bases for cumbia, bullerengue, porro, puya, gaita and fandango. The notation is images: render with `pdftoppm`, `pdftotext` is not enough. |
-| `Produccion_musical_contemporanea_Paz_2005.pdf` | **A thesis on the rhythmic cells of the Colombian Pacific** (Universidad de San Buenaventura, 2005), advised by Javier Martínez Maya. 105 pages. **No notation**: prose analysis plus organology. What's usable is which instruments make up the marimba ensemble and what each one does. Converted at `manuales-md/Paz2005_Celulas_Ritmicas_Pacifico.md` |
+| `Produccion_musical_contemporanea_Paz_2005.pdf` | **A thesis on the rhythmic cells of the Colombian Pacific** (Universidad de San Buenaventura, 2005), advised by Javier Martínez Maya. 105 pages. **No notation**: prose analysis plus organology. What's usable is which instruments make up the marimba ensemble and what each one does. Converted at `manuales/md/Paz2005_Celulas_Ritmicas_Pacifico.md` |
 | `QY100_Folleto_2000.pdf` | **Sales brochure**, English (Dec 2000). Two pages, but it carries **the 128 factory styles with their full names** — the device only shows five-character abbreviations. Extracted to [`docs/estilos-de-fabrica.md`](estilos-de-fabrica.md). Also the rear panel and the specifications. |
-| `QY100E2.pdf` | **Data List**, English (2000) — the separate booklet the owner's manual keeps referring to as *"el manual adjunto de listas"*. XG normal and drum voice lists with program numbers, effect types and parameters, preset style and phrase lists, chord type list, drum table, amp simulator list, and its own MIDI data format section. Converted at `manuales-md/QY100_Data_List.md`. |
+| `QY100E2.pdf` | **Data List**, English (2000) — the separate booklet the owner's manual keeps referring to as *"el manual adjunto de listas"*. XG normal and drum voice lists with program numbers, effect types and parameters, preset style and phrase lists, chord type list, drum table, amp simulator list, and its own MIDI data format section. Converted at `manuales/md/QY100_Data_List.md`. |
 | `219610235-YAMAHA-QY100-Service-Manual.pdf` | Official Yamaha service manual, English (SY 011558, printed 2000.12). Hardware-level reference. |
-| `QY100_1.37/_QY100_v137.mid` | Firmware v1.37 image, delivered as a Standard MIDI File (format 0, 1 track, 96 PPQN, ~1.8 MB). Not a musical performance — the ROM payload is encoded as MIDI data and streamed to the device. |
-| `QY100_1.37/QY100 Firmware Update Readme.txt` | Step-by-step flashing procedure for that file. |
+| `referencia/firmware-1.37/_QY100_v137.mid` | Firmware v1.37 image, delivered as a Standard MIDI File (format 0, 1 track, 96 PPQN, ~1.8 MB). Not a musical performance — the ROM payload is encoded as MIDI data and streamed to the device. |
+| `referencia/firmware-1.37/QY100 Firmware Update Readme.txt` | Step-by-step flashing procedure for that file. |
 
 ## The Torso T-1: a manual with no PDF
 
 Torso publishes the T-1 guide **only as a website**, at
-<https://docs.torsoelectronics.com/t1/>. There is nothing in `Manuales/` for it,
+<https://docs.torsoelectronics.com/t1/>. There is nothing in `manuales/pdf/` for it,
 and it was the only device in the rig without a manual here.
 
-`manuales-md/TorsoT1.md` is its 77 pages, in the
+`manuales/md/TorsoT1.md` is its 77 pages, in the
 order of the site's own index, each carrying the URL it came from so any claim
 stays checkable. The 80 figures are in
-`manuales-md/diagramas/` under `torso-t1-`.
+`manuales/md/diagramas/` under `torso-t1-`.
 
 Refresh it — Torso ships firmware regularly and revises the guide with it — via
 
 ```bash
-python3 -I manuales-md/torso-t1-convertir.py /tmp/t1 manuales-md/TorsoT1.md --descargar
+python3 -I scripts/torso-t1-convertir.py /tmp/t1 manuales/md/TorsoT1.md --descargar
 ```
 
 Three things that document records about itself, because each one bounds what it
@@ -52,9 +52,9 @@ can be cited for:
 
 ## Markdown conversions — read these, not the PDFs
 
-`manuales-md/` holds a Markdown conversion of **every** PDF here. Grep or `Read` these instead of extracting PDF pages; it is far faster and the content is equivalent.
+`manuales/md/` holds a Markdown conversion of **every** PDF here. Grep or `Read` these instead of extracting PDF pages; it is far faster and the content is equivalent.
 
-`manuales-md/QY100_Service_Manual.md` opens with a **line-number index** to every section (SysEx bulk dump, Table 1-9, implementation charts, LSI pins). Jump with `Read` + `offset` rather than scanning 3,900 lines.
+`manuales/md/QY100_Service_Manual.md` opens with a **line-number index** to every section (SysEx bulk dump, Table 1-9, implementation charts, LSI pins). Jump with `Read` + `offset` rather than scanning 3,900 lines.
 
 Two tables in it were mangled by the converter and have been **hand-corrected** against `pdftotext -layout`, each flagged with an inline editorial note: Table 1-9 (shifted `Recv`/`Trans`/`Req` columns) and the Bulk Dump SEQ Data byte layout (a row that escaped its table). Everything else is untouched machine output — if a table looks wrong, check the PDF before trusting it.
 
@@ -62,7 +62,7 @@ Audited 2026-07-27: text coverage is 100.4% (service) and 100.3% (user manual) v
 
 **Diagrams do not survive conversion** — their labels scatter into unrelated table cells and the spatial meaning is lost. That has been worked around two ways:
 
-- Every diagram page is rendered to PNG in `manuales-md/diagramas/` (150 dpi; the block diagram also at 300 dpi). `Read` those files directly instead of paging through the PDF.
+- Every diagram page is rendered to PNG in `manuales/md/diagramas/` (150 dpi; the block diagram also at 300 dpi). `Read` those files directly instead of paging through the PDF.
 - The **block diagram (p. 9)** — the highest-value one — is transcribed into proper tables inside the Markdown, so IC-to-function mappings are now greppable. `IC3 = FlashROM 16M "main prog"`, `IC6 = SRAM "user data"` (battery-backed), etc.
 
 The service manual Markdown carries an index of both. Other diagram pages (circuit board layout, IC block diagrams, parts list, overall circuit diagram) exist only as images — transcribe one if you need it.
@@ -70,19 +70,19 @@ The service manual Markdown carries an index of both. Other diagram pages (circu
 To render more pages:
 
 ```bash
-pdftoppm -r 150 -png -f FIRST -l LAST Manuales/FILE.pdf manuales-md/diagramas/PREFIX
+pdftoppm -r 150 -png -f FIRST -l LAST manuales/pdf/FILE.pdf manuales/md/diagramas/PREFIX
 ```
 
-Source PDFs live in `Manuales/` (capital M), conversions in `manuales-md/`. To convert a newly added one:
+Source PDFs live in `manuales/pdf/`, conversions in `manuales/md/`. To convert a newly added one:
 
 ```bash
-uvx --from 'markitdown[pdf]' markitdown Manuales/FILE.pdf > manuales-md/FILE.md
+uvx --from 'markitdown[pdf]' markitdown manuales/pdf/FILE.pdf > manuales/md/FILE.md
 ```
 
 **If the result is ~1 line, the PDF is a scan with no text layer.** Check with `pdffonts` — no fonts listed means no text. OCR it instead; `tesseract` and `ocrmypdf` are already installed:
 
 ```bash
-ocrmypdf --force-ocr -l eng --output-type pdf --quiet Manuales/FILE.pdf /tmp/ocr.pdf && pdftotext -layout /tmp/ocr.pdf -
+ocrmypdf --force-ocr -l eng --output-type pdf --quiet manuales/pdf/FILE.pdf /tmp/ocr.pdf && pdftotext -layout /tmp/ocr.pdf -
 ```
 
 OCR output can misread characters, so those files carry a warning header and their pages are also rendered to PNG alongside the conversion — check a number against the image before trusting it.
@@ -111,7 +111,7 @@ The MIDI data format and implementation chart sections are the reference to cite
 
 ## Firmware update procedure
 
-From `QY100_1.37/QY100 Firmware Update Readme.txt` — the button chords are not guessable and the timing matters:
+From `referencia/firmware-1.37/QY100 Firmware Update Readme.txt` — the button chords are not guessable and the timing matters:
 
 1. Connect QY100 to host via **MIDI IN/OUT**, set the Host Select switch to `MIDI`.
 2. Power on while holding `[m7(9)]` + `[mM7]` + `[m7(11)]` — this enters update mode.

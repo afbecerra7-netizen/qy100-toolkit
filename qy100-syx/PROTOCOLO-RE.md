@@ -1,5 +1,5 @@
 > **El formato de notas que este documento buscaba ya está resuelto** — ver
-> [`HALLAZGOS.md`](HALLAZGOS.md) y `CLAUDE.md`. Lo que sigue vigente es el
+> [`HALLAZGOS.md`](HALLAZGOS.md) y `AGENTS.md`. Lo que sigue vigente es el
 > **método**, que es exactamente el que se usa cada vez que aparece un campo
 > nuevo: cambiar una sola cosa en el panel, volcar, y diffear.
 >

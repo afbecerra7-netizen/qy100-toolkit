@@ -24,7 +24,7 @@ ilusion, no el diseno. Las pantallas sin cablear lo dicen en su propia cara.
 `In/Out`.** Con `Off` no llega nada y el silencio se lee igual que «la maqueta
 no sirve». Se pone sin tocar el panel:
 
-    cd ../qy100-syx && .venv/bin/python ajustar_midi_control.py in/out
+    cd ../qy100-syx && .venv/bin/python herramientas/ajustar_midi_control.py in/out
 """
 
 import os

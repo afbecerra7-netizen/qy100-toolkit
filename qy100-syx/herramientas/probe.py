@@ -5,7 +5,7 @@ El manual documenta el formato de los mensajes pero no la secuencia exacta que
 espera el equipo. Esto prueba las hipotesis razonables una por una y reporta
 cual produce respuesta, en vez de que las vayamos adivinando de a una.
 
-    .venv/bin/python probe.py --in M4 --out M4
+    .venv/bin/python herramientas/probe.py --in M4 --out M4
 """
 
 import argparse
@@ -13,6 +13,11 @@ import time
 
 import mido
 
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import protocol as P
 
 ap = argparse.ArgumentParser()

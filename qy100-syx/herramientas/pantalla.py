@@ -1,7 +1,7 @@
 """Escribe texto y dibujos en la pantalla del QY100.
 
-    .venv/bin/python pantalla.py texto "HOLA"
-    .venv/bin/python pantalla.py dibujo corazon
+    .venv/bin/python herramientas/pantalla.py texto "HOLA"
+    .venv/bin/python herramientas/pantalla.py dibujo corazon
 
 No es nada propio del QY100: es el **XG Display Data**, y el QY100 lo obedece
 por ser un modulo XG. Esta en el Data List, tabla 1-5:

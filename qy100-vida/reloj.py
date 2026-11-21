@@ -20,7 +20,7 @@ Game of Life corre **encima** de un patron, no al lado.
 
 ⚠️ **Hace falta `MIDI CONTROL` en `Out` o `In/Out`** para que el QY100
 transmita. Con `Off` no llega ni un `F8` y el silencio se lee igual que «el
-reloj externo no funciona». Ver `qy100-syx/ajustar_midi_control.py`.
+reloj externo no funciona». Ver `qy100-syx/herramientas/ajustar_midi_control.py`.
 
 ⚠️ **Y `MIDI SYNC` en `Internal`**, que es lo contrario de lo que suena: es el
 QY100 el que manda el reloj, asi que su reloj tiene que ser el suyo propio. Con

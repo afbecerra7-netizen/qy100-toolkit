@@ -351,7 +351,7 @@ PISTAS_AFRO = [
     (3, "BA", "afro_bajo",     "Bass",    "FngrBass",   False),
     (4, "C1", "afro_guitarra", "Chord 1", "CleanGtr",   False),
     # `BrssSect` y no `HiBrass`: este ultimo esta en el indice 298, fuera de los
-    # 128 programas direccionables. `voces.json` lista las 525 de la ROM y solo
+    # 128 programas direccionables. `datos/voces.json` lista las 525 de la ROM y solo
     # las primeras 128 se pueden mandar como program change.
     (5, "C2", "afro_vientos",  "Chord 1", "BrssSect",   False),
 ]

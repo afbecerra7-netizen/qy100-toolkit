@@ -7,7 +7,7 @@ identified here rather than silently folded into the licence.
 
 ## Yamaha
 
-`voces.json`, `frases.json`, `estilos.json` and `tambores.json` are tables of
+`datos/voces.json`, `datos/frases.json`, `datos/estilos.json` and `datos/tambores.json` are tables of
 **facts read off Yamaha's own documentation and firmware**: program numbers,
 voice and style names, preset-phrase indices, note assignments. They exist so
 software can address the device correctly. The names in them are Yamaha's; the
@@ -37,7 +37,7 @@ device holding his own patterns.
 
 ## TRIBE Player
 
-`tambores.json` maps the articulation layout of TRIBE Player 2 (Tribe
+`datos/tambores.json` maps the articulation layout of TRIBE Player 2 (Tribe
 Instruments) so that loops played with it can be addressed. It is a note-number
 map, not sample content; no audio from that library is included or
 redistributed. Using the tools that read it requires owning the plugin.

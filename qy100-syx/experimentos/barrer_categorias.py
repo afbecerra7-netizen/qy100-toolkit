@@ -1,6 +1,6 @@
 """Barre los indices de categoria de una referencia a frase preset, oyendo.
 
-    .venv/bin/python barrer_categorias.py --patron 3 --indices 0-14
+    .venv/bin/python experimentos/barrer_categorias.py --patron 3 --indices 0-14
 
 La idea es de Felipe y es la que hace esto posible: **el barrido no necesita
 leer**. Escribir la referencia y darle play son las dos unicas operaciones, y las
@@ -33,6 +33,11 @@ import time
 
 import mido
 
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import patternfmt as F
 from qy100syx import protocol as P
 from qy100syx import transfer

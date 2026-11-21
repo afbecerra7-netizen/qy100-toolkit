@@ -14,12 +14,15 @@ nombre con un byte de bit alto: `Sil.nKit` frente a `SilenKit`.
 """
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 import mido
 
 MID = os.environ.get("QY100_FIRMWARE", os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "QY100_1.37", "_QY100_v137.mid"))
+    os.path.dirname(RAIZ), "referencia", "firmware-1.37", "_QY100_v137.mid"))
 # Junto al firmware, salvo que se diga otra cosa. Antes era una ruta absoluta a
 # un directorio temporal de sesion, que ademas se publicaba en el repo abierto.
 SALIDA = os.environ.get(

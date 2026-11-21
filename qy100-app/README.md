@@ -29,7 +29,7 @@ Lo que no está cableado **lo dice en su propia cara**. Una maqueta que finge
 estar conectada mide la ilusión, no el diseño.
 
 ⚠️ `MIDI CONTROL` en `In` o `In/Out`, o no llega nada — y ese silencio se lee
-igual que «la maqueta no sirve». `../qy100-syx/ajustar_midi_control.py`.
+igual que «la maqueta no sirve». `../qy100-syx/herramientas/ajustar_midi_control.py`.
 
 ## Lo que la maqueta enseñó, que es para lo que existe
 

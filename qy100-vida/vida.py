@@ -70,7 +70,7 @@ class Rejilla(Widget):
         # **Se acumulan TODOS los intervalos desde que se le dio a TOCAR**, no
         # una ventana movil. Una media sobre las ultimas N baila con cada paso y
         # no se puede citar: es una lectura de un instante disfrazada de
-        # medicion, el mismo error que cometio `medir_audio.py` en su primera
+        # medicion, el mismo error que cometio `medir/medir_audio.py` en su primera
         # version. Aqui se muestra el REPARTO —n, mediana, p95, maximo— que es lo
         # que se puede escribir en un documento.
         self._ultimo = None

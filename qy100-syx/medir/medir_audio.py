@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Mide si la subdivision de una grabacion es binaria o ternaria.
 
-    .venv/bin/python medir_audio.py fichero.mp3 [--desde 10] [--dura 60]
-    .venv/bin/python medir_audio.py --autotest
+    .venv/bin/python medir/medir_audio.py fichero.mp3 [--desde 10] [--dura 60]
+    .venv/bin/python medir/medir_audio.py --autotest
 
 Necesita `numpy` (en requirements.txt) y `ffmpeg` en el PATH para decodificar.
 

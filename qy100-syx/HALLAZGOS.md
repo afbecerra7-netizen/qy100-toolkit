@@ -362,7 +362,7 @@ sonido, que es justo lo que promete el manual.
 ## Resuelto después de escribir este documento
 
 La cabecera del patrón, que aquí figuraba entera como pendiente, está hoy
-descifrada y **se escribe de rutina**. `CLAUDE.md` es la referencia al día de
+descifrada y **se escribe de rutina**. `AGENTS.md` es la referencia al día de
 cada campo; el resumen:
 
 | Campo | Dónde | Cómo se supo |
@@ -414,7 +414,7 @@ Con eso **`F8` y `FE` dejan de ser casos especiales**: son la categoría `US`
 —frase de usuario, índice 31— con estado 0 y 6.
 
 Verificado escribiendo `09`/`00` por SysEx y leyendo en el panel
-`Da 001 80MRk-1I`, que es exactamente lo que predice `frases.json`, extraído del
+`Da 001 80MRk-1I`, que es exactamente lo que predice `datos/frases.json`, extraído del
 PDF. Dos fuentes que no se hablan dando lo mismo.
 
 **Consecuencia para quien escriba el registro**: `set_registry` debe preservar
@@ -516,7 +516,7 @@ control en vivo por vía de CC.
   consecutivos: `0 GM`, `1 Key Scale Panning`, `3 Stereo`, `18 Dark`,
   `20 Resonant`, `40 Tutti`, `64-72 Other wave`.
 
-  `[M]` **Y `voces.json` esta ordenado banco-mayor, programa-menor.** Sus
+  `[M]` **Y `datos/voces.json` esta ordenado banco-mayor, programa-menor.** Sus
   indices 0-127 son el banco 0 en orden de programa; de 128 en adelante vienen
   todas las del banco 1 en orden de programa (`GrndPnoK`, `BritPnoK`,
   `ElGrPnoK`, `HnkyTnkK`... = programas 1, 2, 3, 4), luego el banco 3, y asi.
@@ -524,7 +524,7 @@ control en vivo por vía de CC.
   daba 2 aciertos de 350.
 
   `[V]` **Lo que falta es un parser limpio, no descifrar nada.**
-  [`extraer_bancos.py`](extraer_bancos.py) saca 449 voces y cruza **442 de 525**
+  [`extraer/extraer_bancos.py`](extraer/extraer_bancos.py) saca 449 voces y cruza **442 de 525**
   contra la ROM normalizando espacios. Los tres problemas que quedan estan
   identificados: (1) se cuelan voces de la lista SFX, que comparte pagina;
   (2) el contador de elementos que sigue a cada nombre es ambiguo cuando el

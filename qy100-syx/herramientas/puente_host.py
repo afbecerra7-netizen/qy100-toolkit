@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Puente entre el TO HOST del QY100 (cable USB-serie) y un puerto MIDI virtual.
 
-    .venv/bin/python puente_host.py                       # busca el cable solo
-    .venv/bin/python puente_host.py --dev /dev/cu.usbserial-XXXX
-    .venv/bin/python puente_host.py --baud 38400          # selector en PC-2
+    .venv/bin/python herramientas/puente_host.py                       # busca el cable solo
+    .venv/bin/python herramientas/puente_host.py --dev /dev/cu.usbserial-XXXX
+    .venv/bin/python herramientas/puente_host.py --baud 38400          # selector en PC-2
 
 Con el puente en marcha, el Mac ve un puerto llamado `QY100 TO HOST` (entrada y
 salida), y cualquier herramienta que acepte puerto por nombre lo usa:

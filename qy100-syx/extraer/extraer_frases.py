@@ -42,8 +42,8 @@ import subprocess
 import sys
 
 PDF = os.environ.get("QY100_DATALIST", os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "Manuales", "QY100E2.pdf"))
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "manuales", "pdf", "QY100E2.pdf"))
 PRIMERA, ULTIMA = 16, 34
 
 CAT_RE = re.compile(r"Phrase Category=(\w+):\s*(.+?)\s*$")
@@ -242,8 +242,8 @@ if __name__ == "__main__":
                 L.append("```\n")
 
         destino = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "manuales-md", "QY100_Frases_Preset.md")
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "manuales", "md", "QY100_Frases_Preset.md")
         with open(destino, "w") as fh:
             fh.write("\n".join(L) + "\n")
         print("escrito %s" % destino)
@@ -257,7 +257,7 @@ if __name__ == "__main__":
         for cat, desc, beat, num, nombre in filas:
             c = salida["categorias"].setdefault(cat, {"nombre": desc, "beats": {}})
             c["beats"].setdefault(beat, {})["%03d" % num] = nombre
-        destino = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frases.json")
+        destino = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "datos", "frases.json")
         with open(destino, "w") as fh:
             json.dump(salida, fh, indent=1, ensure_ascii=False, sort_keys=True)
         print("escrito %s" % destino)

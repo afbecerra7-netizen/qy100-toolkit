@@ -1,6 +1,6 @@
 """Lee un clip MIDI de un proyecto de Ableton, lo mide y lo exporta a `.mid`.
 
-    .venv/bin/python analizar_loop.py ~/ruta/Proyecto.als --pista DRUMS \\
+    .venv/bin/python medir/analizar_loop.py ~/ruta/Proyecto.als --pista DRUMS \\
         --nombre BULLERENGUE --bpm 80
 
 Existe porque la via para meter ritmos de Tribe en el proyecto es dejarlos en una

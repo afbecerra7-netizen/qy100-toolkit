@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Pesa cada estilo en bloques y en KB de memoria del aparato.
 
-    .venv/bin/python pesar_estilos.py
+    .venv/bin/python medir/pesar_estilos.py
 
-Existe porque la tabla de `PLAN-LIVESET.md` estaba calculada a **147 bytes por
+Existe porque la tabla de `docs/planes/PLAN-LIVESET.md` estaba calculada a **147 bytes por
 bloque, que es el tamaño en el cable y no en el aparato**. El 7->8 es
 codificacion de transporte: 147 bytes de 7 bits llevan 128 de 8, y lo que ocupa
 memoria son los 128. Todo el presupuesto salia un 14,8 % inflado y contradecia
@@ -18,6 +18,11 @@ bien la aritmetica a mano. Que es como se colo la primera vez.
 
 import sys
 
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import andina as A
 from qy100syx import generar as G
 from qy100syx import patternfmt as F
@@ -29,7 +34,7 @@ SRAM_KB = 128
 #: Los 5 bloques de cabecera que lleva todo patron, ademas de las pistas.
 CABECERA = 5
 
-#: El set de 40 minutos, segun `PLAN-LIVESET.md`. El torbellino y la cumbia van
+#: El set de 40 minutos, segun `docs/planes/PLAN-LIVESET.md`. El torbellino y la cumbia van
 #: dos veces, y cada aparicion es un patron distinto con su propia cabecera.
 SET = ["torbellino", "torbellino", "pasillo", "fiestero", "currulao",
        "cumbia", "cumbia", "mapale", "afrobeat (4/4)", "soca"]

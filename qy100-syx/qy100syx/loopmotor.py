@@ -116,7 +116,7 @@ def cargar(notas, pulsos_por_compas=4, compases=None, permitir_corto=False,
     """Construye el modelo desde [(pulso, nota, velocity, duracion_en_pulsos)].
 
     `compases` es el numero declarado de compases del loop (el que dice
-    `loops.json`). La primera version lo deducia de DONDE EMPIEZA la ultima
+    `datos/loops.json`). La primera version lo deducia de DONDE EMPIEZA la ultima
     nota —`round((ultimo + 0.5) / largo)`— que mide otra cosa: un cuarto compas
     de notas tempranas se lo tragaba entero. Sin declararlo, se infiere del
     indice de celda de la ultima nota, que al menos mide lo que dice.

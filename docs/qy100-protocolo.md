@@ -163,7 +163,7 @@ Protocol comes from the service manual §(3-6-3) and Table 1-9 — both hand-cor
   With `MIDI CONTROL` in `Out` or `In/Out`, a setup request sometimes answers
   first try and sometimes fails four in a row. Same fight that stops pattern
   dumps in that state. **The recipe that works: set it to `Off` first, and read
-  the block while it is `Off`.** `ajustar_midi_control.py`
+  the block while it is `Off`.** `herramientas/ajustar_midi_control.py`
   retries for this reason.
 
   **How to write it:** send the **whole 37-byte setup block** back with that byte
@@ -250,11 +250,11 @@ material.
 
 ### The Data Filer is the ground truth
 
-`QY100DataFiler/` holds Yamaha's official Windows utility (2002). Extract it with `unshield x DATA1.CAB`; the payload is `English_Files/QY100.exe` plus `Program_Dll_Files/MidiCtrl.dll` (the DLL is only a Windows MME wrapper — the protocol lives in the exe).
+`referencia/data-filer/` holds Yamaha's official Windows utility (2002). Extract it with `unshield x DATA1.CAB`; the payload is `English_Files/QY100.exe` plus `Program_Dll_Files/MidiCtrl.dll` (the DLL is only a Windows MME wrapper — the protocol lives in the exe).
 
 **`QY100.exe` at offset ~214600 contains Yamaha's own SysEx message template table.** It confirmed every address and ByteCount we had derived from the service manual, and corrected one thing: in `CLEAR SONG` / `CLEAR PATTERN` the item number goes in the **data byte**, not the address, with `0x7F` meaning all — the templates carry `ff` there as a substitution marker. `test_protocol.py` now asserts our output byte-for-byte against those templates. When a protocol question comes up, check this table before guessing.
 
-The extracted `QY100DataFilerManual.pdf` is converted in `manuales-md/`; it documents that a bulk file can be split into individual songs and styles.
+The extracted `QY100DataFilerManual.pdf` is converted in `manuales/md/`; it documents that a bulk file can be split into individual songs and styles.
 
 The 7-bit packing scheme is still undetermined; `inspect --unpack` tries 7-in-8 and nibble. Do not hardcode it until a real dump settles it.
 
@@ -337,7 +337,7 @@ traffic**. And if such a chip did drop payload here it would be **noisy, not
 silent**: every block carries a declared ByteCount and a Yamaha checksum, and
 `syx.py inspect` already prints both.
 
-**Where it can fire, on this rig, is `Banks/Minitaur Bank.syx` — 46,625 bytes in
+**Where it can fire, on this rig, is `bancos/Minitaur Bank.syx` — 46,625 bytes in
 a single SysEx message.** That file, not the QY100, is the one that exercises
 the >255-byte failure family.
 
@@ -463,7 +463,7 @@ Six sections were written, dumped back complete with valid checksums and correct
 
 This is the third layer of the same trap, after the mandatory `F0 00` and the role-dependent prefix byte 19: **the QY100 keeps metadata about the data, and correct data with stale metadata reads as absent.** Every check available on the wire says green; the only signal is what the panel shows.
 
-**Pattern header** (`tr=0x7F`, first block, unpacked): **bytes 0–1 are the tempo in tenths of a BPM**, big-endian (120.0 = 1200 = `04 B0`) — found by simply noticing the default value sitting in plain sight, and confirmed by writing 1040 and reading 104 on the panel. Bytes 6–13 are the 8-character name, bytes 15–20 are **measures per section minus one**, in `SECTIONS` order. Decoded by diffing our dumps against QY100 Explorer's 32-measure unlock file (`doffu/32measures/`). The "unlock" is nothing more than writing a value above what the UI allows — the device honours up to 32 while its own interface caps at 8. Their warning holds: once you lower the length from the panel you cannot raise it again without reloading the file.
+**Pattern header** (`tr=0x7F`, first block, unpacked): **bytes 0–1 are the tempo in tenths of a BPM**, big-endian (120.0 = 1200 = `04 B0`) — found by simply noticing the default value sitting in plain sight, and confirmed by writing 1040 and reading 104 on the panel. Bytes 6–13 are the 8-character name, bytes 15–20 are **measures per section minus one**, in `SECTIONS` order. Decoded by diffing our dumps against QY100 Explorer's 32-measure unlock file (`referencia/doffu/32measures/`). The "unlock" is nothing more than writing a value above what the UI allows — the device honours up to 32 while its own interface caps at 8. Their warning holds: once you lower the length from the panel you cannot raise it again without reloading the file.
 
 **The 32-measure unlock is verified end to end** (2026-07-29), written by us rather than loaded from doffu's file: a 5-track generative pattern at 32 measures — 825 notes across 46 chained blocks — plays in full. Write the header's measures field *and* regenerate every track at the new length, or header and tracks disagree. This is only possible because multi-block chaining was solved: at 16 notes per block, a 32-measure pattern cannot be written at all.
 
@@ -548,7 +548,7 @@ Writing to the device (`send`) prompts for confirmation, and clear commands are 
 
 ### The 4,285 preset phrases are documented
 
-`manuales-md/QY100_Frases_Preset.md` and `qy100-syx/frases.json`, both regenerated by [`extraer_frases.py`](../qy100-syx/extraer_frases.py) from Data List pp. 16–34. The count matches Yamaha's published 4,285 exactly.
+`manuales/md/QY100_Frases_Preset.md` and `qy100-syx/datos/frases.json`, both regenerated by [`extraer/extraer_frases.py`](../qy100-syx/extraer/extraer_frases.py) from Data List pp. 16–34. The count matches Yamaha's published 4,285 exactly.
 
 A phrase is addressed by **three fields, not one number**: category + beat + number (manual p. 54). Beat takes only `8 beat`, `16 beat`, `3/4 beat`, and the number's range changes with each combination — 45 blocks in all, each numbered from 001.
 
@@ -595,7 +595,7 @@ tr table (bytes 69-116)   = phrase number - 1
 
 **Five bits of category and three of state, not four and four.** The category
 table comes out of the **firmware**, at offset `0x11AE24` of the image
-`extraer_rom.py` produces: 32 three-byte entries holding the fifteen codes plus
+`extraer/extraer_rom.py` produces: 32 three-byte entries holding the fifteen codes plus
 `__` gaps reserved by Yamaha.
 
 ```
@@ -645,7 +645,7 @@ among the unreachable ones — and generated guitar and horns on top. **From
 **`syx.py referencia` writes references**, which was the missing piece: the
 format had been solved and measured since 2026-08-08 but every use went through a
 one-off script. It takes `SECTION:TRACK=CAT/BEAT/NUM` and **validates against
-`frases.json` before touching the device** — a reference to a phrase that doesn't
+`datos/frases.json` before touching the device** — a reference to a phrase that doesn't
 exist writes just as cleanly, with no error, and the only symptom is a silent
 track with a nameless row on the panel.
 
@@ -751,7 +751,7 @@ never surfaced in any dump we parsed.
 (`ss=0E`) was ignored in both states tested — behind the `Ending`, and over a
 live `Main A`. It fits the pattern format storing six sections and no `Blank`.
 **Two states are not all states**, so this is *ignored where tested*, not
-impossible; `control_seccion.py Blank` still sends it for a retry elsewhere.
+impossible; `herramientas/control_seccion.py Blank` still sends it for a retry elsewhere.
 
 Worth the contrast: the previous time this project collided with a manual it was
 the opposite error — omission, with `MIDI CONTROL` and the bulk dump, and with
@@ -932,12 +932,12 @@ until something bridges it.
   the reverse** (service manual, p. 54). A bulk dump request does nothing to the rest
   of a rig; a note would sound on whatever hangs off that output.
 
-The bridge is [`qy100-syx/puente_host.py`](../qy100-syx/puente_host.py). It opens the
+The bridge is [`qy100-syx/herramientas/puente_host.py`](../qy100-syx/herramientas/puente_host.py). It opens the
 cable and exposes a virtual port called `QY100 TO HOST`, input and output, so the
 tools that accept a port by name use it as they would any other:
 
 ```bash
-.venv/bin/python puente_host.py &
+.venv/bin/python herramientas/puente_host.py &
 .venv/bin/python syx.py dump pattern 4 --in "QY100 TO HOST" --out "QY100 TO HOST" -o p4.syx
 ```
 
@@ -952,7 +952,7 @@ CoreMIDI lists first.
 
 Two tools added 2026-08-02, both of which change how the rest of the project should work.
 
-**[`tocar.py`](../qy100-syx/tocar.py) plays the QY100's tone generator in real time.** Notes arriving on MIDI IN sound with the voice assigned to that channel, so the device can be played without touching the sequencer — nothing here writes to its memory. Here **we are the clock master**, so timing is a local `sleep` loop; that is the exact inverse of [`qy100-arp/`](../qy100-arp/), where the engines follow incoming clock and a local timer would break sync. The rule from there does not apply here because there is nothing to follow.
+**[`herramientas/tocar.py`](../qy100-syx/herramientas/tocar.py) plays the QY100's tone generator in real time.** Notes arriving on MIDI IN sound with the voice assigned to that channel, so the device can be played without touching the sequencer — nothing here writes to its memory. Here **we are the clock master**, so timing is a local `sleep` loop; that is the exact inverse of [`qy100-arp/`](../qy100-arp/), where the engines follow incoming clock and a local timer would break sync. The rule from there does not apply here because there is nothing to follow.
 
 Pieces are plain functions returning a `Pieza`; `prueba`, `vigilia`, `acompanar` (a backing track to play guitar over), `cumbia` and `andino` are written, plus `barrido`, which plays three notes on each of the 16 channels to find out which ones sound.
 
@@ -964,13 +964,13 @@ Three things it has to get right, all learned the hard way:
 
   **And the beep was mistaken for a fault in the music.** Six tracks were played back in isolation, each ruled out by ear, and three separate hypotheses about the arrangement were built and discarded before anyone suspected the tooling. The tell was there early and got ignored: an `All Notes Off` silenced it once, and it came back **right after the next write** — twice. When a symptom disappears on a global reset and returns after your own action, the fault is yours, not the data's. The write script now sends both CCs on all 16 channels after every write.
 
-**[`exportar_midi.py`](../qy100-syx/exportar_midi.py) writes a standard `.mid`, and for getting notes into a DAW it beats the transfer outright.** The engines run at 480 clocks per quarter, which is set directly as the file's `ticks_per_beat` — the conversion is 1:1 with no rounding. Against recording the QY100 into Ableton it is exact, instant, needs no `MIDI Sync` / `MIDI control` / `Rec Count` dance, and cannot silently drop blocks. **The QY100 route still earns its keep for playing live, for its voices, and for pattern mode; for moving notes it does not.**
+**[`herramientas/exportar_midi.py`](../qy100-syx/herramientas/exportar_midi.py) writes a standard `.mid`, and for getting notes into a DAW it beats the transfer outright.** The engines run at 480 clocks per quarter, which is set directly as the file's `ticks_per_beat` — the conversion is 1:1 with no rounding. Against recording the QY100 into Ableton it is exact, instant, needs no `MIDI Sync` / `MIDI control` / `Rec Count` dance, and cannot silently drop blocks. **The QY100 route still earns its keep for playing live, for its voices, and for pattern mode; for moving notes it does not.**
 
 `--cuantizar 16` snaps to sixteenths. That is the right grid for this material because every deliberate placement — euclidean hits, the bass on odd sixteenths, off-beat stabs — already lands on exact sixteenths; only `humanizar()`'s few-millisecond jitter is removed. **Quantising coarser destroys the music**: it would drag the bass from sixteenth 3 onto the downbeat. The write script takes the same argument so the device and the DAW hold the identical version.
 
 ### Two traps in note numbering
 
-**Only the first 128 voices are addressable.** `voces.json` stores all 525 names in a flat list and the index equals the program number **only up to 127**; past that they are variations in other XG banks whose *bank LSB* was never decoded. Sending the index as a program yields a value outside 0–127. `tocar.py` raises a clear error; **`generar --voz` has the same exposure** and should get the same guard.
+**Only the first 128 voices are addressable.** `datos/voces.json` stores all 525 names in a flat list and the index equals the program number **only up to 127**; past that they are variations in other XG banks whose *bank LSB* was never decoded. Sending the index as a program yields a value outside 0–127. `herramientas/tocar.py` raises a clear error; **`generar --voz` has the same exposure** and should get the same guard.
 
 **GM's drum names do not describe relative pitch.** Note 45 is called `Low Tom` but it is a rack tom — the floor toms are 41 (`Floor Tom L`) and 43 (`Floor Tom H`), *below* it. Trusting the name put a high tom where the EP wanted a floor tom, in two tracks, and it survived until Felipe heard it. Read the Data List's drum table (p. 12), not the name.
 
@@ -1013,17 +1013,17 @@ strip for something persistent.
 And because the manual allows refreshing individual elements while the rest holds,
 the strip can be **animated**. Verified with a heart beating at 104 BPM. Since the
 QY100 also transmits MIDI clock, an animation could follow the sequencer rather
-than a local timer. `pantalla.py`.
+than a local timer. `herramientas/pantalla.py`.
 
 ## Firmware format (decoded)
 
-`QY100_1.37/_QY100_v137.mid` is not music — it is the ROM image for IC3 (FlashROM 16 Mbit, `main prog`) encoded as MIDI SysEx. Decoded structure:
+`referencia/firmware-1.37/_QY100_v137.mid` is not music — it is the ROM image for IC3 (FlashROM 16 Mbit, `main prog`) encoded as MIDI SysEx. Decoded structure:
 
 ```
 F0 43 00 5F 00 40 <addr:3B, 7-bit> <64B packed 7-in-8> <checksum> F7
 ```
 
-**The 7-in-8 packing here is not the same as `protocol.unpack_7in8`** (corrected 2026-07-29): the MSB byte sits at the **end** of each group of 8, and within it **bit 6 carries the first data byte** (MSB-first). Getting either wrong yields text that looks almost right — `Stand.it` with a zero where the `K` goes, or `Sil.nKit` with one stray high bit — which is exactly the failure mode that survives a casual glance. Two independent anchors caught it: the drum-kit table (byte position) and a name containing a high-bit byte (bit order, invisible in pure ASCII). `qy100-syx/extraer_rom.py` implements the corrected version.
+**The 7-in-8 packing here is not the same as `protocol.unpack_7in8`** (corrected 2026-07-29): the MSB byte sits at the **end** of each group of 8, and within it **bit 6 carries the first data byte** (MSB-first). Getting either wrong yields text that looks almost right — `Stand.it` with a zero where the `K` goes, or `Sil.nKit` with one stray high bit — which is exactly the failure mode that survives a casual glance. Two independent anchors caught it: the drum-kit table (byte position) and a name containing a high-bit byte (bit order, invisible in pure ASCII). `qy100-syx/extraer/extraer_rom.py` implements the corrected version.
 
 - 24,570 bulk blocks × 56 real bytes = **1,375,920 bytes**
 - Checksum: two's complement of the 7-bit sum, taken from byte offset 3
@@ -1031,11 +1031,11 @@ F0 43 00 5F 00 40 <addr:3B, 7-bit> <64B packed 7-in-8> <checksum> F7
 - Banks start at flash offset `0x10000` — **the first 64 KB is never written**, i.e. the bootloader is protected, so a failed flash is likely recoverable
 - **Not encrypted**: entropy 6.93 bits/byte with 11% zero bytes, and plaintext `QY100`, `XG`, `Song` strings decode out
 
-**The voice bank was extracted from this ROM** (2026-07-29) — see `qy100-syx/voces.json` and `syx.py voces <texto>`. 525 normal voices in fixed 8-byte records, anchored on two points measured on the device: `GrandPno` = program 0 (display 001) and `SquareLd` = program 80 (display 081). Both land exactly, and 525 + 22 kits matches the manual's 547. `--voz` now takes names.
+**The voice bank was extracted from this ROM** (2026-07-29) — see `qy100-syx/datos/voces.json` and `syx.py voces <texto>`. 525 normal voices in fixed 8-byte records, anchored on two points measured on the device: `GrandPno` = program 0 (display 001) and `SquareLd` = program 80 (display 081). Both land exactly, and 525 + 22 kits matches the manual's 547. `--voz` now takes names.
 
 The 22 drum kits are **settled by the Data List** (`QY100E2.pdf` pp. 4–9), not by the ROM: they sit at non-consecutive program numbers — 1, 2, 3, 4, 9, 10, 17, 18, 25… — on bank 127, except `SFX Kit 1`/`2` which are on **bank 126**. The device anchor confirms it: prefix byte 16 = 9 → Pgm# 10 = `Dark Room Kit`, which the ROM abbreviates to `DarkRKit` and the panel shows as `Dr010`. The earlier guess that the ROM list index *was* the program number was wrong, and the mismatch it produced was the clue.
 
-The **chord type list** (p. 36–37, rendered to `manuales-md/diagramas/qy100-acordes-*.png` — the page is graphical and does not survive text conversion) names all 26 types with their intervals, but **carries no numeric codes**; the Data List's own MIDI section has none either. Only `M7`=0, `m7`=8 and `7`=13 are measured. The list still helps: it turns measuring the rest into a systematic sweep instead of guesswork.
+The **chord type list** (p. 36–37, rendered to `manuales/md/diagramas/qy100-acordes-*.png` — the page is graphical and does not survive text conversion) names all 26 types with their intervals, but **carries no numeric codes**; the Data List's own MIDI section has none either. Only `M7`=0, `m7`=8 and `7`=13 are measured. The list still helps: it turns measuring the rest into a systematic sweep instead of guesswork.
 
 The wall for actual firmware modification is the **SWX00B (HG73C205AFD)** CPU — Yamaha proprietary, two of them (IC1 main / IC2 sub), instruction set not publicly documented. Reading and rewriting the flash is solved; disassembling it is not. Prefer external augmentation (qy100-arp) or data-level changes over firmware patching.
 
@@ -1081,7 +1081,7 @@ hypothesis about the container, and it was false.
 
   Making it stop and feeding it our own dumps split the failures into **two
   different problems**. All the figures below are recounted by
-  [`medir_volcados.py`](../qy100-syx/medir_volcados.py) over **415 distinct
+  [`medir/medir_volcados.py`](../qy100-syx/medir/medir_volcados.py) over **415 distinct
   tracks**, which appear 955 times across 122 files — the dumps repeat between
   files, and counting appearances instead of tracks inflates everything by more
   than two.

@@ -4,7 +4,7 @@ El QY100 es un generador XG multitimbrico: las notas que llegan por MIDI IN
 en el canal N suenan con la voz asignada a ese canal. Asi que se puede tocar
 sin tocar el secuenciador — nada de esto escribe en la memoria del equipo.
 
-    .venv/bin/python tocar.py prueba
+    .venv/bin/python herramientas/tocar.py prueba
 
 Aqui **el maestro somos nosotros**, no el QY100, asi que la temporizacion es
 un reloj local. Es lo contrario de lo que hace `qy100-arp`, donde los motores
@@ -28,7 +28,11 @@ import time
 
 import mido
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import os, sys                                                         # noqa: E401,E402
+# Vive en una subcarpeta de qy100-syx/: el paquete `qy100syx` y las
+# herramientas se importan desde la raiz. Se corre desde qy100-syx/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import generar as G                                    # noqa: E402
 
 PUERTO = "M4"
@@ -57,7 +61,7 @@ class Pieza:
     def voz(self, canal, nombre, volumen=100):
         """Fija la voz de un canal. Acepta nombre de voz normal o de kit.
 
-        Solo sirven las **128 primeras** voces normales. `voces.json` guarda
+        Solo sirven las **128 primeras** voces normales. `datos/voces.json` guarda
         los 525 nombres en una lista plana y su indice coincide con el numero
         de programa unicamente hasta la 127 — de ahi en adelante son
         variaciones en otros bancos XG, y el *bank LSB* que las selecciona

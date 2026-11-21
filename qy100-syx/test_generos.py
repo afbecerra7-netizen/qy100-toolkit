@@ -21,6 +21,9 @@ senal de que se movio algo.
 """
 
 import sys
+import os as _os
+# Las pruebas usan `importar` e `importar_tribe`, que viven en herramientas/.
+sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "herramientas"))
 
 from qy100syx import andina as A
 

@@ -2,7 +2,7 @@
 
 Todo lo de aqui sale del service manual, seccion (3-6-3) BULK DUMP and PARAMETER
 CHANGE (p. 59) y de la Tabla 1-9 SEQUENCER PARAMETER ADDRESS (p. 68). Ver
-`manuales-md/QY100_Service_Manual.md`, que trae ambas ya corregidas.
+`manuales/md/QY100_Service_Manual.md`, que trae ambas ya corregidas.
 
 Formatos de mensaje
 -------------------

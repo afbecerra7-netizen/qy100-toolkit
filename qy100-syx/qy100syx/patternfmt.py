@@ -104,7 +104,7 @@ END_OF_TRACK = 0xF2
 TRACK_MARKER = b"\xf0\x00"   # toda pista arranca asi; sin esto el editor cuelga
 CONTROL_CHANGE = 0xFB         # `FB cc vv` — 3 bytes.
 #
-# **Medido** con `medir_volcados.py`, que es de donde tiene que salir cualquier
+# **Medido** con `medir/medir_volcados.py`, que es de donde tiene que salir cualquier
 # cifra de estas: **10 eventos**, todos con `cc = 64` (pedal de sostenido),
 # repartidos en 8 pistas, con valores 0 (seis veces) y 127 (cuatro). Alguien
 # grabo tocando con pedal, pero es UNA grabacion, no una costumbre.
@@ -165,7 +165,7 @@ def decode_blocks(payloads, start=EVENT_STREAM_START, max_events=4096, estricto=
     # Es mejor comprobacion que esperar a un byte invalido — de las 28 pistas sin
     # marcador en nuestros volcados, 18 acababan fallando y **10 se decodificaban
     # sin quejarse**, sacando 154 notas inventadas. Esas 10 son el caso
-    # peligroso. Cifras de `medir_volcados.py`.
+    # peligroso. Cifras de `medir/medir_volcados.py`.
     if estricto and flujo[:2] != TRACK_MARKER:
         raise ValueError(
             "la pista no empieza por F0 00 (empieza por %s). Falta su primer "
@@ -1335,7 +1335,7 @@ CABECERA_BASE = [bytes.fromhex(h) for h in (
 # con estado 0 y 6 — una frase de **usuario** con contenido o vacia.
 #
 # La tabla sale del **firmware**, offset 0x11AE24 de la imagen que produce
-# `extraer_rom.py`, y los `__` son huecos reservados por Yamaha. Cuadra con las
+# `extraer/extraer_rom.py`, y los `__` son huecos reservados por Yamaha. Cuadra con las
 # ocho banderas medidas en el equipo, 8 de 8.
 #
 # **Por que costo tanto**: se asumio una particion 4+4 y se barrio el nibble

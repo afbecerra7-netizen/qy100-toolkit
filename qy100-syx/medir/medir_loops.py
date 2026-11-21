@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Mide si un loop MIDI es de subdivision binaria o ternaria, reproducible.
 
-    .venv/bin/python medir_loops.py midi/CHANDE-loop.mid
-    .venv/bin/python medir_loops.py            # los loops canonicos del repo
+    .venv/bin/python medir/medir_loops.py midi/CHANDE-loop.mid
+    .venv/bin/python medir/medir_loops.py            # los loops canonicos del repo
 
 Existe porque dos cifras publicadas —el 89 %/47 % del chande y el 74 %/69 % del
 mapale de Tribe— solo vivian en la prosa y en un mensaje de commit: ninguna
-herramienta las recalculaba, contra la norma de CLAUDE.md de que toda cifra
+herramienta las recalculaba, contra la norma de AGENTS.md de que toda cifra
 citada tiene que salir de algo que se pueda volver a correr. Ahora salen de
 aqui.
 

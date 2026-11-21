@@ -1,6 +1,6 @@
 # QY100 — the 128 factory styles, with their full names
 
-From Yamaha's **sales brochure** (`Manuales/QY100_Folleto_2000.pdf`, Adobe
+From Yamaha's **sales brochure** (`manuales/pdf/QY100_Folleto_2000.pdf`, Adobe
 PageMaker, December 2000). The device only shows five-character abbreviations,
 so without this there is no way to look up `AfrJz` or `DncSw` by what they are.
 
@@ -16,7 +16,7 @@ Extracted by slicing on column: `pdftotext -layout` interleaves the brochure's
 columns, and without the slice foreign text leaks in — style 067 came out as
 `6/8 R&B / MUSIC SEQUENCER`.
 
-The data lives in [`qy100-syx/estilos.json`](../qy100-syx/estilos.json).
+The data lives in [`qy100-syx/datos/estilos.json`](../qy100-syx/datos/estilos.json).
 
 | nº | style | nº | style | nº | style | nº | style |
 | --- | --- | --- | --- | --- | --- | --- | --- |

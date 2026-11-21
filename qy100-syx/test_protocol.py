@@ -9,6 +9,9 @@ Valida el armado y parseo de mensajes contra lo que dice el service manual
 
 import io
 import sys
+import os as _os
+# Las pruebas usan `importar` e `importar_tribe`, que viven en herramientas/.
+sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "herramientas"))
 
 from qy100syx import protocol as P
 from qy100syx import report
@@ -488,7 +491,7 @@ if os.path.exists("dumps/41-duracion.syx"):
         check("rechaza gate imposible", "ValueError", "ValueError")
 
 print("\ncabecera del patron")
-DOFFU = "../doffu/32measures/Measr32_QY100.syx"
+DOFFU = "../referencia/doffu/32measures/Measr32_QY100.syx"
 def _cab(f):
     ms, _ = P.parse_all(open(f, "rb").read())
     c = [bytes(m.data) for m in ms if m.addr[0] == 0x12 and m.addr[2] == 0x7F]

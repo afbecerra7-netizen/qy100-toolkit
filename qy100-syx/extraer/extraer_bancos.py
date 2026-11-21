@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Saca el `bank LSB` de cada voz XG del Data List, y lo cruza contra la ROM.
 
-    .venv/bin/python extraer_bancos.py
+    .venv/bin/python extraer/extraer_bancos.py
 
-**El problema que resuelve.** `voces.json` trae los 525 nombres de voz sacados
+**El problema que resuelve.** `datos/voces.json` trae los 525 nombres de voz sacados
 de la ROM del firmware, en orden, pero **solo los primeros 128 son
 direccionables**: el indice equivale al program change hasta el 127 y de ahi en
 adelante son variaciones cuyo banco nunca se decodifico. Eso limitaba el
@@ -38,8 +38,8 @@ import re
 import subprocess
 import sys
 
-AQUI = os.path.dirname(os.path.abspath(__file__))
-PDF = os.path.join(AQUI, "..", "Manuales", "QY100E2.pdf")
+AQUI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # qy100-syx/
+PDF = os.path.join(AQUI, "..", "manuales", "pdf", "QY100E2.pdf")
 PAGINAS = (2, 3)
 
 #: Nombres de banco, de la pagina 3. Solo para que la salida se lea.
@@ -216,7 +216,7 @@ def parsear():
 
 def main():
     tabla = parsear()
-    rom = json.load(open(os.path.join(AQUI, "voces.json")))["normales_por_programa"]
+    rom = json.load(open(os.path.join(AQUI, "datos", "voces.json")))["normales_por_programa"]
     print("Data List : %d voces" % len(tabla))
     print("ROM       : %d voces\n" % len(rom))
 
@@ -274,7 +274,7 @@ def main():
     print("\nbloque SFX (MSB=064): %d voces, %d/%d anclas"
           % (len(sfx), len(ANCLAS_SFX), len(ANCLAS_SFX)))
 
-    salida = os.path.join(AQUI, "bancos.json")
+    salida = os.path.join(AQUI, "datos", "bancos.json")
     buenas = [{"msb": MSB_NORMAL, "programa": pr, "banco": bk, "nombre": nom}
               for pr, bk, nom in tabla if norm(nom) in en_rom]
     vistos = {norm(v["nombre"]) for v in buenas}

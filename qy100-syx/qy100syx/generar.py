@@ -121,7 +121,7 @@ def resumen(notas, total_clocks):
 
 # --- Banco de voces -----------------------------------------------------
 #
-# Extraido de la ROM del firmware (`extraer_rom.py`) y anclado en dos puntos
+# Extraido de la ROM del firmware (`extraer/extraer_rom.py`) y anclado en dos puntos
 # medidos en el equipo: GrandPno = programa 0 y SquareLd = programa 80. Los dos
 # caen exactos, asi que la numeracion de las voces normales es directa.
 #
@@ -133,7 +133,7 @@ import json as _json
 import os as _os
 
 _VOCES = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
-                       "voces.json")
+                       "datos", "voces.json")
 _cache = None
 
 
@@ -148,7 +148,7 @@ def banco():
 def voz_por_nombre(nombre):
     """'SquareLd' -> 80 (programa base cero). Acepta may/minusculas.
 
-    **Solo las 128 primeras son direccionables.** `voces.json` guarda los 525
+    **Solo las 128 primeras son direccionables.** `datos/voces.json` guarda los 525
     nombres en una lista plana, y su indice coincide con el numero de programa
     unicamente hasta la 127; de ahi en adelante son variaciones en otros bancos
     XG cuyo *bank LSB* nunca se descifro. Devolver el indice sin mas produce un
