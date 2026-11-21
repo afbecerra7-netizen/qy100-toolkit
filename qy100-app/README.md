@@ -1,6 +1,6 @@
 # qy100-app — la maqueta del sitemap
 
-El sitemap de `PLAN-IPAD.md` (no se publica) hecho tocable, hablándole al
+El sitemap de la app de iPad hecho tocable, hablándole al
 QY100 de verdad. **No es la app**: es lo que contesta las preguntas que un
 diagrama no contesta.
 
