@@ -65,6 +65,7 @@ Cada script vive en la subcarpeta de lo que hace, y **todos se corren desde
 | [`herramientas/pantalla.py`](herramientas/pantalla.py) | Escribe texto y mapas de bits de 16x16 en la pantalla, por XG Display Data. |
 | [`experimentos/barrer_categorias.py`](experimentos/barrer_categorias.py) | Barre valores de una referencia a frase preset **escribiendo y oyendo**, sin volcar. Guarda el método aunque su lectura acabara siendo el panel. |
 | `herramientas/probe.py` | Sondas sueltas de ingeniería inversa. |
+| [`herramientas/emulador.py`](herramientas/emulador.py) | Escribe un patrón en el emulador QYΩ y lo lee de vuelta, comparando notas: **un primer filtro** antes de escribirle al aparato. No abre puertos MIDI. |
 
 Datos de referencia, todos generados y verificados, no transcritos a mano:
 

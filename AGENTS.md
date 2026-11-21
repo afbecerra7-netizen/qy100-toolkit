@@ -73,7 +73,8 @@ the package through four lines at its top (`RAIZ = …`, `sys.path[:0] = …`):
 copy them into any new one.
 
 **Safe without a device:** the test suites, `medir/medir_volcados.py`,
-`medir/medir_loops.py`, `medir/pesar_estilos.py` and everything in `extraer/`.
+`medir/medir_loops.py`, `medir/pesar_estilos.py`, everything in `extraer/`, and
+`herramientas/emulador.py`, which only talks to the QYΩ emulator over local HTTP.
 **Anything else may open a MIDI port** and talk to a device: read it before
 running it.
 
