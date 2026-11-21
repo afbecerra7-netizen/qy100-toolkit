@@ -57,6 +57,7 @@ index; the detail lives one topic per file:
 | *(not published)* | The plan for one particular live set. The memory measurements that came out of it are here, in the protocol document |
 | *(not published)* | The plan for wiring one particular studio |
 | *(not published)* | Notes on neighbouring projects and correspondence |
+| *(not published)* | The working board of one particular studio |
 | *(not published)* | Plugin inventory of one particular studio |
 
 ## How certainty is marked
@@ -217,8 +218,8 @@ term and gloss it — **the physical buttons are labelled in English**.
 
 Documents that are published are written in English at the source, so that no
 translation layer has to be maintained. `docs/equipo.md`, `PLAN-LIVESET.md`,
-`docs/laboratorio-remoto.md` and `docs/proyectos-vecinos.md` stay in Spanish
-because they are never published.
+`docs/laboratorio-remoto.md`, `docs/proyectos-vecinos.md` and everything under
+`docs/director/` stay in Spanish because they are never published.
 
 ## External resource
 
