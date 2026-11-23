@@ -15,7 +15,7 @@ measurements are reproducible with
 > - `[V]` **unverified**, or checked by a route that doesn't prove it.
 >
 > A coherent inference sounds exactly like a fact. The bambuco came out wrong
-> three times running for that reason, and the DrumBrute's trigger parameter was
+> three times running for that reason, and the DrumBrute Impact's trigger parameter was
 > attributed to the wrong byte because it happened to be first in the list.
 
 ### The bambuco, measured off scores — and three wrong versions first

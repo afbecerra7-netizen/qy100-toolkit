@@ -137,7 +137,7 @@ The cases that illustrate it best, all real:
 - **The time-signature denominator** was declared absent after sweeping four
   values of a three-bit field. Three values are valid and only one of them fell
   inside the sweep. **A partial sweep does not prove an absence.**
-- **The DrumBrute's trigger parameter** was attributed to 102 because it was
+- **The DrumBrute Impact's trigger parameter** was attributed to 102 because it was
   first in the list and read 0. It's 105. A one-datum hypothesis.
 - **A file round-trip** was taken as proof that a program understood the format.
   A program that doesn't understand it and merely copies it produces the same

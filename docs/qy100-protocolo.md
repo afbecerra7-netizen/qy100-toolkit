@@ -13,7 +13,7 @@ factory phrases, and the firmware image. The tool that implements all of this is
 > - `[V]` **unverified**, or checked by a route that doesn't prove it.
 >
 > A coherent inference sounds exactly like a fact. The bambuco came out wrong
-> three times running for that reason, and the DrumBrute's trigger parameter was
+> three times running for that reason, and the DrumBrute Impact's trigger parameter was
 > attributed to the wrong byte because it happened to be first in the list.
 
 ## qy100-syx
