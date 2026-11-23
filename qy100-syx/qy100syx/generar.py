@@ -94,6 +94,60 @@ def melodia(compases, root="C", escala="minor", octava=4, division="1/16",
     return render(m, compases, beats_per_bar)
 
 
+# --- Arpegio ----------------------------------------------------------------
+#
+# El QY100 no trae arpegiador. Este lo **hornea**: el arpegiador de `qy100-arp`
+# toca en frio un acorde mantenido, y el resultado se escribe como frase de
+# usuario. Con `TYPE = Chord 1/2` y el acorde fuente igual al acorde mantenido,
+# el QY100 la reacomoda sola a cada acorde de su pista de acordes, sin nada
+# conectado. Por eso aqui se toca el acorde **fuente**, no el que va a sonar.
+#
+# Intervalos de los tipos de acorde que se dejan usar como fuente. Son teoria
+# corriente, no medicion; el nombre de cada tipo es el del QY100
+# (`patternfmt.CHORD_TYPES`, medidos los 27).
+INTERVALOS = {
+    "M":    (0, 4, 7),
+    "M7":   (0, 4, 7, 11),
+    "6":    (0, 4, 7, 9),
+    "add9": (0, 4, 7, 14),
+    "m":    (0, 3, 7),
+    "m7":   (0, 3, 7, 10),
+    "m6":   (0, 3, 7, 9),
+    "7":    (0, 4, 7, 10),
+}
+
+
+def notas_acorde(acorde="CM7", octava=4):
+    """'CM7' -> [60, 64, 67, 71]. La raiz cae en la octava pedida (C4 = 60)."""
+    from .patternfmt import CHORD_ROOTS, parse_chord
+    raiz, tipo = parse_chord(acorde) if isinstance(acorde, str) else acorde
+    if tipo not in INTERVALOS:
+        raise ValueError("acorde %r: tipo %r sin intervalos aqui (hay: %s)"
+                         % (acorde, tipo, ", ".join(INTERVALOS)))
+    base = 12 * (octava + 1) + CHORD_ROOTS.index(raiz)
+    return [base + i for i in INTERVALOS[tipo]]
+
+
+def arpegio(compases, acorde="CM7", forma="up", division="1/16", octavas=1,
+            gate=0.5, velocity=100, octava=4, semilla=None, beats_per_bar=4):
+    """Arpegio de `acorde` mantenido durante `compases`. Devuelve (notas, relojes).
+
+    `forma` es uno de los patrones de `qy100-arp` (up, down, updown, updown_inc,
+    downup, as_played, random, chord). `gate` es la fraccion del paso que suena:
+    por debajo de 1 dos notas seguidas no se pisan, y eso es lo que pide un
+    sinte monofonico como el Minitaur.
+    """
+    if _ARP not in sys.path:
+        sys.path.insert(0, _ARP)
+    from qy100arp.arp import Arpeggiator
+    arp = Arpeggiator({"pattern": forma, "division": division, "octaves": octavas,
+                       "gate": gate, "velocity_mode": "fixed",
+                       "fixed_velocity": velocity, "seed": semilla})
+    for n in notas_acorde(acorde, octava):
+        arp.note_on(n, velocity)
+    return render(arp, compases, beats_per_bar)
+
+
 def a_bloques(notas, total_clocks, prefijo):
     """Empaqueta unas notas generadas en bloques listos para `build_dump`.
 

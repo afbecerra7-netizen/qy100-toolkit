@@ -23,38 +23,25 @@ QY100 de verdad haga lo mismo: el emulador no tiene tiempos exactos ni esta
 comparado sistematicamente con el aparato. Es un primer filtro, no un permiso.
 """
 import argparse
-import json
 import os
 import sys
-import urllib.request
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path[:0] = [RAIZ, os.path.join(RAIZ, "herramientas")]
 from qy100syx import patternfmt as F                                 # noqa: E402
 from qy100syx import protocol as P                                   # noqa: E402
 from qy100syx import generar as G                                    # noqa: E402
-
-URL = os.environ.get("QYOMEGA_URL", "http://127.0.0.1:8100")
+from qy100syx import emu as E                                        # noqa: E402
 
 
 def enviar(mensajes):
     """Manda mensajes SysEx al emulador y devuelve lo que contesta, como bytes."""
-    cuerpo = b"".join(mensajes)
-    req = urllib.request.Request(URL + "/sysex", data=cuerpo, method="POST",
-                                 headers={"Content-Type": "application/octet-stream"})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        d = json.load(r)
-    if d.get("error"):
-        raise SystemExit("el emulador contesto un error: %s" % d["error"])
-    return d.get("sent", 0), b"".join(bytes.fromhex(h) for h in d.get("replies") or [])
+    return E.enviar(mensajes)
 
 
 def leer_patron(n):
     """Pide el patron n (base cero) en bulk mode y devuelve sus bloques de volcado."""
-    _s, blob = enviar([P.bulk_mode(True),
-                       P.dump_request(P.Addr.pattern(n, F.HEADER_TR)),
-                       P.bulk_mode(False)])
-    msgs, _ = P.parse_all(blob)
+    msgs, _ = P.parse_all(E.leer_patron(n))
     return [m for m in msgs if m.sub == P.SUB_DUMP]
 
 

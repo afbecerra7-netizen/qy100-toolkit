@@ -28,6 +28,20 @@ def log(*a):
     print(*a, file=sys.stderr)
 
 
+PISTAS = ["D1", "D2", "PC", "BA", "C1", "C2", "C3", "C4"]
+
+
+def _pista(texto):
+    """'C1' o '4' -> 4. Los nombres son los del panel del QY100."""
+    t = texto.strip().upper()
+    if t in PISTAS:
+        return PISTAS.index(t)
+    n = int(t)
+    if not 0 <= n <= 7:
+        raise argparse.ArgumentTypeError("pista fuera de 0-7: %r" % texto)
+    return n
+
+
 def build_parser():
     # Los argumentos de conexion se declaran en un padre compartido y se cuelgan
     # tanto del parser principal como de cada subcomando, para que funcionen en
@@ -134,11 +148,12 @@ def build_parser():
     ge = sub.add_parser("generar", parents=[conn],
                         help="generar una pista con los motores generativos "
                              "y escribirla como frase de usuario")
-    ge.add_argument("motor", choices=["euclid", "markov"])
+    ge.add_argument("motor", choices=["euclid", "markov", "arp"])
     ge.add_argument("--patron", type=int, default=1, help="patron 1-64")
     ge.add_argument("--seccion", type=int, default=1,
                     help="0=Intro 1=MainA 2=MainB 3=FillAB 4=FillBA 5=Ending")
-    ge.add_argument("--pista", type=int, default=1, help="pista 0-7 de la seccion")
+    ge.add_argument("--pista", type=_pista, default=1,
+                    help="pista de la seccion: 0-7, o D1 D2 PC BA C1 C2 C3 C4")
     ge.add_argument("--compases", type=int,
                     help="por defecto, los que declare la cabecera del patron")
     ge.add_argument("--semilla", type=int)
@@ -153,6 +168,17 @@ def build_parser():
     ge.add_argument("--escala", default="minor")
     ge.add_argument("--octava", type=int, default=4)
     ge.add_argument("--densidad", type=float, default=0.6)
+    # arp: el arpegiador de qy100-arp tocando un acorde mantenido (generar.arpegio)
+    ge.add_argument("--acorde", default="CM7",
+                    help="acorde que se arpegia; tambien queda de acorde fuente")
+    ge.add_argument("--forma", default="up",
+                    choices=["up", "down", "updown", "updown_inc", "downup",
+                             "as_played", "random", "chord"])
+    ge.add_argument("--octavas", type=int, default=1)
+    ge.add_argument("--gate", type=float, default=0.5,
+                    help="fraccion del paso que suena; < 1 no se pisan (monofonico)")
+    ge.add_argument("--emulador", action="store_true",
+                    help="leer y escribir en el emulador QYΩ (127.0.0.1:8100), no en el equipo")
     # ajustes de la frase; se pueden fijar aunque la pista no exista todavia
     ge.add_argument("--nombre", help="nombre de la frase, hasta 12 caracteres")
     ge.add_argument("--voz",
@@ -344,22 +370,9 @@ def cmd_generar(args):
     tr = F.track_byte(args.seccion, args.pista)
     addr = P.Addr.pattern(args.patron - 1, tr)
 
-    inp, outp = open_ports(args)
-    try:
-        outp.send(mido.Message("sysex", data=P.bulk_mode(True)[1:-1]))
-        time.sleep(0.3)
-        log("Leyendo el patron %d para tomar el prefijo y la longitud..." % args.patron)
-        blob, _ = transfer.request(outp, inp, P.Addr.pattern(args.patron - 1, F.HEADER_TR),
-                                   args.quiet_for, args.timeout, log)
-    finally:
-        try:
-            outp.send(mido.Message("sysex", data=P.bulk_mode(False)[1:-1]))
-            time.sleep(0.2)
-        except Exception:
-            pass
-        for p in (inp, outp):
-            if p:
-                p.close()
+    log("Leyendo el patron %d %spara tomar el prefijo y la longitud..."
+        % (args.patron, "en el EMULADOR " if args.emulador else ""))
+    blob = _leer_patron(args)
 
     msgs, _ = P.parse_all(blob)
     dumps = [m for m in msgs if m.sub == P.SUB_DUMP]
@@ -368,12 +381,25 @@ def cmd_generar(args):
         por_addr.setdefault(m.addr, []).append(m)
 
     cab = por_addr.get(P.Addr.pattern(args.patron - 1, F.HEADER_TR))
-    if not cab:
+    if cab:
+        cab_inicial = [bytes(m.data) for m in cab]
+        nombre, compases = F.decode_header(cab_inicial[0])
+        n_comp = args.compases or compases[args.seccion]
+    elif not dumps:
+        # Ningun bloque en absoluto: el patron esta vacio, y un patron vacio no
+        # devuelve cabecera. Se parte de la plantilla, que es la captura de un
+        # patron vacio (como `herramientas/importar.py` y `emulador.py`).
+        n_comp = args.compases or 1
+        nombre = (args.nombre or ("ARP" if args.motor == "arp" else "GEN"))[:8]
+        cab_inicial = list(F.CABECERA_BASE)
+        cab_inicial[0] = F.encode_header(cab_inicial[0], name=nombre,
+                                         measures=[n_comp] * len(F.SECTIONS))
+        log("El patron %d esta vacio: la cabecera sale de la plantilla (%d compas(es))."
+            % (args.patron, n_comp))
+    else:
         log("No llego la cabecera del patron. Con MIDI CONTROL encendido el")
         log("QY100 inunda la entrada de reloj y se pierden bloques: ponlo en Off.")
         return 1
-    nombre, compases = F.decode_header(bytes(cab[0].data))
-    n_comp = args.compases or compases[args.seccion]
 
     destino = por_addr.get(addr)
     if destino:
@@ -422,6 +448,13 @@ def cmd_generar(args):
             prog, "(kit de bateria)" if args.bateria
             else G.banco()["normales_por_programa"][prog]))
 
+    # Un arpegio se escribe sobre su acorde y se deja seguir la pista de acordes:
+    # por defecto TYPE = Chord 2 y acorde fuente = el acorde arpegiado. Chord 2 y
+    # no Chord 1 porque Chord 1 lleva un bit en la cabecera medido solo para la
+    # pista 0 (`patternfmt.HEADER_HIKEY_OFF`), y Chord 2 no lo necesita.
+    if args.motor == "arp":
+        args.tipo = args.tipo or "Chord 2"
+        args.fuente = args.fuente or args.acorde
     prefijo = F.build_prefix(
         base=base, compases=n_comp, nombre=args.nombre, tipo=args.tipo,
         fuente=args.fuente, pista=args.pista,
@@ -433,6 +466,11 @@ def cmd_generar(args):
         notas, total = G.euclidiano(n_comp, pulsos=args.pulsos, pasos=args.pasos,
                                     nota=args.nota, division=args.division,
                                     velocity=args.velocity, semilla=args.semilla)
+    elif args.motor == "arp":
+        notas, total = G.arpegio(n_comp, acorde=args.acorde, forma=args.forma,
+                                 division=args.division, octavas=args.octavas,
+                                 gate=args.gate, velocity=args.velocity,
+                                 octava=args.octava, semilla=args.semilla)
     else:
         notas, total = G.melodia(n_comp, root=args.root, escala=args.escala,
                                  octava=args.octava, division=args.division,
@@ -467,7 +505,7 @@ def cmd_generar(args):
         return 1
     log("Prevuelo OK: %d bloques del patron reconstruidos exactos." % len(dumps))
 
-    if not args.yes:
+    if not args.yes and not args.emulador:
         try:
             if input("Escribe 'si' para escribir en el QY100: ").strip().lower() \
                     not in ("si", "sí"):
@@ -493,11 +531,11 @@ def cmd_generar(args):
     # patron borrado (comprobado dos veces, la segunda con una pista nueva que
     # se colaba detras de la cabecera). Por eso se separan los dos grupos en vez
     # de recorrer la lista tal cual.
-    pistas, cab_msgs = [], []
+    pistas = []
     puesto = False
     for m in dumps:
         if m.addr[2] == F.HEADER_TR:
-            cab_msgs.append(m)
+            continue
         elif m.addr == addr:
             if not puesto:
                 pistas.extend(P.build_dump(addr, b) for b in bloques)
@@ -517,28 +555,84 @@ def cmd_generar(args):
         s, t = divmod(m.addr[2], F.TRACKS_PER_SECTION)
         reg.setdefault(s, set()).add(t)
     reg.setdefault(args.seccion, set()).add(args.pista)
-    cab = F.set_registry([bytes(m.data) for m in cab_msgs],
-                         {s: sorted(v) for s, v in reg.items()})
+    cab = F.set_registry(cab_inicial, {s: sorted(v) for s, v in reg.items()})
     # La voz que suena es la de PISTA, no la de la frase: si solo se escribiera
     # la de la frase, el mezclador podria estar imponiendo otra cosa. Se ponen
     # las dos de acuerdo. Ojo: el mezclador es por patron, no por seccion, asi
     # que esto afecta a la misma pista en las seis.
     if prog is not None:
         cab = F.set_mixer_voice(cab, args.pista, prog, bateria=bool(args.bateria))
-    cabecera = [P.build_dump(m.addr, cab[k]) for k, m in enumerate(cab_msgs)]
+    dir_cab = P.Addr.pattern(args.patron - 1, F.HEADER_TR)
+    cabecera = [P.build_dump(dir_cab, b) for b in cab]
     salida = pistas + cabecera
 
-    _, outp = open_ports(args, need_in=False)
-    try:
-        n = transfer.send_pattern(outp, salida, log=log)
-        log("Escritos %d bloques (patron completo, %s regenerada)."
-            % (n, F.describe_tr(tr)))
-    finally:
-        outp.close()
+    if args.emulador:
+        from . import emu
+        emu.escribir(salida)
+        n = len(salida)
+    else:
+        _, outp = open_ports(args, need_in=False)
+        try:
+            n = transfer.send_pattern(outp, salida, log=log)
+        finally:
+            outp.close()
+        time.sleep(0.5)
+    log("Escritos %d bloques (patron completo, %s regenerada)%s."
+        % (n, F.describe_tr(tr), " en el EMULADOR" if args.emulador else ""))
+
+    # Un envio sin error no prueba nada: se relee y se comparan las notas
+    # decodificadas, no los bytes (el equipo reserializa).
+    log("Releyendo para comprobar...")
+    time.sleep(0.5)
+    ok = _verificar(_leer_patron(args), addr, args.seccion, args.pista, notas)
     log("")
-    log("Recuerda: el QY100 rearmoniza segun el TYPE de la pista (manual p. 58).")
-    log("Para oir exactamente lo generado, pon esa pista en Bypass.")
-    return 0
+    if args.tipo and args.tipo != "Bypass":
+        log("La pista va en %s sobre %s: el QY100 la reacomoda al acorde de su"
+            % (args.tipo, args.fuente or "su acorde fuente"))
+        log("pista de acordes. Para oir lo generado tal cual, ponla en Bypass.")
+    return 0 if ok else 1
+
+
+def _leer_patron(args):
+    """El volcado crudo del patron `args.patron`, del aparato o del emulador."""
+    from . import patternfmt as F
+    if args.emulador:
+        from . import emu
+        return emu.leer_patron(args.patron - 1)
+    inp, outp = open_ports(args)
+    try:
+        outp.send(mido.Message("sysex", data=P.bulk_mode(True)[1:-1]))
+        time.sleep(0.3)
+        blob, _ = transfer.request(outp, inp, P.Addr.pattern(args.patron - 1, F.HEADER_TR),
+                                   args.quiet_for, args.timeout, log)
+    finally:
+        try:
+            outp.send(mido.Message("sysex", data=P.bulk_mode(False)[1:-1]))
+            time.sleep(0.2)
+        except Exception:
+            pass
+        for p in (inp, outp):
+            if p:
+                p.close()
+    return blob
+
+
+def _verificar(blob, addr, seccion, pista, notas):
+    """¿La pista releida trae las mismas notas y esta registrada en su seccion?"""
+    from . import patternfmt as F
+    msgs, _ = P.parse_all(blob)
+    dumps = [m for m in msgs if m.sub == P.SUB_DUMP]
+    bloques = [bytes(m.data) for m in dumps if m.addr == addr]
+    cab = [bytes(m.data) for m in dumps if m.addr[2] == F.HEADER_TR]
+    leidas = F.decode_blocks(bloques)[0] if bloques else []
+    clave = lambda ns: [(x.pitch, x.velocity, x.gate, x.time) for x in ns]  # noqa: E731
+    iguales = clave(leidas) == clave(notas)
+    registrada = bool(cab) and pista in (F.decode_registry(cab).get(seccion) or [])
+    log("  %s: %d notas escritas, %d releidas  %s"
+        % (F.describe_tr(addr[2]), len(notas), len(leidas), "IGUAL" if iguales else "DISTINTO"))
+    log("  cabecera: %s" % ("la pista esta registrada en su seccion" if registrada
+                            else "NO la registra (o no volvio)"))
+    return iguales and registrada
 
 
 def cmd_estilo(args):

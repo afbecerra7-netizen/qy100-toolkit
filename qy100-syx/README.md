@@ -21,7 +21,7 @@ canción.
 - Capturar volcados iniciados desde el panel.
 - Inspeccionar, validar y comparar archivos `.syx`.
 - Restaurar respaldos con confirmación previa.
-- Generar frases euclidianas o Markov dentro de un patrón.
+- Generar frases euclidianas, Markov o **arpegios** dentro de un patrón.
 - Crear una pista que todavía no exista y registrarla en la cabecera.
 - Leer y escribir las 16 pistas MIDI de una canción.
 - Buscar las 525 voces normales y los 22 kits documentados.
@@ -180,7 +180,41 @@ ordena las pistas antes de los cinco bloques de cabecera y pide confirmación.
 ```
 
 Las secciones son `0=Intro`, `1=Main A`, `2=Main B`, `3=Fill AB`,
-`4=Fill BA`, `5=Ending`. Las pistas son `0–7`: D1, D2, PC, BA y C1–C4.
+`4=Fill BA`, `5=Ending`. Las pistas son `0–7`, o por nombre: D1, D2, PC, BA y C1–C4.
+
+Después de escribir, `generar` **relee el patrón** y compara las notas
+decodificadas: termina en `IGUAL` o en `DISTINTO`, y con `DISTINTO` sale con error.
+
+### Un arpegio dentro del QY100
+
+El QY100 no trae arpegiador. `generar arp` lo hornea: el arpegiador de
+[`qy100-arp`](../qy100-arp/) toca en frío un acorde mantenido y el resultado se
+escribe como frase. Por defecto la pista queda en `TYPE = Chord 2` con ese acorde
+de fuente, así que el QY100 **reacomoda el arpegio a cada acorde de su pista de
+acordes**, sin nada conectado.
+
+```bash
+# Sube y baja por CM7 en dos octavas, semicorcheas, en C1 de Main A
+.venv/bin/python syx.py generar arp \
+  --patron 10 --seccion 1 --pista C1 --compases 1 \
+  --acorde CM7 --forma updown --octavas 2 --division 1/16 --voz SquareLd
+```
+
+- `--forma`: `up`, `down`, `updown`, `updown_inc`, `downup`, `as_played`,
+  `random` (con `--semilla`, reproducible) o `chord`.
+- `--gate` (0.5 por defecto) es la fracción del paso que suena. Por debajo de 1
+  dos notas no se pisan, que es lo que necesita un sinte monofónico.
+- `--acorde` admite los tipos M, M7, 6, add9, m, m7, m6 y 7.
+- Chord 2 y no Chord 1: Chord 1 lleva un bit en la cabecera medido solo para la
+  pista 0, y Chord 2 no lo necesita. `--tipo` lo cambia.
+
+**Probar primero en el emulador.** Con `--emulador`, `generar` lee y escribe en el
+emulador QYΩ (`./emu serve`, 127.0.0.1:8100) en vez de en el equipo, sin pedir
+confirmación porque no toca nada real. `[M]` Así se escribió el ejemplo de arriba
+y volvió igual (2026-11-22): 16 notas, `Chord 2`, fuente `CM7`. Que el emulador
+lo acepte es el primer filtro; el QY100 de verdad se comprueba aparte. Para oírlo
+en el emulador, en modo patrón hay que pasar del 128: `001`–`128` son los estilos
+de fábrica y el patrón de usuario 10 es `U10`.
 
 ### Generar un estilo entero
 
