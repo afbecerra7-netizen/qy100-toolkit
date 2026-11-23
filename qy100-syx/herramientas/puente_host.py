@@ -34,6 +34,18 @@ guion lo convierte en un puerto virtual.
 
 ## Lo que hay que saber  `[V]` donde no se ha medido
 
+- **Un solo puente por cable.** `[D]` (2026-11-23, visto por la sesión del QY100
+  Mixer): con dos puentes abiertos sobre el mismo `/dev/cu.usbserial-…` se reparten
+  lo que contesta el QY100, y cada app cree que el aparato no respondió. Antes de
+  arrancar uno, `pgrep -fl puente_host.py`. Y la velocidad tiene que ser la del
+  interruptor: `PC-2` con `--baud 38400`; a 31.250 el QY100 tampoco contesta.
+- **No cerrar el puente mientras otro programa lo usa.** `[M]` (2026-11-23): tras
+  una tanda por el TO HOST el QY100 quedó en «Now Bulk Mode» con el panel
+  bloqueado; le llegó una entrada a bulk mode sin su salida. Salió con un solo
+  `F0 43 10 5F 10 00 00 00 F7` (bulk mode OFF) por el mismo cable, y contestó con
+  `FE` y `F2 00 00`. Apagarlo y prenderlo también sirve: sin datos a medias no se
+  pierde nada.
+
 - **Todo lo que entra por TO HOST sale tambien por el MIDI OUT del QY100**, y lo
   que entra por MIDI IN sale por TO HOST (manual de servicio, p. 54). Un pedido
   de volcado de Yamaha no afecta al resto del equipo, pero una nota si sonaria

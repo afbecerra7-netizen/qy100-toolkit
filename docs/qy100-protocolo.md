@@ -949,6 +949,22 @@ until something bridges it.
 - `[M]` **Everything that comes in through `TO HOST` also goes out of `MIDI OUT`, and
   the reverse** (service manual, p. 54). A bulk dump request does nothing to the rest
   of a rig; a note would sound on whatever hangs off that output.
+- **XG parameter changes go in, XG requests get no answer** (2026-11-23, `PC-2` at
+  38,400, while testing the QY100 Mixer app). `[M]` An XG Display Data message
+  showed its text on the unit's screen, so XG Parameter Change (`F0 43 1n 4C …`) is
+  received. `[D]` No XG request was answered — neither a bulk dump request
+  (`F0 43 2n 4C …`) nor a parameter request (`F0 43 3n 4C …`), in or out of bulk
+  mode — while the QY's own `dump setup` (model `5F`) answered inside bulk mode.
+  The second half was observed by the app's session, not repeated here. So the
+  mixer can write the tone generator through `TO HOST` but cannot read it back that
+  way. `[V]` Whether the QY100 answers XG requests on its `MIDI IN` is not known.
+- **A program can open the cable itself**, without the bridge (2026-11-23, `PC-2` at
+  38,400, the QY100 Mixer app through Web Serial). `[M]` Outgoing: an XG Display Data
+  message sent that way showed its text on the unit's screen, seen by the owner.
+  `[D]` Incoming: the app received the whole 48-byte setup dump with a good checksum,
+  observed by the app's session and not repeated here.
+- **One bridge per cable.** `[D]` With two bridges open on the same serial device
+  the replies are shared between them, and each client sees the unit as silent.
 
 The bridge is [`qy100-syx/herramientas/puente_host.py`](../qy100-syx/herramientas/puente_host.py). It opens the
 cable and exposes a virtual port called `QY100 TO HOST`, input and output, so the
