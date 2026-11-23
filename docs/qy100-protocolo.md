@@ -824,6 +824,24 @@ now points the same way: **song mode is the stage, pattern mode is the bench.**
 An app can offer real knobs in song mode and a read-modify-write panel in
 pattern mode, and it can tell which is which from the Song Position Pointer.
 
+### Silencing a part against incoming MIDI (2026-11-22)
+
+Notes arriving at `MIDI IN` play the part on the same channel *and*, with
+`ECHO BACK = Thru`, go on to the external synth: a doubled sound. Two ways to
+silence the QY100's side were tried:
+
+- `[M]` **Part volume does not work.** Lowering part 4 also lowered the Minitaur
+  on channel 4, which reads `CC 7` as its output level. `[D]` The QY100 passes
+  the volume change on as `CC 7`.
+- `[M]` **`Rcv Channel = Off` does**: `F0 43 10 4C 08 nn 04 7F F7` (Data List
+  table 1-6), sent through the Zoom to part 3 for channel 4. **It does not survive
+  a power cycle**: after switching off and on, both sounds were back. So it has
+  to be resent each session, and a power cycle is the way back to the QY100
+  playing alone. `[D]` Part `nn` = channel `nn + 1` is the XG default.
+  [`experimentos/probar_rcv_channel.py`](../qy100-syx/experimentos/probar_rcv_channel.py)
+  sends it and undoes it. Still open `[V]`: whether it also silences the
+  QY100's own pattern track on that part, and whether a pattern change clears it.
+
 ### Menu changes emit no SysEx — measured (2026-08-16)
 
 `[M]` Two runs, 75 s and 65 s, `MIDI CONTROL` in `In/Out`, navigating menus by
