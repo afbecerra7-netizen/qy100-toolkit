@@ -62,6 +62,7 @@ Cada script vive en la subcarpeta de lo que hace, y **todos se corren desde
 | [`medir/medir_audio.py`](medir/medir_audio.py) | ¿Binaria o ternaria? — sobre una grabación. Lleva `--autotest` con clicks sintéticos; si falla, ninguna medición suya vale. |
 | [`medir/medir_loops.py`](medir/medir_loops.py) | Lo mismo sobre loops MIDI: recalcula toda cifra de loop que citen los documentos. |
 | [`medir/pesar_estilos.py`](medir/pesar_estilos.py) | Pesa cada estilo en bloques y en KB de memoria del aparato. |
+| [`herramientas/m4l_qy100.py`](herramientas/m4l_qy100.py) | Genera **QY100 Part**, un dispositivo de Max for Live para manejar una parte del QY100 desde Ableton: voz con nombre y banco, CC y tipos de efecto. Ya generado en [`max/`](max/); cómo usarlo, en [`docs/max-for-live.md`](../docs/max-for-live.md). No abre puertos MIDI. |
 | [`herramientas/pantalla.py`](herramientas/pantalla.py) | Escribe texto y mapas de bits de 16x16 en la pantalla, por XG Display Data. |
 | [`experimentos/barrer_categorias.py`](experimentos/barrer_categorias.py) | Barre valores de una referencia a frase preset **escribiendo y oyendo**, sin volcar. Guarda el método aunque su lectura acabara siendo el panel. |
 | `herramientas/probe.py` | Sondas sueltas de ingeniería inversa. |

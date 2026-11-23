@@ -7,7 +7,8 @@ identified here rather than silently folded into the licence.
 
 ## Yamaha
 
-`datos/voces.json`, `datos/frases.json`, `datos/estilos.json` and `datos/tambores.json` are tables of
+`datos/voces.json`, `datos/bancos.json`, `datos/frases.json`, `datos/estilos.json` and
+`datos/tambores.json` are tables of
 **facts read off Yamaha's own documentation and firmware**: program numbers,
 voice and style names, preset-phrase indices, note assignments. They exist so
 software can address the device correctly. The names in them are Yamaha's; the
